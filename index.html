@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>BPER Banca</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -16,33 +16,15 @@
         body {
             background-color: #f5f7fa;
             color: #333;
-            max-width: 390px;
+            max-width: 390px; /* iPhone 12 width */
             margin: 0 auto;
-            min-height: 844px;
+            min-height: 844px; /* iPhone 12 height */
             position: relative;
             overflow-x: hidden;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.15);
-        }
-        
-        /* iPhone Status Bar */
-        .status-bar {
-            background: #002a4d;
-            color: white;
-            padding: 5px 15px;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            height: 44px;
-            align-items: center;
-        }
-        
-        .time {
-            font-weight: 600;
-        }
-        
-        .status-icons {
-            display: flex;
-            gap: 8px;
+            /* Ensure content respects safe areas */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
         
         /* App Header */
@@ -54,6 +36,8 @@
             top: 0;
             z-index: 100;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            /* Adjust padding for iPhone 12 notch */
+            padding-top: calc(15px + env(safe-area-inset-top)); /* Original padding + safe area */
         }
         
         .header-top {
@@ -290,6 +274,8 @@
             padding: 12px 0;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             z-index: 100;
+            /* Adjust padding for iPhone 12 home indicator safe area */
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
         }
         
         .nav-item {
@@ -328,13 +314,17 @@
             background: #000;
             border-radius: 3px;
             position: fixed;
-            bottom: 8px;
+            bottom: 8px; /* Standard distance from safe area */
             left: 50%;
             transform: translateX(-50%);
             z-index: 101;
+            /* Position relative to safe area, but also ensure it's not covered by bottom-nav */
+            /* This is tricky to do purely with CSS if the bottom-nav also has safe-area padding. */
+            /* A better approach is to make the home-indicator part of the bottom-nav, or ensure its z-index is higher. */
+            /* Or, if body has padding-bottom for safe area, this can just be `bottom: 8px;` */
         }
         
-        /* Transaction Details */
+        /* Transaction Details - not used but kept for completeness */
         .transaction-details {
             padding: 10px 20px;
             background: #f9f9f9;
@@ -354,17 +344,6 @@
     </style>
 </head>
 <body>
-    <!-- iPhone Status Bar -->
-    <div class="status-bar">
-        <div class="time">18:34</div>
-        <div class="status-icons">
-            <i class="fas fa-signal"></i>
-            <i class="fas fa-wifi"></i>
-            <i class="fas fa-battery-full"></i>
-        </div>
-    </div>
-    
-    <!-- App Header -->
     <header class="app-header">
         <div class="header-top">
             <div class="logo">
@@ -383,9 +362,7 @@
         </nav>
     </header>
     
-    <!-- Main Content -->
     <main>
-        <!-- Account Summary -->
         <section class="account-summary">
             <div class="account-title">Conto 3657761</div>
             <div class="account-balance">
@@ -399,7 +376,6 @@
             <div class="iban">IT25C053875335000003657761</div>
         </section>
         
-        <!-- Quick Actions -->
         <div class="quick-actions">
             <div class="action-btn">
                 <div class="action-icon">
@@ -421,10 +397,8 @@
             </div>
         </div>
         
-        <!-- Divider -->
         <div class="divider"></div>
         
-        <!-- Recent Transactions -->
         <h2 class="section-title">ULTIMI MOVIMENTI</h2>
         <section class="transactions">
             <div class="transaction-item">
@@ -466,7 +440,6 @@
         </section>
     </main>
     
-    <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <div class="nav-item active">
             <i class="fas fa-home nav-icon"></i>
@@ -486,7 +459,6 @@
         </div>
     </nav>
     
-    <!-- iPhone Home Indicator -->
     <div class="home-indicator"></div>
 
     <script>
@@ -521,24 +493,16 @@
             });
         });
         
-        // Transaction details toggle
+        // Transaction details toggle - (This functionality was not fully implemented in the original CSS, kept for future expansion)
         const transactionItems = document.querySelectorAll('.transaction-item');
         transactionItems.forEach(item => {
             item.addEventListener('click', () => {
                 item.classList.toggle('expanded');
+                // You would typically toggle a details div here
             });
         });
         
-        // Update time in status bar
-        function updateTime() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            document.querySelector('.time').textContent = `${hours}:${minutes}`;
-        }
-        
-        updateTime();
-        setInterval(updateTime, 60000);
+        // Removed updateTime function as status bar is removed.
         
         // Simulate loading
         document.addEventListener('DOMContentLoaded', () => {
