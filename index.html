@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPER Banca</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            max-width: 390px;
+            margin: 0 auto;
+            min-height: 844px;
+            position: relative;
+            overflow-x: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* iPhone Status Bar */
+        .status-bar {
+            background: #002a4d;
+            color: white;
+            padding: 5px 15px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            height: 44px;
+            align-items: center;
+        }
+        
+        .time {
+            font-weight: 600;
+        }
+        
+        .status-icons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        /* App Header */
+        .app-header {
+            background: linear-gradient(135deg, #00447c, #002a4d);
+            color: white;
+            padding: 15px 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo span {
+            color: #ffcc00;
+        }
+        
+        .header-icons {
+            display: flex;
+            gap: 22px;
+        }
+        
+        .header-icons i {
+            font-size: 20px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            justify-content: space-around;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-tab {
+            padding: 12px 0;
+            font-weight: 500;
+            position: relative;
+            cursor: pointer;
+            font-size: 15px;
+            letter-spacing: -0.2px;
+        }
+        
+        .nav-tab.active {
+            font-weight: 700;
+        }
+        
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #ffcc00;
+            border-radius: 3px 3px 0 0;
+        }
+        
+        /* Account Summary */
+        .account-summary {
+            background: white;
+            border-radius: 16px;
+            margin: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .account-title {
+            font-size: 15px;
+            color: #666;
+            margin-bottom: 5px;
+            letter-spacing: -0.3px;
+        }
+        
+        .account-balance {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .balance-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: #00447c;
+        }
+        
+        .account-details {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        .account-name {
+            font-weight: 600;
+            color: #00447c;
+        }
+        
+        .iban {
+            background: #f5f7fa;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 14px;
+            color: #00447c;
+            font-weight: 500;
+            margin-bottom: 20px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 15px;
+        }
+        
+        .action-btn {
+            background: white;
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            width: 30%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .action-btn:active {
+            transform: scale(0.98);
+            background: #f5f7fa;
+        }
+        
+        .action-icon {
+            background: #00447c;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-size: 18px;
+        }
+        
+        .action-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: #00447c;
+        }
+        
+        /* Recent Transactions */
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #00447c;
+            margin: 30px 15px 15px;
+            letter-spacing: -0.3px;
+        }
+        
+        .transactions {
+            background: white;
+            border-radius: 16px;
+            margin: 0 15px 80px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 18px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .transaction-info {
+            flex: 1;
+        }
+        
+        .transaction-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 16px;
+            letter-spacing: -0.3px;
+        }
+        
+        .transaction-type {
+            font-size: 13px;
+            color: #666;
+            letter-spacing: -0.2px;
+        }
+        
+        .transaction-amount {
+            font-weight: 600;
+            font-size: 18px;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+        
+        .positive {
+            color: #28a745;
+        }
+        
+        .negative {
+            color: #dc3545;
+        }
+        
+        .pending {
+            font-size: 12px;
+            color: #ff9800;
+            font-weight: 500;
+            margin-top: 5px;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 390px;
+            margin: 0 auto;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+            width: 25%;
+        }
+        
+        .nav-item.active {
+            color: #00447c;
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .nav-item.active .nav-icon {
+            color: #00447c;
+        }
+        
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 0 15px;
+        }
+        
+        /* Simulated Home Indicator */
+        .home-indicator {
+            height: 5px;
+            width: 134px;
+            background: #000;
+            border-radius: 3px;
+            position: fixed;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 101;
+        }
+        
+        /* Transaction Details */
+        .transaction-details {
+            padding: 10px 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            margin: 10px 15px;
+            font-size: 14px;
+            color: #666;
+            display: none;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 390px) {
+            body {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- iPhone Status Bar -->
+    <div class="status-bar">
+        <div class="time">18:34</div>
+        <div class="status-icons">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
+    
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="header-top">
+            <div class="logo">
+                <h1>BP<span>ER</span> Banca</h1>
+            </div>
+            <div class="header-icons">
+                <i class="fas fa-search"></i>
+                <i class="fas fa-bell"></i>
+            </div>
+        </div>
+        
+        <nav class="nav-tabs">
+            <div class="nav-tab active">Conti</div>
+            <div class="nav-tab">Carte</div>
+            <div class="nav-tab">Finanziamenti</div>
+        </nav>
+    </header>
+    
+    <!-- Main Content -->
+    <main>
+        <!-- Account Summary -->
+        <section class="account-summary">
+            <div class="account-title">Conto 3657761</div>
+            <div class="account-balance">
+                <div class="balance-amount">161,46 €</div>
+                <i class="fas fa-chevron-right" style="color: #00447c;"></i>
+            </div>
+            <div class="account-details">
+                Saldo disponibile al 23/06/2025<br>
+                <span class="account-name">Sy Mouhamadou</span>
+            </div>
+            <div class="iban">IT25C053875335000003657761</div>
+        </section>
+        
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <div class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <div class="action-text">Bonifico ordinario</div>
+            </div>
+            <div class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <div class="action-text">Ricarica Telefonica</div>
+            </div>
+            <div class="action-btn">
+                <div class="action-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="action-text">Cbill e PagoPA</div>
+            </div>
+        </div>
+        
+        <!-- Divider -->
+        <div class="divider"></div>
+        
+        <!-- Recent Transactions -->
+        <h2 class="section-title">ULTIMI MOVIMENTI</h2>
+        <section class="transactions">
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <div class="transaction-name">VERSAMENTO DA ATM AZIEN...</div>
+                    <div class="transaction-type">VERSAMENTO</div>
+                </div>
+                <div class="transaction-amount positive">+20,00 €</div>
+            </div>
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <div class="transaction-name">LIDL 148 CLUSONE 24023 ITA...</div>
+                    <div class="transaction-type">PAGAMENTO</div>
+                    <div class="pending">Da contabilizzare</div>
+                </div>
+                <div class="transaction-amount negative">-5,28 €</div>
+            </div>
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <div class="transaction-name">LIDL 2079 BERGAMO 24121 ITA...</div>
+                    <div class="transaction-type">PAGAMENTO</div>
+                </div>
+                <div class="transaction-amount negative">-12,50 €</div>
+            </div>
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <div class="transaction-name">STIPENDIO</div>
+                    <div class="transaction-type">ACCREDITO</div>
+                </div>
+                <div class="transaction-amount positive">+1.250,00 €</div>
+            </div>
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <div class="transaction-name">AMAZON ITALIA</div>
+                    <div class="transaction-type">PAGAMENTO</div>
+                </div>
+                <div class="transaction-amount negative">-49,99 €</div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active">
+            <i class="fas fa-home nav-icon"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item">
+            <i class="fas fa-qrcode nav-icon"></i>
+            <span>Paga</span>
+        </div>
+        <div class="nav-item">
+            <i class="fas fa-credit-card nav-icon"></i>
+            <span>Prodotti</span>
+        </div>
+        <div class="nav-item">
+            <i class="fas fa-comment nav-icon"></i>
+            <span>Hey BPER</span>
+        </div>
+    </nav>
+    
+    <!-- iPhone Home Indicator -->
+    <div class="home-indicator"></div>
+
+    <script>
+        // Tab navigation
+        const navTabs = document.querySelectorAll('.nav-tab');
+        navTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                navTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+        
+        // Bottom navigation
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+        
+        // Button press effect
+        const actionBtns = document.querySelectorAll('.action-btn');
+        actionBtns.forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.style.transform = 'scale(0.98)';
+                btn.style.backgroundColor = '#f5f7fa';
+            });
+            btn.addEventListener('touchend', () => {
+                btn.style.transform = '';
+                btn.style.backgroundColor = '';
+            });
+        });
+        
+        // Transaction details toggle
+        const transactionItems = document.querySelectorAll('.transaction-item');
+        transactionItems.forEach(item => {
+            item.addEventListener('click', () => {
+                item.classList.toggle('expanded');
+            });
+        });
+        
+        // Update time in status bar
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.querySelector('.time').textContent = `${hours}:${minutes}`;
+        }
+        
+        updateTime();
+        setInterval(updateTime, 60000);
+        
+        // Simulate loading
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                document.body.style.transition = 'opacity 0.3s ease-in';
+                document.body.style.opacity = '1';
+            }, 300);
+        });
+    </script>
+</body>
+</html>
