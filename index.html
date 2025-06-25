@@ -2,515 +2,789 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>BPER Banca</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPER Banca - Mobile Banking</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            color: #333;
-            max-width: 390px; /* iPhone 12 width */
-            margin: 0 auto;
-            min-height: 844px; /* iPhone 12 height */
-            position: relative;
-            overflow-x: hidden;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.15);
-            /* Ensure content respects safe areas */
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        
-        /* App Header */
-        .app-header {
-            background: linear-gradient(135deg, #00447c, #002a4d);
-            color: white;
-            padding: 15px 20px 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            /* Adjust padding for iPhone 12 notch */
-            padding-top: calc(15px + env(safe-area-inset-top)); /* Original padding + safe area */
-        }
-        
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-        }
-        
-        .logo h1 {
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-        
-        .logo span {
-            color: #ffcc00;
-        }
-        
-        .header-icons {
-            display: flex;
-            gap: 22px;
-        }
-        
-        .header-icons i {
-            font-size: 20px;
-        }
-        
-        .nav-tabs {
-            display: flex;
-            justify-content: space-around;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .nav-tab {
-            padding: 12px 0;
-            font-weight: 500;
-            position: relative;
-            cursor: pointer;
-            font-size: 15px;
-            letter-spacing: -0.2px;
-        }
-        
-        .nav-tab.active {
-            font-weight: 700;
-        }
-        
-        .nav-tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: #ffcc00;
-            border-radius: 3px 3px 0 0;
-        }
-        
-        /* Account Summary */
-        .account-summary {
-            background: white;
-            border-radius: 16px;
-            margin: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        
-        .account-title {
-            font-size: 15px;
-            color: #666;
-            margin-bottom: 5px;
-            letter-spacing: -0.3px;
-        }
-        
-        .account-balance {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .balance-amount {
-            font-size: 28px;
-            font-weight: 700;
-            color: #00447c;
-        }
-        
-        .account-details {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
-            line-height: 1.4;
-        }
-        
-        .account-name {
-            font-weight: 600;
-            color: #00447c;
-        }
-        
-        .iban {
-            background: #f5f7fa;
-            border-radius: 10px;
-            padding: 15px;
-            font-size: 14px;
-            color: #00447c;
-            font-weight: 500;
-            margin-bottom: 20px;
-            text-align: center;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            letter-spacing: 0.5px;
-        }
-        
-        /* Quick Actions */
-        .quick-actions {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px 15px;
-        }
-        
-        .action-btn {
-            background: white;
-            border-radius: 12px;
-            padding: 15px 10px;
-            text-align: center;
-            width: 30%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease;
-        }
-        
-        .action-btn:active {
-            transform: scale(0.98);
-            background: #f5f7fa;
-        }
-        
-        .action-icon {
-            background: #00447c;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px;
-            font-size: 18px;
-        }
-        
-        .action-text {
-            font-size: 13px;
-            font-weight: 500;
-            color: #00447c;
-        }
-        
-        /* Recent Transactions */
-        .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #00447c;
-            margin: 30px 15px 15px;
-            letter-spacing: -0.3px;
-        }
-        
-        .transactions {
-            background: white;
-            border-radius: 16px;
-            margin: 0 15px 80px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        
-        .transaction-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 18px 20px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .transaction-info {
-            flex: 1;
-        }
-        
-        .transaction-name {
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 16px;
-            letter-spacing: -0.3px;
-        }
-        
-        .transaction-type {
-            font-size: 13px;
-            color: #666;
-            letter-spacing: -0.2px;
-        }
-        
-        .transaction-amount {
-            font-weight: 600;
-            font-size: 18px;
-            white-space: nowrap;
-            margin-left: 10px;
-        }
-        
-        .positive {
-            color: #28a745;
-        }
-        
-        .negative {
-            color: #dc3545;
-        }
-        
-        .pending {
-            font-size: 12px;
-            color: #ff9800;
-            font-weight: 500;
-            margin-top: 5px;
-        }
-        
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            max-width: 390px;
-            margin: 0 auto;
-            background: white;
-            display: flex;
-            justify-content: space-around;
-            padding: 12px 0;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-            z-index: 100;
-            /* Adjust padding for iPhone 12 home indicator safe area */
-            padding-bottom: calc(12px + env(safe-area-inset-bottom));
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 12px;
-            color: #666;
-            width: 25%;
-        }
-        
-        .nav-item.active {
-            color: #00447c;
-        }
-        
-        .nav-icon {
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-        
-        .nav-item.active .nav-icon {
-            color: #00447c;
-        }
-        
-        /* Divider */
-        .divider {
-            height: 1px;
-            background: #e0e0e0;
-            margin: 0 15px;
-        }
-        
-        /* Simulated Home Indicator */
-        .home-indicator {
-            height: 5px;
-            width: 134px;
-            background: #000;
-            border-radius: 3px;
-            position: fixed;
-            bottom: 8px; /* Standard distance from safe area */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 101;
-            /* Position relative to safe area, but also ensure it's not covered by bottom-nav */
-            /* This is tricky to do purely with CSS if the bottom-nav also has safe-area padding. */
-            /* A better approach is to make the home-indicator part of the bottom-nav, or ensure its z-index is higher. */
-            /* Or, if body has padding-bottom for safe area, this can just be `bottom: 8px;` */
-        }
-        
-        /* Transaction Details - not used but kept for completeness */
-        .transaction-details {
-            padding: 10px 20px;
-            background: #f9f9f9;
-            border-radius: 10px;
-            margin: 10px 15px;
-            font-size: 14px;
-            color: #666;
-            display: none;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 390px) {
-            body {
-                box-shadow: none;
-            }
-        }
-    </style>
+        :root{--g1:#005057;--g2:#005057;--g3:#005057;--g4:#e0f2f1;--g5:#005057;--g6:#f0fafa;--wc:#fff;--lc:#f0f0f0;--ic:var(--g5);--bc:#e0e0e0;--sh:0 4px 12px rgba(0,0,0,.08);--mp:#28a745;--mn:#dc3545;--ps:env(safe-area-inset-top);--pb:env(safe-area-inset-bottom);--pl:env(safe-area-inset-left);--pr:env(safe-area-inset-right)}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding:0;background-color:var(--g3);color:var(--g2);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;display:flex;flex-direction:column;min-height:100vh}.status-bar{background-color:var(--g1);color:var(--wc);display:flex;justify-content:space-between;align-items:center;padding:calc(var(--ps)+8px) 15px 8px;font-size:15px;font-weight:600;position:sticky;top:0;width:100%;box-sizing:border-box;z-index:100}.status-bar .right-icons{display:flex;gap:5px;font-size:13px;align-items:center}.status-bar .right-icons .fa-battery-full{font-size:16px}.app-header{background-color:var(--g1);color:var(--wc);padding:0 20px;position:sticky;top:calc(var(--ps)+40px);z-index:90;box-shadow:none;}.header-top{display:flex;justify-content:space-between;align-items:center;padding:15px 0;margin-bottom:15px}.profile-initials{background-color:var(--wc);border-radius:18px;width:36px;height:36px;display:flex;justify-content:center;align-items:center;font-weight:600;font-size:16px;color:var(--g1);}.header-icons{display:flex;gap:20px;font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);}.nav-tabs{display:flex;padding-bottom:15px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;gap: 13px; -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%); mask-image: linear-gradient(to right, black 90%, transparent 100%);}.nav-tabs::-webkit-scrollbar{display:none}.nav-tab{padding:8px 15px;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background-color .3s ease,color .3s ease;text-align:center;background-color:#13666c;color:var(--wc);}.nav-tab.active{background-color:var(--wc);color:var(--g1);}main{flex-grow:1;padding-bottom:calc(80px + var(--pb));box-sizing:border-box;position:relative;background-color:var(--g3);padding-top:20px; width: 100%;}.content-section{display:none;padding:0 20px;}.content-section.active-content{display:block}.account-title-outside{font-size:20px;font-weight:700;color:var(--wc);margin-top:0;margin-bottom:10px;padding-left:20px;display:flex;justify-content:space-between;align-items:center;}.account-title-outside .toggle-icon{font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);margin-right:20px;}.account-summary{background-color:var(--wc);border-radius:16px;padding:20px;margin-bottom:25px;box-shadow:var(--sh);position:relative;z-index:10; margin-left: 20px; margin-right: 20px;}.account-summary .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.account-summary .header .toggle-icon{font-size:20px;color:var(--ic)}.account-balance{font-size:32px;font-weight:700;color:var(--g2);margin-bottom:5px;display:flex;align-items:center}.account-balance .arrow-icon{font-size:20px;margin-left:8px;color:var(--g5)}.balance-info{font-size:13px;color:var(--g5);margin-bottom:20px}.iban-details{display:flex;justify-content:space-between;align-items:center;background-color:var(--g6);border-radius:10px;padding:12px 15px;font-size:14px;font-weight:500;color:var(--g2)}.iban-details .copy-icon{color:var(--g5);font-size:18px;cursor:pointer}.quick-actions{display:flex;justify-content:space-around;margin-bottom:25px;padding: 0 20px;}.action-item{display:flex;flex-direction:column;align-items:center;text-align:center;flex:1;position:relative;}.action-item .icon-wrapper{background-color:var(--lc);border-radius:12px;width:60px;height:60px;display:flex;justify-content:center;align-items:center;margin-bottom:8px;font-size:24px;color:var(--ic)}.action-item span{font-size:13px;color:var(--wc);font-weight:500}.action-item:not(:last-child)::after { /* Dividers between quick actions */
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 60%; /* Adjust height as needed */
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.3); /* White divider */
+}.action-item .icon-wrapper.inverted-colors {
+    background-color: var(--wc); /* Invert background */
+    color: var(--g1); /* Invert icon color */
+}.transactions-card-wrapper{background-color:var(--wc);border-top-left-radius:16px;border-top-right-radius:16px;padding:0;margin-bottom:25px;box-shadow:var(--sh);color:var(--g2); width: auto; margin: 0;}.transactions-card-wrapper .section-title{margin-top:0; padding: 20px 20px 0 20px;}.transactions .transaction-item{background-color:var(--wc);padding:15px 0;margin-bottom:0px;display:flex;flex-direction:column;cursor:pointer;transition:all .2s ease;border-bottom: 1px solid var(--bc);}.transactions .transaction-item:last-child{border-bottom:none}.transactions .transaction-item.expanded{padding-bottom:20px}.transactions .transaction-main-info{display:flex;justify-content:space-between;align-items:center; width: 100%; padding: 0 20px;}.transactions .transaction-info{display:flex;align-items:center}.transactions .transaction-date{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px}.transactions .transaction-description{flex-grow:1}.transactions .transaction-name{font-weight:600;font-size:15px;margin-bottom:3px;letter-spacing:-.3px;color:var(--g2)}.transactions .transaction-type{font-size:12px;color:var(--g5);letter-spacing:-.2px}.transactions .transaction-amount{font-size:15px;font-weight:600;white-space:nowrap}.transactions .transaction-amount.positive{color:var(--mp)}.transactions .transaction-amount.negative{color:var(--mn)}.transactions .transaction-details{display:none;margin-top:10px;font-size:13px;color:var(--g5);padding-top:10px;border-top:1px solid var(--bc); padding: 0 20px;}.transactions .transaction-item.expanded .transaction-details{display:block}.transactions .transaction-details p{margin:5px 0}.transactions .transaction-details strong{color:var(--g2)}.view-all-link{text-align:right;margin-top:15px;margin-bottom:25px;font-size:14px;padding-right:20px;}.view-all-link a{color:var(--g5);text-decoration:none;font-weight:500}.promo-card{background-color:var(--g4);border-radius:16px;padding:20px;margin-bottom:25px;box-shadow:var(--sh);display:flex;align-items:center;gap:15px;color:var(--g2);position:relative;overflow:hidden; margin-left: 20px; margin-right: 20px;}.promo-card .promo-content{flex:1}.promo-card .promo-tag{background-color:var(--g3);color:var(--wc);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:8px}.promo-card h4{font-size:17px;font-weight:700;margin:0 0 5px;color:var(--g2)}.promo-card p{font-size:13px;line-height:1.4;margin:0;color:var(--g5)}.promo-card .arrow-icon{font-size:20px;color:var(--g5)}.placeholder-section{display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 250px);text-align:center;color:var(--g5)}.placeholder-section i{font-size:60px;color:var(--bc);margin-bottom:20px}.placeholder-section h3{font-size:24px;margin-bottom:10px;color:var(--wc)}.placeholder-section p{font-size:16px;line-height:1.5;max-width:80%;color:var(--wc)}.bottom-nav{background-color:var(--wc);border-top:1px solid var(--bc);position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 calc(10px + var(--pb));box-shadow:0 -2px 10px rgba(0,0,0,.05);z-index:100}.bottom-nav .nav-item{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--ic);text-decoration:none;flex:1;padding:5px 0;transition:color .3s ease}.bottom-nav .nav-item i{font-size:22px;margin-bottom:5px}.bottom-nav .nav-item.active{color:var(--g1)}.bottom-nav .nav-item.active i{color:var(--g1)}.all-transactions-header{background-color:var(--g1);color:var(--wc);padding:0;position:sticky;top:0;z-index:90;display:none}.all-transactions-top-bar{display:flex;justify-content:space-between;align-items:center;padding-top:var(--ps,44px);min-height:44px;font-size:15px;font-weight:600;padding: calc(var(--ps, 44px)) 20px 0;}.all-transactions-top-bar .all-transactions-time{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}.all-transactions-top-bar .all-transactions-icons{display:flex;gap:5px;font-size:13px;align-items:center}.all-transactions-top-bar .all-transactions-icons i{font-size:12px}.all-transactions-top-bar .all-transactions-icons .fa-battery-full{font-size:16px}.all-transactions-title-bar{display:flex;align-items:center;padding:15px 20px 10px;}.all-transactions-title-bar .back-button{font-size:22px;margin-right:15px;color:var(--wc);cursor:pointer}.all-transactions-title-bar .title-with-subtitle{font-size:20px;font-weight:700;line-height:1.2;margin:0;flex-grow:1}.all-transactions-title-bar .title-with-subtitle .subtitle{font-size:14px;font-weight:500;color:rgba(255,255,255,.7);display:block;margin-top:2px}.search-filter-bar{display:flex;align-items:center;gap:10px;margin-top:15px; padding: 0 20px 15px;}.search-input-wrapper{flex-grow:1;position:relative}.search-input-wrapper input{width:100%;padding:12px 15px 12px 40px;border-radius:12px;border:none;background-color:rgba(255,255,255,.1);color:var(--wc);font-size:15px;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.1)}.search-input-wrapper input::placeholder{color:rgba(255,255,255,.6)}.search-input-wrapper .fa-search{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.6);font-size:16px}.filter-icons{display:flex;gap:20px;font-size:20px;color:var(--wc)}.all-transactions-content-wrapper{background:var(--wc);border-top-left-radius:16px;border-top-right-radius:16px;padding:20px;flex-grow:1;color:var(--g2);margin-top:-10px;position:relative;z-index:80;padding-bottom:calc(80px + var(--pb))}.section-title-alt{font-size:16px;font-weight:700;color:var(--g2);margin-bottom:15px;letter-spacing:-.3px; padding: 0 20px;}.filter-tabs{display:flex;background-color:var(--g4);border-radius:12px;padding:5px;margin-bottom:20px;justify-content:space-around;align-items:center; margin: 0 20px 20px 20px;}.filter-tab{flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:500;color:var(--g5);cursor:pointer;transition:all .2s ease}.filter-tab.active{background-color:var(--wc);border-radius:10px;color:var(--g2);box-shadow:0 2px 5px rgba(0,0,0,.05)}.transactions-list-container{ padding: 0 20px;}.transactions-list-container .transaction-item{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--bc);color:var(--g2)}.transactions-list-container .transaction-item:last-child{border-bottom:none}.transactions-list-container .transaction-info{display:flex;align-items:center;flex:1}.transactions-list-container .transaction-date-alt{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px}.transactions-list-container .transaction-description{flex:1}.transactions-list-container .transaction-name{font-weight:600;font-size:15px;margin-bottom:3px;letter-spacing:-.3px;color:var(--g2)}.transactions-list-container .transaction-type{font-size:12px;color:var(--g5);letter-spacing:-.2px}.transactions-list-container .transaction-amount{font-size:15px;font-weight:600;white-space:nowrap}.transactions .transaction-amount.positive{color:var(--mp)}.transactions .transaction-amount.negative{color:var(--mn)}.transactions .transaction-date{display:none}#carte-content .card-display{background-color:var(--g4);border-radius:16px;padding:20px;margin-bottom:25px;box-shadow:var(--sh);text-align:center;color:var(--g2); margin-left: 20px; margin-right: 20px;}#carte-content .card-display img{max-width:100%;height:auto;border-radius:10px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}#carte-content .card-display h3{font-size:18px;margin-bottom:5px}#carte-content .card-display p{font-size:14px;color:var(--g5)}#carte-content .card-actions{display:flex;justify-content:space-around;margin-bottom:25px;padding: 0 20px;}.card-actions .action-item{flex:1;padding:10px}#carte-content .notification-banner{background-color:var(--g4);border-radius:12px;padding:15px;display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--g5);margin-bottom:25px; margin-left: 20px; margin-right: 20px;}#carte-content .notification-banner i{color:var(--g5)}#carte-content .notification-banner .close-btn{background:none;border:none;font-size:18px;color:var(--g5);cursor:pointer;padding:0;margin-left:auto}#finanziamenti-content .promo-card{background-color:#d1c4e9;color:#4527a0}#finanziamenti-content .promo-card .promo-tag{background-color:#8c73c8;color:var(--wc)}#finanziamenti-content .promo-card .arrow-icon{color:#4527a0}#finanziamenti-content .promo-card h4{color:#4527a0}#finanziamenti-content .promo-card p{color:#4527a0}#investimenti-content ul li i{color:var(--g5)}#investimenti-content ul li .fa-chevron-right{color:var(--ic)}#investimenti-content ul li{color:var(--g2)}#assicurazioni-content .view-all-link a{color:var(--g5)}#assicurazioni-content .account-summary.promo-pink{background-color:#fce4ec;color:#d81b60}#assicurazioni-content .account-summary.promo-pink .header i,#assicurazioni-content .account-summary.promo-pink h3,#assicurazioni-content .account-summary.promo-pink p,#assicurazioni-content .account-summary.promo-pink span{color:#d81b60}#assicurazioni-content .account-summary.promo-blue{background-color:#e3f2fd;color:#1565c0}#assicurazioni-content .account-summary.promo-blue .header i,#assicurazioni-content .account-summary.promo-blue h3,#assicurazioni-content .account-summary.promo-blue p,#assicurazioni-content .account-summary.promo-blue span{color:#1565c0}#mobilita-content ul li i{color:var(--g5)}#mobilita-content ul li .fa-chevron-right{color:var(--ic)}#mobilita-content ul li{color:var(--g2)}
+    
+/* === FULL WIDTH FIX === */
+main {
+  width: 100vw !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin: 0 !important;
+}
+
+.content-section {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.account-summary,
+.promo-card,
+.card-display,
+.notification-banner,
+.transactions-card-wrapper {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Facoltativo: per eliminare padding laterale anche nei contenuti di transazioni o dettagli */
+.transactions .transaction-main-info,
+.transactions .transaction-details,
+.transactions-list-container {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Se vuoi full width anche nei filtri o tab */
+.filter-tabs {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+</style>
 </head>
 <body>
+    <div class="status-bar">
+        <span class="time"></span>
+        <div class="right-icons">
+            <i class="fas fa-signal"></i>
+            <i class="fas fa-wifi"></i>
+            <span class="battery-percentage"></span>
+            <i class="fas fa-battery-full"></i>
+        </div>
+    </div>
     <header class="app-header">
         <div class="header-top">
-            <div class="logo">
-                <h1>BP<span>ER</span> Banca</h1>
-            </div>
+            <div class="profile-initials">MS</div>
             <div class="header-icons">
-                <i class="fas fa-search"></i>
-                <i class="fas fa-bell"></i>
+                <i class="fas fa-bell"></i> 
+                <i class="fas fa-question-circle"></i> 
             </div>
         </div>
-        
         <nav class="nav-tabs">
-            <div class="nav-tab active">Conti</div>
-            <div class="nav-tab">Carte</div>
-            <div class="nav-tab">Finanziamenti</div>
+            <div class="nav-tab active" data-target="conti-content">Conti</div>
+            <div class="nav-tab" data-target="carte-content">Carte</div>
+            <div class="nav-tab" data-target="finanziamenti-content">Finanziamenti</div>
+            <div class="nav-tab" data-target="investimenti-content">Investimenti</div>
+            <div class="nav-tab" data-target="mutui-content">Mutui</div>
+            <div class="nav-tab" data-target="assicurazioni-content">Assicurazioni</div>
+            <div class="nav-tab" data-target="mobilita-content">Mobilità</div>
         </nav>
     </header>
-    
     <main>
-        <section class="account-summary">
-            <div class="account-title">Conto 3657761</div>
-            <div class="account-balance">
-                <div class="balance-amount">161,46 €</div>
-                <i class="fas fa-chevron-right" style="color: #00447c;"></i>
+        <section id="conti-content" class="content-section active-content">
+            <h3 class="account-title-outside">
+                <span>Conto 3657761</span>
+                <i id="toggle-all-visibility" class="fas fa-eye-slash toggle-icon"></i>
+            </h3>
+            <div class="account-summary">
+                <div class="header">
+                </div>
+                <div class="account-balance">
+                    <span id="current-balance">161,46 €</span> <i class="fas fa-chevron-right arrow-icon"></i>
+                </div>
+                <p class="balance-info">Saldo disponibile al 23/06/2025<br><strong>Sy Mouhamadou</strong></p>
+                <div class="iban-details">
+                    <span id="iban-text">IT25C0538753350000003657761</span>
+                    <i id="copy-iban-button" class="fas fa-arrow-up-from-bracket copy-icon"></i>
+                </div>
             </div>
-            <div class="account-details">
-                Saldo disponibile al 23/06/2025<br>
-                <span class="account-name">Sy Mouhamadou</span>
+            <div class="quick-actions">
+                <div class="action-item">
+                    <div class="icon-wrapper inverted-colors"><i class="fas fa-hand-holding-dollar"></i></div>
+                    <span>Bonifico<br>ordinario</span>
+                </div>
+                <div class="action-item">
+                    <div class="icon-wrapper inverted-colors"><i class="fas fa-mobile-screen-button"></i></div>
+                    <span>Ricarica<br>Telefonica</span>
+                </div>
+                <div class="action-item">
+                    <div class="icon-wrapper inverted-colors"><i class="fas fa-file-invoice"></i></div>
+                    <span>Cbill e<br>PagoPA</span>
+                </div>
             </div>
-            <div class="iban">IT25C053875335000003657761</div>
+            <div class="transactions-card-wrapper">
+                <h2 class="section-title">ULTIMI MOVIMENTI</h2>
+                <div class="transactions">
+                    <div class="transaction-item">
+                        <div class="transaction-main-info">
+                            <div class="transaction-info">
+                                <div class="transaction-date">19<br>giu</div>
+                                <div class="transaction-description">
+                                    <div class="transaction-name">ALDI S.R.L. PEDRENGO ITA Ope...</div>
+                                    <div class="transaction-type">PAGAMENTO</div>
+                                </div>
+                            </div>
+                            <div class="transaction-amount negative" data-original-amount="-4,24 €">-4,24 €</div>
+                        </div>
+                        <div class="transaction-details">
+                            <p><strong>Dettagli:</strong> Pagamento POS</p>
+                            <p><strong>ID Transazione:</strong> 123456789</p>
+                        </div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-main-info">
+                            <div class="transaction-info">
+                                <div class="transaction-date">17<br>giu</div>
+                                <div class="transaction-description">
+                                    <div class="transaction-name">HO-MOBILE.IT - RICARIC MILA...</div>
+                                    <div class="transaction-type">PAGAMENTO ONLINE</div>
+                                </div>
+                            </div>
+                            <div class="transaction-amount negative" data-original-amount="-10,00 €">-10,00 €</div>
+                        </div>
+                        <div class="transaction-details">
+                            <p><strong>Dettagli:</strong> Ricarica mobile</p>
+                            <p><strong>ID Transazione:</strong> 987654321</p>
+                        </div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-main-info">
+                            <div class="transaction-info">
+                                <div class="transaction-date">16<br>giu</div>
+                                <div class="transaction-description">
+                                    <div class="transaction-name">AUTOLAVAGGIO CASSA 2 CLUS...</div>
+                                    <div class="transaction-type">PAGAMENTO</div>
+                                </div>
+                            </div>
+                            <div class="transaction-amount negative" data-original-amount="-5,00 €">-5,00 €</div>
+                        </div>
+                        <div class="transaction-details">
+                            <p><strong>Dettagli:</strong> Autolavaggio self-service</p>
+                            <p><strong>ID Transazione:</strong> 112233445</p>
+                        </div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-main-info">
+                            <div class="transaction-info">
+                                <div class="transaction-date">16<br>giu</div>
+                                <div class="transaction-description">
+                                    <div class="transaction-name">VERSAMENTO DA ATM AZIE...</div>
+                                    <div class="transaction-type">VERSAMENTO</div>
+                                </div>
+                            </div>
+                            <div class="transaction-amount positive" data-original-amount="+150,00 €">+150,00 €</div>
+                        </div>
+                        <div class="transaction-details">
+                            <p><strong>Dettagli:</strong> Versamento contanti</p>
+                            <p><strong>ID Transazione:</strong> 556677889</p>
+                        </div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-main-info">
+                            <div class="transaction-info">
+                                <div class="transaction-date">16<br>giu</div>
+                                <div class="transaction-description">
+                                    <div class="transaction-name">BELLA PIZZA KEBAP BERGAMO...</div>
+                                    <div class="transaction-type">PAGO BANCOMAT</div>
+                                </div>
+                            </div>
+                            <div class="transaction-amount negative" data-original-amount="-5,00 €">-5,00 €</div>
+                        </div>
+                        <div class="transaction-details">
+                            <p><strong>Dettagli:</strong> Pasto asporto</p>
+                            <p><strong>ID Transazione:</strong> 998877665</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="view-all-link">
+                <a href="#" class="view-all-transactions-link" data-target="all-transactions-content">Visualizza tutti ></a>
+            </div>
+            <div class="promo-card">
+                <div class="promo-content">
+                    <span class="promo-tag">PROMO</span>
+                    <h4>Crescere</h4>
+                    <p>Per gli azionisti di Banca Popolare di Sondrio è partita l'Offerta Pubblica di Scambio promossa da BPER per il 100% delle azioni della Banca.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
+            </div>
+            <div class="placeholder-section" style="height: 100px; margin-top: 20px;">
+                <p>Spazio per il grafico "Entrate e Uscite"</p>
+            </div>
         </section>
-        
-        <div class="quick-actions">
-            <div class="action-btn">
-                <div class="action-icon">
-                    <i class="fas fa-exchange-alt"></i>
-                </div>
-                <div class="action-text">Bonifico ordinario</div>
+        <section id="carte-content" class="content-section">
+            <div class="card-display">
+                <h3>5318 **** **** 2947</h3>
+                <p>Carta di debito</p>
+                <img src="https://via.placeholder.com/300x180/e0e0e0/ffffff?text=Carta+BPER" alt="Carta BPER" style="filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));">
             </div>
-            <div class="action-btn">
-                <div class="action-icon">
-                    <i class="fas fa-mobile-alt"></i>
+            <div class="card-actions">
+                <div class="action-item">
+                    <div class="icon-wrapper"><i class="fas fa-key"></i></div>
+                    <span>PIN</span>
                 </div>
-                <div class="action-text">Ricarica Telefonica</div>
+                <div class="action-item">
+                    <div class="icon-wrapper"><i class="fas fa-fingerprint"></i></div>
+                    <span>KEY6</span>
+                </div>
+                <div class="action-item">
+                    <div class="icon-wrapper"><i class="fas fa-power-off"></i></div>
+                    <span>Sospendi</span>
+                </div>
+                <div class="action-item">
+                    <div class="icon-wrapper"><i class="fas fa-gear"></i></div>
+                    <span>Servizi</span>
+                </div>
+                <div class="action-item">
+                    <div class="icon-wrapper"><i class="fas fa-ellipsis-h"></i></div>
+                    <span>Altro</span>
+                </div>
             </div>
-            <div class="action-btn">
-                <div class="action-icon">
-                    <i class="fas fa-receipt"></i>
+            <div class="notification-banner">
+                <div>
+                    <i class="fab fa-apple"></i>
+                    Carta aggiunta a **Apple Wallet**.<br>Ora puoi pagare comodamente con il tuo smartphone
                 </div>
-                <div class="action-text">Cbill e PagoPA</div>
+                <button class="close-btn"><i class="fas fa-times"></i></button>
             </div>
-        </div>
-        
-        <div class="divider"></div>
-        
-        <h2 class="section-title">ULTIMI MOVIMENTI</h2>
-        <section class="transactions">
-            <div class="transaction-item">
-                <div class="transaction-info">
-                    <div class="transaction-name">VERSAMENTO DA ATM AZIEN...</div>
-                    <div class="transaction-type">VERSAMENTO</div>
+            <h2 class="section-title">ULTIMI MOVIMENTI</h2>
+            <div class="transactions">
+                <div class="transaction-item">
+                    <div class="transaction-main-info">
+                        <div class="transaction-info">
+                            <div class="transaction-date">17<br>giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">ALDI S.R.L. VIA PINO LONGHI 2...</div>
+                                <div class="transaction-type">PAGAMENTO POS</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-4,24 €</div>
+                    </div>
+                    <div class="transaction-details">
+                        <p><strong>Dettagli:</strong> Pagamento POS</p>
+                        <p><strong>ID Transazione:</strong> 123456789</p>
+                    </div>
                 </div>
-                <div class="transaction-amount positive">+20,00 €</div>
+                <div class="transaction-item">
+                    <div class="transaction-main-info">
+                        <div class="transaction-info">
+                            <div class="transaction-date">14<br>giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">HO-MOBILE.IT - RICARIC MILA...</div>
+                                <div class="transaction-type">PAGAMENTO ONLINE</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-10,00 €</div>
+                    </div>
+                    <div class="transaction-details">
+                        <p><strong>Dettagli:</strong> Ricarica mobile</p>
+                        <p><strong>ID Transazione:</strong> 987654321</p>
+                    </div>
+                </div>
             </div>
-            <div class="transaction-item">
-                <div class="transaction-info">
-                    <div class="transaction-name">LIDL 148 CLUSONE 24023 ITA...</div>
-                    <div class="transaction-type">PAGAMENTO</div>
-                    <div class="pending">Da contabilizzare</div>
+        </section>
+        <section id="finanziamenti-content" class="content-section">
+            <div class="promo-card">
+                <div class="promo-content">
+                    <span class="promo-tag">PROMO</span>
+                    <h4>Auto, viaggio, arredamento nuovo?</h4>
+                    <p>Scopri la soluzione ideale per finanziare i tuoi progetti o le spese di ogni giorno.</p>
                 </div>
-                <div class="transaction-amount negative">-5,28 €</div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
             </div>
-            <div class="transaction-item">
-                <div class="transaction-info">
-                    <div class="transaction-name">LIDL 2079 BERGAMO 24121 ITA...</div>
-                    <div class="transaction-type">PAGAMENTO</div>
+            <h2 class="section-title">I TUOI PRESTITI</h2>
+            <div class="account-summary">
+                <div class="header">
+                    <h3>Prestito 0704... <i class="fas fa-chevron-right arrow-icon" style="font-size: 16px;"></i></h3>
                 </div>
-                <div class="transaction-amount negative">-12,50 €</div>
+                <p class="balance-info">Importo finanziato 5.250,00 €<br>In corso</p>
+                <div class="iban-details" style="margin-bottom: 10px;">
+                    <span>Importo residuo</span>
+                    <span style="font-weight: 600;">1.520,46 €</span>
+                </div>
+                <div class="iban-details">
+                    <span>Prossima rata</span>
+                    <span style="font-weight: 600;">25/06/25</span>
+                </div>
             </div>
-            <div class="transaction-item">
-                <div class="transaction-info">
-                    <div class="transaction-name">STIPENDIO</div>
-                    <div class="transaction-type">ACCREDITO</div>
+        </section>
+        <section id="investimenti-content" class="content-section">
+            <div class="promo-card">
+                <div class="promo-content">
+                    <h4>Valorizza i tuoi risparmi</h4>
+                    <p>Scopri le soluzioni di risparmio e investimento più adatte ai tuoi obiettivi e alle tue esigenze</p>
                 </div>
-                <div class="transaction-amount positive">+1.250,00 €</div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
             </div>
-            <div class="transaction-item">
-                <div class="transaction-info">
-                    <div class="transaction-name">AMAZON ITALIA</div>
-                    <div class="transaction-type">PAGAMENTO</div>
+            <ul style="list-style: none; padding: 0; margin-top: 20px;">
+                <li style="padding: 15px 0; border-bottom: 1px solid var(--bc); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-chart-line"></i> La tua posizione fiscale <i class="fas fa-chevron-right"></i>
+                </li>
+                <li style="padding: 15px 0; border-bottom: 1px solid var(--bc); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-user"></i> Vai al profilo investitore <i class="fas fa-chevron-right"></i>
+                </li>
+            </ul>
+        </section>
+        <section id="mutui-content" class="content-section">
+            <div class="promo-card">
+                <div class="promo-content">
+                    <h4>Com'è fatta la casa dei tuoi sogni?</h4>
+                    <p>Che sia la prima casa o una ristrutturazione green, c'è un mutuo che fa per te.</p>
                 </div>
-                <div class="transaction-amount negative">-49,99 €</div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
+            </div>
+        </section>
+        <section id="assicurazioni-content" class="content-section">
+            <div class="placeholder-section" style="height: 100px; margin-top: 20px;">
+                <p>Spazio per banner promozionali o card assicurazioni</p>
+            </div>
+            <h2 class="section-title">LE TUO POLIZZE</h2>
+            <div class="filter-tabs" style="margin-bottom: 20px;">
+                <div class="filter-tab active">Attive</div>
+                <div class="filter-tab">Estinte</div>
+            </div>
+            <div class="account-summary" style="margin-bottom: 15px;">
+                <div class="header">
+                    <h3>Atto Tondo <i class="fas fa-chevron-right arrow-icon" style="font-size: 16px;"></i></h3>
+                </div>
+                <p class="balance-info">Arca Assicurazioni<br>Auto</p>
+                <div class="iban-details" style="margin-bottom: 10px;">
+                    <span>Decorrenza</span>
+                    <span style="font-weight: 600;">01/11/2024</span>
+                </div>
+                <div class="iban-details" style="margin-bottom: 8px;">
+                    <span>Scadenza</span>
+                    <span style="font-weight: 600;">01/12/2025</span>
+                <div class="iban-details" style="margin-bottom: 8px;">
+                    <span>Numero polizza</span>
+                    <span style="font-weight: 600;">N° 00162607388617</span>
+                </div>
+                <div class="iban-details">
+                    <span>Tipo Veicolo</span>
+                    <span style="font-weight: 600;">Autovettura</span>
+                </div>
+                <div class="iban-details">
+                    <span>Targa</span>
+                    <span style="font-weight: 600;">FN621FA</span>
+                </div>
+                <div class="iban-details">
+                    <span>Stato</span>
+                    <span style="font-weight: 600; color: var(--mp);">Attiva</span>
+                </div>
+                <div class="view-all-link" style="margin-top: 10px;">
+                    <a href="#">Vedi dettagli ></a>
+                </div>
+            </div>
+            <div class="account-summary" style="margin-bottom: 15px;">
+                <div class="header">
+                    <h3>Arca 3 for you <i class="fas fa-chevron-right arrow-icon" style="font-size: 16px;"></i></h3>
+                </div>
+                <p class="balance-info">Arca Assicurazioni<br>Salute</p>
+                <div class="iban-details" style="margin-bottom: 8px;">
+                    <span>Decorrenza</span>
+                    <span style="font-weight: 600;">01/11/2024</span>
+                </div>
+                <div class="iban-details" style="margin-bottom: 8px;">
+                    <span>Scadenza</span>
+                    <span style="font-weight: 600;">01/11/2025</span>
+                </div>
+                <div class="iban-details" style="margin-bottom: 8px;">
+                    <span>Numero polizza</span>
+                    <span style="font-weight: 600;">N° 00163905618225</span>
+                </div>
+                <div class="iban-details">
+                    <span>Stato</span>
+                    <span style="font-weight: 600; color: var(--mp);">Attiva</span>
+                </div>
+                <div class="view-all-link" style="margin-top: 10px;">
+                    <a href="#">Vedi dettagli ></a>
+                </div>
+            </div>
+            <div class="account-summary" style="margin-bottom: 15px;">
+                <div class="header">
+                    <h3>SALVA PRESTITO - Lavoratori di... <i class="fas fa-chevron-right arrow-icon" style="font-size: 16px;"></i></h3>
+                </div>
+                <p class="balance-info">Arca Assicurazioni<br>Casa e Famiglia</p>
+                <div class="iban-details" style="margin-bottom: 8px;">
+                    <span>Decorrenza</span>
+                    <span style="font-weight: 600;">20/10/2022</span>
+                </div>
+                <div class="iban-details" style="margin-bottom: 8px;">
+                    <span>Scadenza</span>
+                    <span style="font-weight: 600;">20/04/2026</span>
+                </div>
+                <div class="iban-details" style="margin-bottom: 8px;">
+                    <span>Numero polizza</span>
+                    <span style="font-weight: 600;">N° 000000132264</span>
+                </div>
+                <div class="iban-details">
+                    <span>Stato</span>
+                    <span style="font-weight: 600; color: var(--mp);">Attiva</span>
+                </div>
+                <div class="view-all-link" style="margin-top: 10px;">
+                    <a href="#">Vedi dettagli ></a>
+                </div>
+            </div>
+            <div class="account-summary promo-pink" style="margin-top: 25px;">
+                <div class="header">
+                    <i class="fas fa-info-circle"></i>
+                    <h3>Hai richiesto la disdetta di una polizza?</h3>
+                </div>
+                <p class="balance-info" style="font-size: 14px;">La copertura è attiva fino alla data di scadenza. Trovi i dettagli nella sezione Estinte.</p>
+            </div>
+            <div class="account-summary promo-blue" style="margin-top: 15px; margin-bottom: 25px;">
+                <div class="header">
+                    <i class="fas fa-user-friends"></i>
+                    <h3>Gentile cliente, nella presente sezione potrai consultare il dettaglio delle polizze assicurative da Lei sottoscritte o dei preventivi da Lei calcolati con una o più delle seguenti società per il tramite dell'intermediazione di Bper Banca: Arca Vita, Arca Assicurazioni, UniSalute, Unipol. Potranno essere presenti polizze da Lei sottoscritte per Accordi in gestione con le seguenti Compagnie Assicurative: Athora, Cardiff, Helvetia Italia Assicurazioni, HDI Assicurazioni, Intesa Sanpaolo Protezione, Intesa Sanpaolo Assicurazioni. Le titolarità del trattamento dei dati personali contenuti nella presente sezione è quindi, per quanto di competenza, di ciascuna delle predette società con la quale con la quale sono intercorsi i suddetti rapporti. Per maggiori informazioni in merito al trattamento dei Suoi dati personali può consultare l'informativa privacy messa a disposizione da ciascuna società, per quanto di competenza, al momento della stipula della polizza e/o del calcolo del preventivo, per il tramite di Bper Banca.</h3>
+                </div>
+            </div>
+        </section>
+        <section id="mobilita-content" class="content-section">
+            <div class="promo-card">
+                <div class="promo-content">
+                    <span class="promo-tag">PROMO</span>
+                    <h4>Unipolmove Telepedaggio</h4>
+                    <p>Acquista ora, canone azzerato per un anno sul 1° e sul 2° dispositivo.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
+            </div>
+            <ul style="list-style: none; padding: 0; margin-top: 20px;">
+                <li style="padding: 15px 0; border-bottom: 1px solid var(--bc); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-car"></i> Bollo auto e moto in scadenza? <i class="fas fa-chevron-right"></i>
+                </li>
+            </ul>
+        </section>
+        <section id="all-transactions-content" class="content-section">
+            <div class="all-transactions-header">
+                <div class="all-transactions-top-bar">
+                    <span class="all-transactions-time"></span>
+                    <div class="all-transactions-icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <span class="battery-percentage"></span>
+                        <i class="fas fa-battery-full"></i>
+                    </div>
+                </div>
+                <div class="all-transactions-title-bar">
+                    <i class="fas fa-chevron-left back-button"></i>
+                    <h2 class="title-with-subtitle">
+                        Ultimi movimenti<br>
+                        <span class="subtitle">Conto 3657761 15,86 €</span>
+                    </h2>
+                </div>
+                <div class="search-filter-bar">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Cerca movimenti">
+                    </div>
+                    <div class="filter-icons">
+                        <i class="fas fa-sliders"></i>
+                        <i class="fas fa-download"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="all-transactions-content-wrapper">
+                <h3 class="section-title-alt">I TUOI MOVIMENTI</h3>
+                <div class="filter-tabs">
+                    <div class="filter-tab active">Tutti</div>
+                    <div class="filter-tab">Entrate</div>
+                    <div class="filter-tab">Uscite</div>
+                </div>
+                <div class="transactions-list-container">
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">25 <br> giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">RATA PRESTITO BSS BIBANC...</div>
+                                <div class="transaction-type">RATA FINANZIAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-145,60 €</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">24 <br> giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">LIDL 148 CLUSONE ITA Operazi...</div>
+                                <div class="transaction-type">PAGAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-5,28 €</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">24 <br> giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">ENERGY SELF ALBINO ALBINO I...</div>
+                                <div class="transaction-type">PAGAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-4,77 €</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">24 <br> giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">LIDL 2079 BERGAMO ITA Opera...</div>
+                                <div class="transaction-type">PAGAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-3,28 €</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">23 <br> giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">VERSAMENTO DA ATM AZIEN...</div>
+                                <div class="transaction-type">VERSAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount positive">+20,00 €</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">19 <br> giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">ALDI S.R.L. PEDRENGO ITA Ope...</div>
+                                <div class="transaction-type">PAGAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-4,24 €</div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">17 <br> giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">HO-MOBILE.IT - RICARIC MILA...</div>
+                                <div class="transaction-type">PAGAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-10,00 €</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="pagamenti-content" class="content-section">
+            <div class="placeholder-section">
+                <i class="fas fa-money-check-dollar"></i>
+                <h3>Pagamenti</h3>
+                <p>Qui puoi gestire i tuoi pagamenti e bonifici.</p>
+            </div>
+        </section>
+        <section id="altro-content" class="content-section">
+            <div class="placeholder-section">
+                <i class="fas fa-ellipsis-h"></i>
+                <h3>Altro</h3>
+                <p>Scopri servizi aggiuntivi e opzioni del tuo conto.</p>
+            </div>
+        </section>
+        <section id="supporto-content" class="content-section">
+            <div class="placeholder-section">
+                <i class="fas fa-headset"></i>
+                <h3>Supporto</h3>
+                <p>Hai bisogno di aiuto? Contattaci o trova le risposte qui.</p>
             </div>
         </section>
     </main>
-    
     <nav class="bottom-nav">
-        <div class="nav-item active">
-            <i class="fas fa-home nav-icon"></i>
+        <a href="#" class="nav-item active" data-target="conti-content">
+            <i class="fas fa-house"></i>
             <span>Home</span>
-        </div>
-        <div class="nav-item">
-            <i class="fas fa-qrcode nav-icon"></i>
-            <span>Paga</span>
-        </div>
-        <div class="nav-item">
-            <i class="fas fa-credit-card nav-icon"></i>
-            <span>Prodotti</span>
-        </div>
-        <div class="nav-item">
-            <i class="fas fa-comment nav-icon"></i>
-            <span>Hey BPER</span>
-        </div>
+        </a>
+        <a href="#" class="nav-item" data-target="pagamenti-content">
+            <i class="fas fa-money-bill-transfer"></i>
+            <span>Pagamenti</span>
+        </a>
+        <a href="#" class="nav-item" data-target="altro-content">
+            <i class="fas fa-ellipsis-h"></i>
+            <span>Altro</span>
+        </a>
+        <a href="#" class="nav-item" data-target="supporto-content">
+            <i class="fas fa-headset"></i>
+            <span>Supporto</span>
+        </a>
     </nav>
-    
-    <div class="home-indicator"></div>
-
     <script>
-        // Tab navigation
-        const navTabs = document.querySelectorAll('.nav-tab');
-        navTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                navTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-            });
-        });
-        
-        // Bottom navigation
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                navItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-            });
-        });
-        
-        // Button press effect
-        const actionBtns = document.querySelectorAll('.action-btn');
-        actionBtns.forEach(btn => {
-            btn.addEventListener('touchstart', () => {
-                btn.style.transform = 'scale(0.98)';
-                btn.style.backgroundColor = '#f5f7fa';
-            });
-            btn.addEventListener('touchend', () => {
-                btn.style.transform = '';
-                btn.style.backgroundColor = '';
-            });
-        });
-        
-        // Transaction details toggle - (This functionality was not fully implemented in the original CSS, kept for future expansion)
-        const transactionItems = document.querySelectorAll('.transaction-item');
-        transactionItems.forEach(item => {
-            item.addEventListener('click', () => {
-                item.classList.toggle('expanded');
-                // You would typically toggle a details div here
-            });
-        });
-        
-        // Removed updateTime function as status bar is removed.
-        
-        // Simulate loading
         document.addEventListener('DOMContentLoaded', () => {
-            document.body.style.opacity = '0';
-            setTimeout(() => {
-                document.body.style.transition = 'opacity 0.3s ease-in';
-                document.body.style.opacity = '1';
-            }, 300);
+            const switchContent = (targetId) => {
+                document.querySelectorAll('.content-section').forEach(section => {
+                    section.classList.remove('active-content');
+                });
+                document.getElementById(targetId)?.classList.add('active-content');
+            };
+
+            const activateNavTab = (targetId) => {
+                document.querySelector('.nav-tab.active')?.classList.remove('active');
+                const targetTab = document.querySelector(`.nav-tab[data-target="${targetId}"]`);
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                }
+            };
+
+            const activateBottomNav = (targetId) => {
+                document.querySelector('.bottom-nav .nav-item.active')?.classList.remove('active');
+                const targetNavItem = document.querySelector(`.bottom-nav .nav-item[data-target="${targetId}"]`);
+                if (targetNavItem) {
+                    targetNavItem.classList.add('active');
+                }
+            };
+
+            const updateTimeAndBattery = () => {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                document.querySelector('.status-bar .time').textContent = `${hours}:${minutes}`;
+                document.querySelector('.all-transactions-top-bar .all-transactions-time').textContent = `${hours}:${minutes}`;
+                document.querySelector('.status-bar .battery-percentage').textContent = '39%'; // Static for now
+                document.querySelector('.all-transactions-top-bar .battery-percentage').textContent = '39%'; // Static for now
+            };
+
+            updateTimeAndBattery();
+            setInterval(updateTimeAndBattery, 60000); // Update every minute
+
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.dataset.target;
+                    activateNavTab(target);
+                    switchContent(target);
+                    // Always activate "Home" in bottom nav if "conti-content" is active, otherwise deselect
+                    activateBottomNav(target === 'conti-content' ? 'conti-content' : '');
+
+                    // Reset header display for main content sections
+                    document.querySelector('.app-header').style.display = 'block';
+                    document.querySelector('.nav-tabs').style.display = 'flex';
+                    document.querySelector('.header-top').style.marginBottom = '15px';
+                    document.querySelector('.app-header').style.paddingBottom = '0';
+                    document.querySelector('.status-bar').style.backgroundColor = 'var(--g1)';
+                    document.querySelector('.all-transactions-header').style.display = 'none';
+
+                    if (target === 'conti-content') {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+            });
+
+            const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
+            bottomNavItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const target = item.dataset.target;
+                    activateBottomNav(target);
+                    switchContent(target);
+
+                    // Handle header display based on bottom nav selection
+                    if (target === 'conti-content') {
+                        activateNavTab('conti-content'); // Activate "Conti" tab when Home is selected
+                        document.querySelector('.app-header').style.display = 'block';
+                        document.querySelector('.nav-tabs').style.display = 'flex';
+                        document.querySelector('.header-top').style.marginBottom = '15px';
+                        document.querySelector('.app-header').style.paddingBottom = '0';
+                        document.querySelector('.status-bar').style.backgroundColor = 'var(--g1)';
+                    } else {
+                        // For other bottom nav items, deactivate top tabs and adjust header
+                        document.querySelector('.nav-tab.active')?.classList.remove('active');
+                        document.querySelector('.nav-tabs').style.display = 'none';
+                        document.querySelector('.header-top').style.marginBottom = '0';
+                        document.querySelector('.app-header').style.paddingBottom = '15px';
+                        document.querySelector('.status-bar').style.backgroundColor = 'var(--g1)';
+                    }
+                    document.querySelector('.all-transactions-header').style.display = 'none';
+                });
+            });
+
+
+            const toggleAllVisibility = document.getElementById('toggle-all-visibility');
+            const currentBalance = document.getElementById('current-balance');
+            const transactionAmounts = document.querySelectorAll('.transaction-amount');
+            let isBalanceHidden = false; // Initialize to false (visible)
+
+            toggleAllVisibility.addEventListener('click', () => {
+                isBalanceHidden = !isBalanceHidden; // Toggle state
+
+                if (isBalanceHidden) {
+                    currentBalance.textContent = '****,** €';
+                    transactionAmounts.forEach(amount => {
+                        amount.textContent = '****,** €';
+                    });
+                    toggleAllVisibility.classList.remove('fa-eye-slash');
+                    toggleAllVisibility.classList.add('fa-eye');
+                } else {
+                    currentBalance.textContent = '161,46 €'; // Restore original balance
+                    transactionAmounts.forEach(amount => {
+                        amount.textContent = amount.dataset.originalAmount; // Restore from data attribute
+                    });
+                    toggleAllVisibility.classList.remove('fa-eye');
+                    toggleAllVisibility.classList.add('fa-eye-slash');
+                }
+            });
+
+
+            const copyIbanButton = document.getElementById('copy-iban-button');
+            const ibanText = document.getElementById('iban-text');
+            if (copyIbanButton && ibanText) {
+                copyIbanButton.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(ibanText.textContent);
+                        alert('IBAN copiato negli appunti!');
+                    } catch (err) {
+                        console.error('Errore durante la copia dell\'IBAN: ', err);
+                        alert('Impossibile copiare l\'IBAN. Riprova o copia manualmente.');
+                    }
+                });
+            }
+
+            document.querySelectorAll('.transactions .transaction-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    item.classList.toggle('expanded');
+                });
+            });
+
+            const viewAllLink = document.querySelector('.view-all-transactions-link');
+            if (viewAllLink) {
+                viewAllLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchContent('all-transactions-content');
+                    document.querySelector('.app-header').style.display = 'none'; // Hide main header
+                    document.querySelector('.all-transactions-header').style.display = 'block'; // Show all transactions header
+                    activateBottomNav('conti-content'); // Keep 'Home' active in bottom nav
+                    activateNavTab('conti-content'); // Keep 'Conti' active in top nav
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+                });
+            }
+
+            const backButton = document.querySelector('.all-transactions-title-bar .back-button');
+            if (backButton) {
+                backButton.addEventListener('click', () => {
+                    switchContent('conti-content');
+                    document.querySelector('.app-header').style.display = 'block'; // Show main header
+                    document.querySelector('.nav-tabs').style.display = 'flex'; // Ensure nav-tabs are visible
+                    document.querySelector('.header-top').style.marginBottom = '15px'; // Restore margin
+                    document.querySelector('.app-header').style.paddingBottom = '0'; // Restore padding
+                    document.querySelector('.all-transactions-header').style.display = 'none'; // Hide all transactions header
+                    activateBottomNav('conti-content'); // Keep 'Home' active
+                    activateNavTab('conti-content'); // Keep 'Conti' active
+                    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+                });
+            }
+
+            document.querySelectorAll('.filter-tabs .filter-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelector('.filter-tab.active')?.classList.remove('active');
+                    e.target.classList.add('active');
+                    console.log(`Filtro selezionato: ${e.target.textContent}`);
+                });
+            });
+
+            document.querySelector('#carte-content .notification-banner .close-btn')?.addEventListener('click', (e) => {
+                e.target.closest('.notification-banner').style.display = 'none';
+            });
         });
     </script>
 </body>
