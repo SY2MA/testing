@@ -6,31 +6,324 @@
     <title>BPER Banca - Mobile Banking</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        :root{--g1:#005057;--g2:#005057;--g3:#005057;--g4:#e0f2f1;--g5:#005057;--g6:#f0fafa;--wc:#fff;--lc:#f0f0f0;--ic:var(--g5);--bc:#e0e0e0;--sh:0 4px 12px rgba(0,0,0,.08);--mp:#28a745;--mn:#dc3545;--ps:env(safe-area-inset-top);--pb:env(safe-area-inset-bottom);--pl:env(safe-area-inset-left);--pr:env(safe-area-inset-right)}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding:0;background-color:var(--g3);color:var(--g2);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;display:flex;flex-direction:column;min-height:100vh}.status-bar{background-color:var(--g1);color:var(--wc);display:flex;justify-content:space-between;align-items:center;padding:calc(var(--ps)+8px) 15px 8px;font-size:15px;font-weight:600;position:sticky;top:0;width:100%;box-sizing:border-box;z-index:100}.status-bar .right-icons{display:flex;gap:5px;font-size:13px;align-items:center}.status-bar .right-icons .fa-battery-full{font-size:16px}.app-header{background-color:var(--g1);color:var(--wc);padding:0 20px;position:sticky;top:calc(var(--ps)+40px);z-index:90;box-shadow:none;}.header-top{display:flex;justify-content:space-between;align-items:center;padding:15px 0;margin-bottom:15px}.profile-initials{background-color:var(--wc);border-radius:18px;width:36px;height:36px;display:flex;justify-content:center;align-items:center;font-weight:600;font-size:16px;color:var(--g1);}.header-icons{display:flex;gap:20px;font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);}.nav-tabs{display:flex;padding-bottom:15px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;gap: 13px; -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%); mask-image: linear-gradient(to right, black 90%, transparent 100%);}.nav-tabs::-webkit-scrollbar{display:none}.nav-tab{padding:8px 15px;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background-color .3s ease,color .3s ease;text-align:center;background-color:#13666c;color:var(--wc);}.nav-tab.active{background-color:var(--wc);color:var(--g1);}main{flex-grow:1;padding-bottom:calc(80px + var(--pb));box-sizing:border-box;position:relative;background-color:var(--g3);padding-top:20px; width: 100%;}.content-section{display:none;padding:0 20px;}.content-section.active-content{display:block}.account-title-outside{font-size:20px;font-weight:700;color:var(--wc);margin-top:0;margin-bottom:10px;padding-left:20px;display:flex;justify-content:space-between;align-items:center;}.account-title-outside .toggle-icon{font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);margin-right:20px;}.account-summary{background-color:var(--wc);border-radius:16px;padding:20px;margin-bottom:25px;box-shadow:var(--sh);position:relative;z-index:10; margin-left: 20px; margin-right: 20px;}.account-summary .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.account-summary .header .toggle-icon{font-size:20px;color:var(--ic)}.account-balance{font-size:32px;font-weight:700;color:var(--g2);margin-bottom:5px;display:flex;align-items:center}.account-balance .arrow-icon{font-size:20px;margin-left:8px;color:var(--g5)}.balance-info{font-size:13px;color:var(--g5);margin-bottom:20px}.iban-details{display:flex;justify-content:space-between;align-items:center;background-color:var(--g6);border-radius:10px;padding:12px 15px;font-size:14px;font-weight:500;color:var(--g2)}.iban-details .copy-icon{color:var(--g5);font-size:18px;cursor:pointer}.quick-actions{display:flex;justify-content:space-around;margin-bottom:15px; padding: 0 20px;}.action-item{display:flex;flex-direction:column;align-items:center;text-align:center;flex:1;position:relative;}.action-item .icon-wrapper{background-color:var(--lc);border-radius:12px;width:60px;height:60px;display:flex;justify-content:center;align-items:center;margin-bottom:8px;font-size:24px;color:var(--ic)}.action-item span{font-size:13px;color:var(--wc);font-weight:500}.action-item:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    height: 60%;
-    width: 1px;
-    background-color: rgba(255, 255, 255, 0.3);
-}.action-item .icon-wrapper.inverted-colors {
-    background-color: var(--wc);
-    color: var(--g1);
-}.transactions-card-wrapper{background-color:var(--wc);border-top-left-radius:16px;border-top-right-radius:16px;padding:0;margin-bottom:25px;box-shadow:var(--sh);color:var(--g2); width: auto; margin: 0;}.transactions-card-wrapper .section-title{margin-top:15px; padding: 20px 20px 0 20px;}.transactions .transaction-item{background-color:var(--wc);padding:0; margin-bottom:0px;display:flex;flex-direction:column;cursor:pointer;transition:all .2s ease;border-bottom: 1px solid var(--bc);}.transactions .transaction-item:last-child{border-bottom:none}.transactions .transaction-item.expanded{padding-bottom:20px}.transactions .transaction-main-info{display:flex;justify-content:space-between;align-items:center; width: 100%; padding: 15px 20px;}.transactions .transaction-info{display:flex; align-items:center; flex-grow: 1;}.transactions .transaction-date{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px; display: block;}.transactions .transaction-description{flex-grow:1; min-width: 0;}.transactions .transaction-name{font-weight:600;font-size:15px;margin-bottom:3px;letter-spacing:-.3px;color:var(--g2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}.transactions .transaction-type{font-size:12px;color:var(--g5);letter-spacing:-.2px}.transactions .transaction-status{background-color:var(--bc);color:var(--g5);font-size:10px;padding:4px 8px;border-radius:12px;display:inline-block;margin-top:5px;white-space:nowrap;}.transactions .transaction-amount{font-size:15px;font-weight:600;white-space:nowrap}.transactions .transaction-amount.positive{color:var(--mp)}.transactions .transaction-amount.negative{color:var(--mn)}.transactions .transaction-details{display:none;margin-top:10px;font-size:13px;color:var(--g5);padding-top:10px;border-top:1px solid var(--bc); padding: 0 20px;}.transactions .transaction-item.expanded .transaction-details{display:block}.transactions .transaction-details p{margin:5px 0}.transactions .transaction-details strong{color:var(--g2)}.view-all-link{text-align:right;margin-top:15px;margin-bottom:25px;font-size:14px;padding-right:20px;}.view-all-link a{color:var(--g5);text-decoration:none;font-weight:500}.promo-card{background-color:var(--g4);border-radius:16px;padding:20px;margin-bottom:25px;box-shadow:var(--sh);display:flex;align-items:center;gap:15px;color:var(--g2);position:relative;overflow:hidden; margin-left: 20px; margin-right: 20px;}.promo-card .promo-content{flex:1}.promo-card .promo-tag{background-color:var(--g3);color:var(--wc);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:8px}.promo-card h4{font-size:17px;font-weight:700;margin:0 0 5px;color:var(--g2)}.promo-card p{font-size:13px;line-height:1.4;margin:0;color:var(--g5)}.promo-card .arrow-icon{font-size:20px;color:var(--g5)}.placeholder-section{display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 250px);text-align:center;color:var(--g5)}.placeholder-section i{font-size:60px;color:var(--bc);margin-bottom:20px}.placeholder-section h3{font-size:24px;margin-bottom:10px;color:var(--wc)}.placeholder-section p{font-size:16px;line-height:1.5;max-width:80%;color:var(--wc)}.bottom-nav{background-color:var(--wc);border-top:1px solid var(--bc);position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 calc(10px + var(--pb));box-shadow:0 -2px 10px rgba(0,0,0,.05);z-index:100}.bottom-nav .nav-item{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--ic);text-decoration:none;flex:1;padding:5px 0;transition:color .3s ease}.bottom-nav .nav-item i{font-size:22px;margin-bottom:5px}.bottom-nav .nav-item.active{color:var(--g1)}.bottom-nav .nav-item.active i{color:var(--g1)}.all-transactions-header{background-color:var(--g1);color:var(--wc);padding:0;position:sticky;top:0;z-index:90;display:none}.all-transactions-top-bar{display:flex;justify-content:space-between;align-items:center;padding-top:var(--ps,44px);min-height:44px;font-size:15px;font-weight:600;padding: calc(var(--ps, 44px)) 20px 0;}.all-transactions-top-bar .all-transactions-time{font-family:'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}.all-transactions-top-bar .all-transactions-icons{display:flex;gap:5px;font-size:13px;align-items:center}.all-transactions-top-bar .all-transactions-icons i{font-size:12px}.all-transactions-top-bar .all-transactions-icons .fa-battery-full{font-size:16px}.all-transactions-title-bar{display:flex;align-items:center;padding:15px 20px 10px;}.all-transactions-title-bar .back-button{font-size:22px;margin-right:15px;color:var(--wc);cursor:pointer}.all-transactions-title-bar .title-with-subtitle{font-size:20px;font-weight:700;line-height:1.2;margin:0;flex-grow:1}.all-transactions-title-bar .title-with-subtitle .subtitle{font-size:14px;font-weight:500;color:rgba(255,255,255,.7);display:block;margin-top:2px}.search-filter-bar{display:flex;align-items:center;gap:10px;margin-top:15px; padding: 0 20px 15px;}.search-input-wrapper{flex-grow:1;position:relative}.search-input-wrapper input{width:100%;padding:12px 15px 12px 40px;border-radius:12px;border:none;background-color:rgba(255,255,255,.1);color:var(--wc);font-size:15px;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.1)}.search-input-wrapper input::placeholder{color:rgba(255,255,255,.6)}.search-input-wrapper .fa-search{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.6);font-size:16px}.filter-icons{display:flex;gap:20px;font-size:20px;color:var(--wc)}.all-transactions-content-wrapper{background:var(--wc);border-top-left-radius:16px;border-top-right-radius:16px;padding:20px;flex-grow:1;color:var(--g2);margin-top:-10px;position:relative;z-index:80;padding-bottom:calc(80px + var(--pb))}.section-title-alt{font-size:16px;font-weight:700;color:var(--g2);margin-bottom:15px;letter-spacing:-.3px; padding: 0 20px;}.filter-tabs{display:flex;background-color:var(--g4);border-radius:12px;padding:5px;margin-bottom:20px;justify-content:space-around;align-items:center; margin: 0 20px 20px 20px;}.filter-tab{flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:500;color:var(--g5);cursor:pointer;transition:all .2s ease}.filter-tab.active{background-color:var(--wc);border-radius:10px;color:var(--g2);box-shadow:0 2px 5px rgba(0,0,0,.05)}.transactions-list-container{ padding: 0 20px;}.transactions-list-container .transaction-item{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--bc);color:var(--g2)}.transactions-list-container .transaction-item:last-child{border-bottom:none}.transactions-list-container .transaction-info{display:flex;align-items:center;flex:1}.transactions-list-container .transaction-date-alt{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px}.transactions-list-container .transaction-description{flex:1}.transactions-list-container .transaction-name{font-weight:600;font-size:15px;margin-bottom:3px;letter-spacing:-.3px;color:var(--g2)}.transactions-list-container .transaction-type{font-size:12px;color:var(--g5);letter-spacing:-.2px}.transactions-list-container .transaction-amount{font-size:15px;font-weight:600;white-space:nowrap}.transactions .transaction-amount.positive{color:var(--mp)}.transactions .transaction-amount.negative{color:var(--mn)}.transactions .transaction-date{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px; display: block;}.transactions-list-container .transaction-date{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px}.transactions-list-container .transaction-date-alt{display:none}#carte-content .card-display{background-color:var(--g4);border-radius:16px;padding:20px;margin-bottom:25px;box-shadow:var(--sh);text-align:center;color:var(--g2); margin-left: 20px; margin-right: 20px;}#carte-content .card-display img{max-width:100%;height:auto;border-radius:10px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}#carte-content .card-display h3{font-size:18px;margin-bottom:5px}#carte-content .card-display p{font-size:14px;color:var(--g5)}#carte-content .card-actions{display:flex;justify-content:space-around;margin-bottom:25px;padding: 0 20px;}.card-actions .action-item{flex:1;padding:10px}#carte-content .notification-banner{background-color:var(--g4);border-radius:12px;padding:15px;display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--g5);margin-bottom:25px; margin-left: 20px; margin-right: 20px;}#carte-content .notification-banner i{color:var(--g5)}#carte-content .notification-banner .close-btn{background:none;border:none;font-size:18px;color:var(--g5);cursor:pointer;padding:0;margin-left:auto}#finanziamenti-content .promo-card{background-color:#d1c4e9;color:#4527a0}#finanziamenti-content .promo-card .promo-tag{background-color:#8c73c8;color:var(--wc)}#finanziamenti-content .promo-card .arrow-icon{color:#4527a0}#finanziamenti-content .promo-card h4{color:#4527a0}#finanziamenti-content .promo-card p{color:#4527a0}#investimenti-content ul li i{color:var(--g5)}#investimenti-content ul li .fa-chevron-right{color:var(--ic)}#investimenti-content ul li{color:var(--g2)}#assicurazioni-content .view-all-link a{color:var(--g5)}#assicurazioni-content .account-summary.promo-pink{background-color:#fce4ec;color:#d81b60}#assicurazioni-content .account-summary.promo-pink .header i,#assicurazioni-content .account-summary.promo-pink h3,#assicurazioni-content .account-summary.promo-pink p,#assicurazioni-content .account-summary.promo-pink span{color:#d81b60}#assicurazioni-content .account-summary.promo-blue{background-color:#e3f2fd;color:#1565c0}#assicurazioni-content .account-summary.promo-blue .header i,#assicurazioni-content .account-summary.promo-blue h3,#assicurazioni-content .account-summary.promo-blue p,#assicurazioni-content .account-summary.promo-blue span{color:#1565c0}#mobilita-content ul li i{color:var(--g5)}#mobilita-content ul li .fa-chevron-right{color:var(--ic)}#mobilita-content ul li{color:var(--g2)}
+        :root{
+            --g1:#005057;
+            --g2:#005057;
+            --g3:#005057;
+            --g4:#e0f2f1;
+            --g5:#005057;
+            --g6:#f0fafa;
+            --wc:#fff;
+            --lc:#f0f0f0;
+            --ic:var(--g5);
+            --bc:#e0e0e0;
+            --sh:0 4px 12px rgba(0,0,0,.08);
+            --mp:var(--g2); /* CHANGED: Positive money color to g2 */
+            --mn:var(--g2); /* CHANGED: Negative money color to g2 */
+            --pb:env(safe-area-inset-bottom);
+            --pl:env(safe-area-inset-left);
+            --pr:env(safe-area-inset-right);
+        }
+        body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding:0;background-color:var(--g3);color:var(--g2);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;display:flex;flex-direction:column;min-height:100vh}
+        /* REMOVED: .status-bar CSS */
+        .app-header{background-color:var(--g1);color:var(--wc);padding:0 20px;position:sticky;top:0;z-index:90;box-shadow:none;}.header-top{display:flex;justify-content:space-between;align-items:center;padding:15px 0;margin-bottom:15px}.profile-initials{background-color:var(--wc);border-radius:18px;width:36px;height:36px;display:flex;justify-content:center;align-items:center;font-weight:600;font-size:16px;color:var(--g1);}.header-icons{display:flex;gap:20px;font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);}.nav-tabs{display:flex;padding-bottom:15px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;gap: 13px; -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%); mask-image: linear-gradient(to right, black 90%, transparent 100%);}.nav-tabs::-webkit-scrollbar{display:none}.nav-tab{padding:8px 15px;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background-color .3s ease,color .3s ease;text-align:center;background-color:#13666c;color:var(--wc);}.nav-tab.active{background-color:var(--wc);color:var(--g1);}main{flex-grow:1;padding-bottom:calc(80px + var(--pb));box-sizing:border-box;position:relative;background-color:var(--g3);padding-top:20px; width: 100%;}.content-section{display:none;padding:0 20px;}.content-section.active-content{display:block}.account-title-outside{font-size:20px;font-weight:700;color:var(--wc);margin-top:0;margin-bottom:10px;padding-left:20px;display:flex;justify-content:space-between;align-items:center;}.account-title-outside .toggle-icon{font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);margin-right:20px;}
+        .account-summary{
+            background-color:var(--wc);
+            border-radius:16px;
+            padding:10px; /* CHANGED: Padding to 10px */
+            margin-bottom:25px;
+margin-top:25px;
+            box-shadow:var(--sh);
+            position:relative;
+            z-index:10;
+            margin-left: 0;
+            margin-right: 0;
+        }
+        .account-summary .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.account-summary .header .toggle-icon{font-size:20px;color:var(--ic)}.account-balance{font-size:32px;font-weight:700;color:var(--g2);margin-bottom:5px;display:flex;align-items:center}.account-balance .arrow-icon{font-size:20px;margin-left:8px;color:var(--g5)}.balance-info{font-size:13px;color:var(--g5);margin-bottom:20px}.iban-details{display:flex;justify-content:space-between;align-items:center;background-color:var(--g6);border-radius:10px;padding:12px 15px;font-size:14px;font-weight:500;color:var(--g2)}.iban-details .copy-icon{color:var(--g5);font-size:18px;cursor:pointer}.quick-actions{display:flex;justify-content:space-around;margin-bottom:15px; padding: 0 20px;}.action-item{display:flex;flex-direction:column;align-items:center;text-align:center;flex:1;position:relative;}.action-item .icon-wrapper{background-color:var(--lc);border-radius:12px;width:60px;height:60px;display:flex;justify-content:center;align-items:center;margin-bottom:8px;font-size:24px;color:var(--ic)}.action-item span{font-size:13px;color:var(--wc);font-weight:500}.action-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 60%;
+            width: 1px;
+            background-color: rgba(255, 255, 255, 0.3);
+        }.action-item .icon-wrapper.inverted-colors {
+            background-color: var(--wc);
+            color: var(--g1);
+        }
+        /* MODIFICHE PRINCIPALI */
+        .transactions-card-wrapper {
+            background-color: var(--wc);
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            padding: 0;
+            margin-bottom: 25px;
+            box-shadow: var(--sh);
+            color: var(--g2);
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .transactions-card-wrapper .section-title {
+            margin-top: 15px;
+            padding: 20px 20px 10px 20px;
+        }
+
+        .transactions .transaction-item {
+            background-color: var(--wc);
+            padding: 0;
+            margin-bottom: 0px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all .2s ease;
+            border-bottom: 1px solid var(--bc);
+        }
+
+        .transactions .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transactions .transaction-main-info {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            padding: 15px 20px;
+        }
+
+        .transactions .transaction-info {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            flex-shrink: 1;
+        }
+
+        .transactions .transaction-date {
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.2;
+            color: var(--g5);
+            margin-right: 15px;
+            width: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .transactions .transaction-description {
+            flex-grow: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .transactions .transaction-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 3px;
+            letter-spacing: -.3px;
+            color: var(--g2);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .transactions .transaction-type {
+            font-size: 12px;
+            color: var(--g5);
+            letter-spacing: -.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .transactions .transaction-status {
+            background-color: var(--bc);
+            color: var(--g5);
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 5px;
+            white-space: nowrap;
+        }
+
+        .transactions .transaction-amount {
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 85px;
+            text-align: left;
+            padding-left: 0px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-left: 3px;
+        }
+
+        /* NEW CSS FOR THE CARET ICON */
+        .transactions .transaction-amount i {
+            font-size: 8px;
+            margin-left: 3px;
+            vertical-align: middle;
+        }
+
+        /* Existing color rules */
+        .transactions .transaction-amount.positive{color:var(--mp)}.transactions .transaction-amount.negative{color:var(--mn)}.transactions .transaction-date{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px; display: block;}.transactions .transaction-details{display:none;margin-top:10px;font-size:13px;color:var(--g5);padding-top:10px;border-top:1px solid var(--bc); padding: 0 20px;}.transactions .transaction-item.expanded .transaction-details{display:block}.transactions .transaction-details p{margin:5px 0}.transactions .transaction-details strong{color:var(--g2)}.view-all-link{text-align:right;margin-top:15px;margin-bottom:25px;font-size:14px;padding-right:20px;}.view-all-link a{color:var(--g5);text-decoration:none;font-weight:500}.promo-card{background-color:var(--g4);border-radius:16px;padding:20px;margin-bottom:25px;box-shadow:var(--sh);display:flex;align-items:center;gap:15px;color:var(--g2);position:relative;overflow:hidden; margin-left: 20px; margin-right: 20px;}.promo-card .promo-content{flex:1}.promo-card .promo-tag{background-color:var(--g3);color:var(--wc);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;display:inline-block;margin-bottom:8px}.promo-card h4{font-size:17px;font-weight:700;margin:0 0 5px;color:var(--g2)}.promo-card p{font-size:13px;line-height:1.4;margin:0;color:var(--g5)}.promo-card .arrow-icon{font-size:20px;color:var(--g5)}.placeholder-section{display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 250px);text-align:center;color:var(--g5)}.placeholder-section i{font-size:60px;color:var(--bc);margin-bottom:20px}.placeholder-section h3{font-size:24px;margin-bottom:10px;color:var(--wc)}.placeholder-section p{font-size:16px;line-height:1.5;max-width:80%;color:var(--wc)}.bottom-nav{background-color:var(--wc);border-top:1px solid var(--bc);position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 calc(10px + var(--pb));box-shadow:0 -2px 10px rgba(0,0,0,.05);z-index:100}.bottom-nav .nav-item{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--ic);text-decoration:none;flex:1;padding:5px 0;transition:color .3s ease}.bottom-nav .nav-item i{font-size:22px;margin-bottom:5px}.bottom-nav .nav-item.active{color:var(--g1)}.bottom-nav .nav-item.active i{color:var(--g1)}.all-transactions-header{background-color:var(--g1);color:var(--wc);padding:0;position:sticky;top:0;z-index:90;} /* display:none; REMOVED */
+        /* REMOVED: .all-transactions-top-bar and its children CSS */
+        .all-transactions-title-bar{display:flex;align-items:center;padding:20px 20px 10px;}.all-transactions-title-bar .back-button{font-size:22px;margin-right:15px;color:var(--wc);cursor:pointer}.all-transactions-title-bar .title-with-subtitle{font-size:20px;font-weight:700;line-height:1.2;margin:0;flex-grow:1}.all-transactions-title-bar .title-with-subtitle .subtitle{font-size:14px;font-weight:500;color:rgba(255,255,255,.7);display:block;margin-top:2px}.search-filter-bar{display:flex;align-items:center;gap:10px;margin-top:15px; padding: 0 20px 15px;}.search-input-wrapper{flex-grow:1;position:relative}.search-input-wrapper input{width:100%;padding:12px 15px 12px 40px;border-radius:12px;border:none;background-color:rgba(255,255,255,.1);color:var(--wc);font-size:15px;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.1)}.search-input-wrapper input::placeholder{color:rgba(255,255,255,.6)}.search-input-wrapper .fa-search{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.6);font-size:16px}.filter-icons{display:flex;gap:20px;font-size:20px;color:var(--wc)}.all-transactions-content-wrapper{background:var(--wc);border-top-left-radius:16px;border-top-right-radius:16px;padding:20px;flex-grow:1;color:var(--g2);margin-top:-10px;position:relative;z-index:80;padding-bottom:calc(80px + var(--pb))}.section-title-alt{font-size:16px;font-weight:700;color:var(--g2);margin-bottom:15px;letter-spacing:-.3px; padding: 0 20px;}.filter-tabs{display:flex;background-color:var(--g4);border-radius:12px;padding:5px;margin-bottom:20px;justify-content:space-around;align-items:center; margin: 0 20px 20px 20px;}.filter-tab{flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:500;color:var(--g5);cursor:pointer;transition:all .2s ease}.filter-tab.active{background-color:var(--wc);border-radius:10px;color:var(--g2);box-shadow:0 2px 5px rgba(0,0,0,.05)}.transactions-list-container{ padding: 0 20px;}.transactions-list-container .transaction-item{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--bc);color:var(--g2)}.transactions-list-container .transaction-item:last-child{border-bottom:none}.transactions-list-container .transaction-info{display:flex;flex-direction:column;flex:1}.transactions-list-container .transaction-date-alt{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px}.transactions-list-container .transaction-description{flex:1}.transactions-list-container .transaction-name{font-weight:600;font-size:15px;margin-bottom:3px;letter-spacing:-.3px;color:var(--g2)}.transactions-list-container .transaction-type{font-size:12px;color:var(--g5);letter-spacing:-.2px}.transactions-list-container .transaction-amount{font-size:15px;font-weight:600;white-space:nowrap;display:flex;align-items:center;justify-content:flex-end;}.transactions-list-container .transaction-amount i{font-size:8px;margin-left:3px;vertical-align:middle;}.transactions .transaction-amount.positive{color:var(--mp)}.transactions .transaction-amount.negative{color:var(--mn)}.transactions .transaction-date{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px; display: block;}.transactions-list-container .transaction-date{font-size:13px;font-weight:600;text-align:center;line-height:1.2;color:var(--g5);margin-right:15px;width:30px}.transactions-list-container .transaction-date-alt{display:none}#carte-content .card-display{background-color:var(--g4);border-radius:16px;padding:20px;margin-bottom:25px;box-shadow:var(--sh);text-align:center;color:var(--g2); margin-left: 20px; margin-right: 20px;}#carte-content .card-display img{max-width:100%;height:auto;border-radius:10px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}#carte-content .card-display h3{font-size:18px;margin-bottom:5px}#carte-content .card-display p{font-size:14px;color:var(--g5)}#carte-content .card-actions{display:flex;justify-content:space-around;margin-bottom:25px;padding: 0 20px;}.card-actions .action-item{flex:1;padding:10px}#carte-content .notification-banner{background-color:var(--g4);border-radius:12px;padding:15px;display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--g5);margin-bottom:25px; margin-left: 20px; margin-right: 20px;}#carte-content .notification-banner i{color:var(--g5)}#carte-content .notification-banner .close-btn{background:none;border:none;font-size:18px;color:var(--g5);cursor:pointer;padding:0;margin-left:auto}#finanziamenti-content .promo-card{background-color:#d1c4e9;color:#4527a0}#finanziamenti-content .promo-card .promo-tag{background-color:#8c73c8;color:var(--wc)}#finanziamenti-content .promo-card .arrow-icon{color:#4527a0}#finanziamenti-content .promo-card h4{color:#4527a0}#finanziamenti-content .promo-card p{color:#4527a0}#investimenti-content ul li i{color:var(--g5)}#investimenti-content ul li .fa-chevron-right{color:var(--ic)}#investimenti-content ul li{color:var(--g2)}#assicurazioni-content .view-all-link a{color:var(--g5)}#assicurazioni-content .account-summary.promo-pink{background-color:#fce4ec;color:#d81b60}#assicurazioni-content .account-summary.promo-pink .header i,#assicurazioni-content .account-summary.promo-pink h3,#assicurazioni-content .account-summary.promo-pink p,#assicurazioni-content .account-summary.promo-pink span{color:#d81b60}#assicurazioni-content .account-summary.promo-blue{background-color:#e3f2fd;color:#1565c0}#assicurazioni-content .account-summary.promo-blue .header i,#assicurazioni-content .account-summary.promo-blue h3,#assicurazioni-content .account-summary.promo-blue p,#assicurazioni-content .account-summary.promo-blue span{color:#1565c0}#mobilita-content ul li i{color:var(--g5)}#mobilita-content ul li .fa-chevron-right{color:var(--ic)}#mobilita-content ul li{color:var(--g2)}
+
+        /* New CSS for Modal Backdrop */
+        #modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+            z-index: 109; /* Below the pop-up, above other content */
+            opacity: 0;
+            visibility: hidden; /* Start hidden for animation */
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        #modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* New CSS for Transaction Detail Pop-up */
+        #transaction-detail-content {
+            background-color: var(--wc); /* White background for pop-up */
+            color: var(--g2); /* Dark text color for pop-up content */
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0; /* Position at the bottom */
+            max-height: 90vh; /* Max height for the pop-up */
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2); /* Shadow for pop-up effect */
+            z-index: 110;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%); /* Start completely off-screen at bottom */
+            transition: transform 0.3s ease-in-out;
+            visibility: hidden; /* Hidden by default for better animation */
+            overflow: hidden; /* Ensures rounded corners and content within stays */
+        }
+
+        #transaction-detail-content.active-content {
+            transform: translateY(0); /* Animate to visible position */
+            visibility: visible; /* Make visible when active */
+        }
+
+        /* Ensure header inside pop-up is sticky if content scrolls */
+        #transaction-detail-content .all-transactions-header {
+            background-color: var(--wc); /* White background for header within pop-up */
+            color: var(--g1); /* Dark text for header within pop-up */
+            padding: 0;
+            position: sticky; /* Make it sticky within the pop-up scroll area */
+            top: 0; /* Stick to the top of the pop-up scroll area */
+            z-index: 90; /* Ensure it's above other pop-up content if any overlaps */
+            box-shadow: none; /* No shadow */
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding-top: env(safe-area-inset-top); /* Respect notch/status bar area */
+        }
+
+        #transaction-detail-content .all-transactions-title-bar .back-button {
+            color: var(--g1); /* Dark color for back button */
+        }
+        #transaction-detail-content .all-transactions-title-bar .title-with-subtitle {
+            color: var(--g2); /* Dark color for title */
+        }
+
+        .transaction-detail-wrapper {
+            flex-grow: 1;
+            padding: 20px;
+            padding-bottom: 30px; /* Add more padding at bottom for scroll comfort */
+            overflow-y: auto; /* Allow scrolling if content is long */
+            background-color: var(--wc); /* White background */
+            color: var(--g2); /* Dark text color */
+        }
+
+        /* Specific styling for elements in the detail view based on the image */
+        .detail-amount {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--g2); /* Dark amount text, unless negative/positive */
+        }
+
+        .detail-amount.negative {
+            color: var(--mn); /* Set to g2 from variable */
+        }
+        .detail-amount.positive {
+            color: var(--mp); /* Set to g2 from variable */
+        }
+
+        .detail-type {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--g5); /* Lighter dark color for type */
+            margin-bottom: 25px;
+        }
+
+        .detail-info-block {
+            background-color: var(--g4); /* Light grey background for info block */
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: var(--g2); /* Text color inside info block */
+        }
+
+        .detail-info-block h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--g2);
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .detail-info-block p {
+            font-size: 13px;
+            margin: 5px 0;
+            line-height: 1.4;
+            color: var(--g5);
+        }
+
+        .detail-date-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--bc); /* Lighter border for white background */
+            font-size: 14px;
+            color: var(--g2); /* Dark text color for dates */
+        }
+
+        .detail-date-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .detail-date-row span:first-child {
+            font-weight: 500;
+            color: var(--g5); /* Lighter dark color for label */
+        }
+
+        .detail-date-row span:last-child {
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
-    <div class="status-bar">
-        <span class="time"></span>
-        <div class="right-icons">
-            <i class="fas fa-signal"></i>
-            <i class="fas fa-wifi"></i>
-            <span class="battery-percentage"></span>
-            <i class="fas fa-battery-full"></i>
-        </div>
-    </div>
     <header class="app-header">
         <div class="header-top">
             <div class="profile-initials">MS</div>
@@ -93,7 +386,7 @@
                                     <div class="transaction-type">VERSAMENTO</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount positive" data-original-amount="+20,00 €">+20,00 €</div>
+                            <div class="transaction-amount positive" data-original-amount="+20,00 €">+20,00 € <i class="fas fa-caret-up"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Versamento contanti</p>
@@ -110,7 +403,7 @@
                                     <div class="transaction-status">Da contabilizzare</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-5,28 €">-5,28 €</div>
+                            <div class="transaction-amount negative" data-original-amount="-5,28 €">-5,28 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pagamento POS</p>
@@ -127,7 +420,7 @@
                                     <div class="transaction-status">Da contabilizzare</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-4,77 €">-4,77 €</div>
+                            <div class="transaction-amount negative" data-original-amount="-4,77 €">-4,77 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pagamento carburante</p>
@@ -143,7 +436,7 @@
                                     <div class="transaction-type">PAGAMENTO</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-3,28 €">-3,28 €</div>
+                            <div class="transaction-amount negative" data-original-amount="-3,28 €">-3,28 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pagamento POS</p>
@@ -159,7 +452,7 @@
                                     <div class="transaction-type">PAGAMENTO</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-4,24 €">-4,24 €</div>
+                            <div class="transaction-amount negative" data-original-amount="-4,24 €">-4,24 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pagamento POS</p>
@@ -175,7 +468,7 @@
                                     <div class="transaction-type">PAGAMENTO ONLINE</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-10,00 €">-10,00 €</div>
+                            <div class="transaction-amount negative" data-original-amount="-10,00 €">-10,00 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Ricarica mobile</p>
@@ -191,15 +484,14 @@
                                     <div class="transaction-type">PAGAMENTO</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-5,00 €">-5,00 €</div>
+                            <div class="transaction-amount negative" data-original-amount="-5,00 €">-5,00 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Autolavaggio self-service</p>
                             <p><strong>ID Transazione:</strong> 112233445</p>
                         </div>
                     </div>
-                    <div class="transaction-item">
-                        <div class="transaction-main-info">
+                    <div class="transaction-item"> <div class="transaction-main-info">
                             <div class="transaction-info">
                                 <div class="transaction-date">16<br>giu</div>
                                 <div class="transaction-description">
@@ -207,7 +499,7 @@
                                     <div class="transaction-type">PAGO BANCOMAT</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-5,00 €">-5,00 €</div>
+                            <div class="transaction-amount negative" data-original-amount="-5,00 €">-5,00 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pasto asporto</p>
@@ -231,571 +523,655 @@
                 <p>Spazio per il grafico "Entrate e Uscite"</p>
             </div>
         </section>
-        <section id="carte-content" class="content-section">
-            <div class="card-display">
-                <h3>5318 **** **** 2947</h3>
-                <p>Carta di debito</p>
-                <img src="https://via.placeholder.com/300x180/e0e0e0/ffffff?text=Carta+BPER" alt="Carta BPER" style="filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));">
-            </div>
-            <div class="card-actions">
-                <div class="action-item">
-                    <div class="icon-wrapper"><i class="fas fa-key"></i></div>
-                    <span>PIN</span>
-                </div>
-                <div class="action-item">
-                    <div class="icon-wrapper"><i class="fas fa-fingerprint"></i></div>
-                    <span>KEY6</span>
-                </div>
-                <div class="action-item">
-                    <div class="icon-wrapper"><i class="fas fa-power-off"></i></div>
-                    <span>Sospendi</span>
-                </div>
-                <div class="action-item">
-                    <div class="icon-wrapper"><i class="fas fa-gear"></i></div>
-                    <span>Servizi</span>
-                </div>
-                <div class="action-item">
-                    <div class="icon-wrapper"><i class="fas fa-ellipsis-h"></i></div>
-                    <span>Altro</span>
-                </div>
-            </div>
-            <div class="notification-banner">
-                <div>
-                    <i class="fab fa-apple"></i>
-                    Carta aggiunta a **Apple Wallet**.<br>Ora puoi pagare comodamente con il tuo smartphone
-                </div>
-                <button class="close-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <h2 class="section-title">ULTIMI MOVIMENTI</h2>
-            <div class="transactions">
-                <div class="transaction-item">
-                    <div class="transaction-main-info">
-                        <div class="transaction-info">
-                            <div class="transaction-date">17<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">ALDI S.R.L. VIA PINO LONGHI 2...</div>
-                                <div class="transaction-type">PAGAMENTO POS</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-4,24 €</div>
-                    </div>
-                    <div class="transaction-details">
-                        <p><strong>Dettagli:</strong> Pagamento POS</p>
-                        <p><strong>ID Transazione:</strong> 123456789</p>
-                    </div>
-                </div>
-                <div class="transaction-item">
-                    <div class="transaction-main-info">
-                        <div class="transaction-info">
-                            <div class="transaction-date">14<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">HO-MOBILE.IT - RICARIC MILA...</div>
-                                <div class="transaction-type">PAGAMENTO ONLINE</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-10,00 €</div>
-                    </div>
-                    <div class="transaction-details">
-                        <p><strong>Dettagli:</strong> Ricarica mobile</p>
-                        <p><strong>ID Transazione:</strong> 987654321</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <section id="finanziamenti-content" class="content-section">
-            <div class="promo-card">
-                <div class="promo-content">
-                    <span class="promo-tag">PROMO</span>
-                    <h4>Auto, viaggio, arredamento nuovo?</h4>
-                    <p>Scopri la soluzione ideale per finanziare i tuoi progetti o le spese di ogni giorno.</p>
-                </div>
-                <i class="fas fa-chevron-right arrow-icon"></i>
-            </div>
-            <h2 class="section-title">I TUOI PRESTITI</h2>
-            <div class="account-summary">
-                <div class="header">
-                    <h3>Prestito 0704... <i class="fas fa-chevron-right arrow-icon" style="font-size: 16px;"></i></h3>
-                </div>
-                <p class="balance-info">Importo finanziato 5.250,00 €<br>In corso</p>
-                <div class="iban-details" style="margin-bottom: 10px;">
-                    <span>Importo residuo</span>
-                    <span style="font-weight: 600;">1.520,46 €</span>
-                </div>
-                <div class="iban-details">
-                    <span>Prossima rata</span>
-                    <span style="font-weight: 600;">25/06/25</span>
-                </div>
-            </div>
-        </section>
-        <section id="investimenti-content" class="content-section">
-            <div class="promo-card">
-                <div class="promo-content">
-                    <h4>Valorizza i tuoi risparmi</h4>
-                    <p>Scopri le soluzioni di risparmio e investimento più adatte ai tuoi obiettivi e alle tue esigenze</p>
-                </div>
-                <i class="fas fa-chevron-right arrow-icon"></i>
-            </div>
-            <ul style="list-style: none; padding: 0; margin-top: 20px;">
-                <li style="padding: 15px 0; border-bottom: 1px solid var(--bc); display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-chart-line"></i> La tua posizione fiscale <i class="fas fa-chevron-right"></i>
-                </li>
-                <li style="padding: 15px 0; border-bottom: 1px solid var(--bc); display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-user"></i> Vai al profilo investitore <i class="fas fa-chevron-right"></i>
-                </li>
-            </ul>
-        </section>
-        <section id="mutui-content" class="content-section">
-            <div class="promo-card">
-                <div class="promo-content">
-                    <h4>Com'è fatta la casa dei tuoi sogni?</h4>
-                    <p>Che sia la prima casa o una ristrutturazione green, c'è un mutuo che fa per te.</p>
-                </div>
-                <i class="fas fa-chevron-right arrow-icon"></i>
-            </div>
-        </section>
-        <section id="assicurazioni-content" class="content-section">
-            <div class="placeholder-section" style="height: 100px; margin-top: 20px;">
-                <p>Spazio per banner promozionali o card assicurazioni</p>
-            </div>
-            <h2 class="section-title">LE TUO POLIZZE</h2>
-            <div class="filter-tabs" style="margin-bottom: 20px;">
-                <div class="filter-tab active">Attive</div>
-                <div class="filter-tab">Estinte</div>
-            </div>
-            <div class="account-summary" style="margin-bottom: 15px;">
-                <div class="header">
-                    <h3>Atto Tondo <i class="fas fa-chevron-right arrow-icon" style="font-size: 16px;"></i></h3>
-                </div>
-                <p class="balance-info">Arca Assicurazioni<br>Auto</p>
-                <div class="iban-details" style="margin-bottom: 10px;">
-                    <span>Decorrenza</span>
-                    <span style="font-weight: 600;">01/11/2024</span>
-                </div>
-                <div class="iban-details" style="margin-bottom: 8px;">
-                    <span>Scadenza</span>
-                    <span style="font-weight: 600;">01/12/2025</span>
-                <div class="iban-details" style="margin-bottom: 8px;">
-                    <span>Numero polizza</span>
-                    <span style="font-weight: 600;">N° 00162607388617</span>
-                </div>
-                <div class="iban-details">
-                    <span>Tipo Veicolo</span>
-                    <span style="font-weight: 600;">Autovettura</span>
-                </div>
-                <div class="iban-details">
-                    <span>Targa</span>
-                    <span style="font-weight: 600;">FN621FA</span>
-                </div>
-                <div class="iban-details">
-                    <span>Stato</span>
-                    <span style="font-weight: 600; color: var(--mp);">Attiva</span>
-                </div>
-                <div class="view-all-link" style="margin-top: 10px;">
-                    <a href="#">Vedi dettagli ></a>
-                </div>
-            </div>
-            <div class="account-summary" style="margin-bottom: 15px;">
-                <div class="header">
-                    <h3>Arca 3 for you <i class="fas fa-chevron-right arrow-icon" style="font-size: 16px;"></i></h3>
-                </div>
-                <p class="balance-info">Arca Assicurazioni<br>Salute</p>
-                <div class="iban-details" style="margin-bottom: 8px;">
-                    <span>Decorrenza</span>
-                    <span style="font-weight: 600;">01/11/2024</span>
-                </div>
-                <div class="iban-details" style="margin-bottom: 8px;">
-                    <span>Scadenza</span>
-                    <span style="font-weight: 600;">01/11/2025</span>
-                </div>
-                <div class="iban-details" style="margin-bottom: 8px;">
-                    <span>Numero polizza</span>
-                    <span style="font-weight: 600;">N° 00163905618225</span>
-                </div>
-                <div class="iban-details">
-                    <span>Stato</span>
-                    <span style="font-weight: 600; color: var(--mp);">Attiva</span>
-                </div>
-                <div class="view-all-link" style="margin-top: 10px;">
-                    <a href="#">Vedi dettagli ></a>
-                </div>
-            </div>
-            <div class="account-summary" style="margin-bottom: 15px;">
-                <div class="header">
-                    <h3>SALVA PRESTITO - Lavoratori di... <i class="fas fa-chevron-right arrow-icon" style="font-size: 16px;"></i></h3>
-                </div>
-                <p class="balance-info">Arca Assicurazioni<br>Casa e Famiglia</p>
-                <div class="iban-details" style="margin-bottom: 8px;">
-                    <span>Decorrenza</span>
-                    <span style="font-weight: 600;">20/10/2022</span>
-                </div>
-                <div class="iban-details" style="margin-bottom: 8px;">
-                    <span>Scadenza</span>
-                    <span style="font-weight: 600;">20/04/2026</span>
-                </div>
-                <div class="iban-details" style="margin-bottom: 8px;">
-                    <span>Numero polizza</span>
-                    <span style="font-weight: 600;">N° 000000132264</span>
-                </div>
-                <div class="iban-details">
-                    <span>Stato</span>
-                    <span style="font-weight: 600; color: var(--mp);">Attiva</span>
-                </div>
-                <div class="view-all-link" style="margin-top: 10px;">
-                    <a href="#">Vedi dettagli ></a>
-                </div>
-            </div>
-            <div class="account-summary promo-pink" style="margin-top: 25px;">
-                <div class="header">
-                    <i class="fas fa-info-circle"></i>
-                    <h3>Hai richiesto la disdetta di una polizza?</h3>
-                </div>
-                <p class="balance-info" style="font-size: 14px;">La copertura è attiva fino alla data di scadenza. Trovi i dettagli nella sezione Estinte.</p>
-            </div>
-            <div class="account-summary promo-blue" style="margin-top: 15px; margin-bottom: 25px;">
-                <div class="header">
-                    <i class="fas fa-user-friends"></i>
-                    <h3>Gentile cliente, nella presente sezione potrai consultare il dettaglio delle polizze assicurative da Lei sottoscritte o dei preventivi da Lei calcolati con una o più delle seguenti società per il tramite dell'intermediazione di Bper Banca: Arca Vita, Arca Assicurazioni, UniSalute, Unipol. Potranno essere presenti polizze da Lei sottoscritte per Accordi in gestione con le seguenti Compagnie Assicurative: Athora, Cardiff, Helvetia Italia Assicurazioni, HDI Assicurazioni, Intesa Sanpaolo Protezione, Intesa Sanpaolo Assicurazioni. Le titolarità del trattamento dei dati personali contenuti nella presente sezione è quindi, per quanto di competenza, di ciascuna delle predette società con la quale con la quale sono intercorsi i suddetti rapporti. Per maggiori informazioni in merito al trattamento dei Suoi dati personali può consultare l'informativa privacy messa a disposizione da ciascuna società, per quanto di competenza, al momento della stipula della polizza e/o del calcolo del preventivo, per il tramite di Bper Banca.</h3>
-                </div>
-            </div>
-        </section>
-        <section id="mobilita-content" class="content-section">
-            <div class="promo-card">
-                <div class="promo-content">
-                    <span class="promo-tag">PROMO</span>
-                    <h4>Unipolmove Telepedaggio</h4>
-                    <p>Acquista ora, canone azzerato per un anno sul 1° e sul 2° dispositivo.</p>
-                </div>
-                <i class="fas fa-chevron-right arrow-icon"></i>
-            </div>
-            <ul style="list-style: none; padding: 0; margin-top: 20px;">
-                <li style="padding: 15px 0; border-bottom: 1px solid var(--bc); display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-car"></i> Bollo auto e moto in scadenza? <i class="fas fa-chevron-right"></i>
-                </li>
-            </ul>
-        </section>
+
         <section id="all-transactions-content" class="content-section">
             <div class="all-transactions-header">
-                <div class="all-transactions-top-bar">
-                    <span class="all-transactions-time"></span>
-                    <div class="all-transactions-icons">
-                        <i class="fas fa-signal"></i>
-                        <i class="fas fa-wifi"></i>
-                        <span class="battery-percentage"></span>
-                        <i class="fas fa-battery-full"></i>
-                    </div>
-                </div>
                 <div class="all-transactions-title-bar">
-                    <i class="fas fa-chevron-left back-button"></i>
-                    <h2 class="title-with-subtitle">
-                        Ultimi movimenti<br>
-                        <span class="subtitle">Conto 3657761 15,86 €</span>
-                    </h2>
+                    <i class="fas fa-arrow-left back-button" data-target="conti-content"></i>
+                    <h1 class="title-with-subtitle">
+                        Movimenti
+                        <span class="subtitle">Conto 3657761</span>
+                    </h1>
+                    <div class="filter-icons">
+                        <i class="fas fa-search"></i>
+                        <i class="fas fa-filter"></i>
+                    </div>
                 </div>
                 <div class="search-filter-bar">
                     <div class="search-input-wrapper">
-                        <i class="fas fa-search"></i>
                         <input type="text" placeholder="Cerca movimenti">
-                    </div>
-                    <div class="filter-icons">
-                        <i class="fas fa-sliders"></i>
-                        <i class="fas fa-download"></i>
+                        <i class="fas fa-search"></i>
                     </div>
                 </div>
             </div>
             <div class="all-transactions-content-wrapper">
-                <h3 class="section-title-alt">I TUOI MOVIMENTI</h3>
                 <div class="filter-tabs">
                     <div class="filter-tab active">Tutti</div>
                     <div class="filter-tab">Entrate</div>
                     <div class="filter-tab">Uscite</div>
                 </div>
+                <h2 class="section-title-alt">Luglio 2024</h2>
                 <div class="transactions-list-container">
                     <div class="transaction-item">
                         <div class="transaction-info">
-                            <div class="transaction-date-alt">25 <br> giu</div>
+                            <div class="transaction-date-alt">25<br>lug</div>
                             <div class="transaction-description">
-                                <div class="transaction-name">RATA PRESTITO BSS BIBANC...</div>
-                                <div class="transaction-type">RATA FINANZIAMENTO</div>
+                                <div class="transaction-name">Bonifico ricevuto DA ROSSI MARIO</div>
+                                <div class="transaction-type">BONIFICO</div>
                             </div>
                         </div>
-                        <div class="transaction-amount negative">-145,60 €</div>
+                        <div class="transaction-amount positive">+500,00 € <i class="fas fa-caret-up"></i></div>
                     </div>
                     <div class="transaction-item">
                         <div class="transaction-info">
-                            <div class="transaction-date-alt">24 <br> giu</div>
+                            <div class="transaction-date-alt">24<br>lug</div>
                             <div class="transaction-description">
-                                <div class="transaction-name">LIDL 148 CLUSONE 24023 ITA...</div>
+                                <div class="transaction-name">Acquisto online AMAZON</div>
                                 <div class="transaction-type">PAGAMENTO</div>
                             </div>
                         </div>
-                        <div class="transaction-amount negative">-5,28 €</div>
+                        <div class="transaction-amount negative">-45,99 € <i class="fas fa-caret-down"></i></div>
                     </div>
+                    </div>
+                <h2 class="section-title-alt" style="margin-top: 30px;">Giugno 2024</h2>
+                <div class="transactions-list-container">
                     <div class="transaction-item">
                         <div class="transaction-info">
-                            <div class="transaction-date-alt">24 <br> giu</div>
+                            <div class="transaction-date-alt">23<br>giu</div>
                             <div class="transaction-description">
-                                <div class="transaction-name">ENERGY SELF ALBINO ALBINO I...</div>
-                                <div class="transaction-type">PAGAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-4,77 €</div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">24 <br> giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">LIDL 2079 BERGAMO ITA Opera...</div>
-                                <div class="transaction-type">PAGAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-3,28 €</div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">23 <br> giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">VERSAMENTO DA ATM AZIEN...</div>
+                                <div class="transaction-name">VERSAMENTO DA ATM AZIENDALE</div>
                                 <div class="transaction-type">VERSAMENTO</div>
                             </div>
                         </div>
-                        <div class="transaction-amount positive">+20,00 €</div>
+                        <div class="transaction-amount positive">+20,00 € <i class="fas fa-caret-up"></i></div>
                     </div>
                     <div class="transaction-item">
                         <div class="transaction-info">
-                            <div class="transaction-date-alt">19 <br> giu</div>
+                            <div class="transaction-date-alt">22<br>giu</div>
                             <div class="transaction-description">
-                                <div class="transaction-name">ALDI S.R.L. PEDRENGO ITA Ope...</div>
+                                <div class="transaction-name">LIDL 148 CLUSONE 24023 ITALIA</div>
                                 <div class="transaction-type">PAGAMENTO</div>
                             </div>
                         </div>
-                        <div class="transaction-amount negative">-4,24 €</div>
+                        <div class="transaction-amount negative">-5,28 € <i class="fas fa-caret-down"></i></div>
                     </div>
                     <div class="transaction-item">
                         <div class="transaction-info">
-                            <div class="transaction-date-alt">17 <br> giu</div>
+                            <div class="transaction-date-alt">21<br>giu</div>
                             <div class="transaction-description">
-                                <div class="transaction-name">HO-MOBILE.IT - RICARIC MILA...</div>
+                                <div class="transaction-name">ENERGY SELF ALBINO ALBINO ITALIA</div>
                                 <div class="transaction-type">PAGAMENTO</div>
                             </div>
                         </div>
-                        <div class="transaction-amount negative">-10,00 €</div>
+                        <div class="transaction-amount negative">-4,77 € <i class="fas fa-caret-down"></i></div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">20<br>giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">LIDL 2079 BERGAMO ITALIA Opera</div>
+                                <div class="transaction-type">PAGAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-3,28 € <i class="fas fa-caret-down"></i></div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">19<br>giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">ALDI S.R.L. PEDRENGO ITALIA Opera</div>
+                                <div class="transaction-type">PAGAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-4,24 € <i class="fas fa-caret-down"></i></div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">17<br>giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">HO-MOBILE.IT - RICARICA ONLINE</div>
+                                <div class="transaction-type">PAGAMENTO ONLINE</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-10,00 € <i class="fas fa-caret-down"></i></div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">16<br>giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">AUTOLAVAGGIO CASSA 2 CLUSONE</div>
+                                <div class="transaction-type">PAGAMENTO</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-5,00 € <i class="fas fa-caret-down"></i></div>
+                    </div>
+                    <div class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-date-alt">16<br>giu</div>
+                            <div class="transaction-description">
+                                <div class="transaction-name">BELLA PIZZA KEBAP BERGAMO</div>
+                                <div class="transaction-type">PAGO BANCOMAT</div>
+                            </div>
+                        </div>
+                        <div class="transaction-amount negative">-5,00 € <i class="fas fa-caret-down"></i></div>
                     </div>
                 </div>
             </div>
         </section>
-        <section id="pagamenti-content" class="content-section">
-            <div class="placeholder-section">
-                <i class="fas fa-money-check-dollar"></i>
-                <h3>Pagamenti</h3>
-                <p>Qui puoi gestire i tuoi pagamenti e bonifici.</p>
+
+        <section id="carte-content" class="content-section">
+            <h2 class="section-title-alt">Le tue carte</h2>
+            <div class="card-display">
+                <img src="https://via.placeholder.com/300x180?text=Your+Card+Image" alt="Carta di Debito">
+                <h3>Carta di Debito</h3>
+                <p>**** **** **** 1234</p>
+                <p>Scad. 12/26</p>
+            </div>
+            <div class="quick-actions card-actions">
+                <div class="action-item">
+                    <div class="icon-wrapper inverted-colors"><i class="fas fa-lock"></i></div>
+                    <span>Blocca</span>
+                </div>
+                <div class="action-item">
+                    <div class="icon-wrapper inverted-colors"><i class="fas fa-cogs"></i></div>
+                    <span>Gestisci</span>
+                </div>
+                <div class="action-item">
+                    <div class="icon-wrapper inverted-colors"><i class="fas fa-info-circle"></i></div>
+                    <span>Dettagli</span>
+                </div>
+            </div>
+            <div class="notification-banner">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>Avviso importante:</strong> La tua carta di credito è in scadenza. Clicca qui per richiederne una nuova.
+                </div>
+                <button class="close-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <h2 class="section-title-alt">Richiedi una nuova carta</h2>
+            <div class="promo-card" style="background-color: var(--g4); color: var(--g2);">
+                <div class="promo-content">
+                    <span class="promo-tag" style="background-color: var(--g3); color: var(--wc);">NOVITÀ</span>
+                    <h4>Carta di Credito BPER</h4>
+                    <p>Ottieni la libertà finanziaria con la nostra nuova carta di credito, ricca di vantaggi esclusivi.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon" style="color: var(--g5);"></i>
             </div>
         </section>
-        <section id="altro-content" class="content-section">
-            <div class="placeholder-section">
-                <i class="fas fa-ellipsis-h"></i>
-                <h3>Altro</h3>
-                <p>Scopri servizi aggiuntivi e opzioni del tuo conto.</p>
+
+        <section id="finanziamenti-content" class="content-section">
+            <h2 class="section-title-alt">I tuoi finanziamenti</h2>
+            <div class="promo-card">
+                <div class="promo-content">
+                    <span class="promo-tag">INFO</span>
+                    <h4>Non hai finanziamenti attivi.</h4>
+                    <p>Scopri le nostre soluzioni per realizzare i tuoi progetti.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
+            </div>
+            <h2 class="section-title-alt">Simula il tuo finanziamento</h2>
+            <div class="promo-card">
+                <div class="promo-content">
+                    <span class="promo-tag">NUOVO</span>
+                    <h4>Calcola la rata del mutuo</h4>
+                    <p>Utilizza il nostro simulatore per scoprire il finanziamento più adatto a te.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
+            </div>
+            <div class="placeholder-section" style="height: 200px;">
+                <i class="fas fa-euro-sign"></i>
+                <h3>Finanziamenti</h3>
+                <p>Gestisci i tuoi prestiti e scopri nuove opportunità di finanziamento.</p>
             </div>
         </section>
-        <section id="supporto-content" class="content-section">
-            <div class="placeholder-section">
-                <i class="fas fa-headset"></i>
-                <h3>Supporto</h3>
-                <p>Hai bisogno di aiuto? Contattaci o trova le risposte qui.</p>
+
+        <section id="investimenti-content" class="content-section">
+            <h2 class="section-title-alt">I tuoi investimenti</h2>
+            <div class="promo-card">
+                <div class="promo-content">
+                    <span class="promo-tag">GUIDA</span>
+                    <h4>Inizia a investire oggi</h4>
+                    <p>Scopri come far crescere il tuo capitale con i nostri piani di investimento personalizzati.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
+            </div>
+            <ul class="list-group" style="padding: 0 20px; list-style: none;">
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--bc); font-size: 16px;">
+                    <span><i class="fas fa-chart-line" style="margin-right: 10px;"></i> Portafoglio</span>
+                    <i class="fas fa-chevron-right"></i>
+                </li>
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--bc); font-size: 16px;">
+                    <span><i class="fas fa-coins" style="margin-right: 10px;"></i> Fondi Comuni</span>
+                    <i class="fas fa-chevron-right"></i>
+                </li>
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-size: 16px;">
+                    <span><i class="fas fa-money-bill-trend-up" style="margin-right: 10px;"></i> Gestione Patrimoniale</span>
+                    <i class="fas fa-chevron-right"></i>
+                </li>
+            </ul>
+            <div class="placeholder-section" style="height: 200px; margin-top: 20px;">
+                <i class="fas fa-chart-pie"></i>
+                <h3>Investimenti</h3>
+                <p>Consulta il tuo portafoglio e esplora nuove opportunità.</p>
             </div>
         </section>
+        
+        <section id="mutui-content" class="content-section">
+            <h2 class="section-title-alt">I tuoi mutui</h2>
+            <div class="promo-card" style="background-color: var(--g4); color: var(--g2);">
+                <div class="promo-content">
+                    <span class="promo-tag" style="background-color: var(--g3); color: var(--wc);">NOVITÀ</span>
+                    <h4>Non hai mutui attivi.</h4>
+                    <p>Scopri le nostre soluzioni di mutuo per acquistare la casa dei tuoi sogni.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon" style="color: var(--g5);"></i>
+            </div>
+            <div class="placeholder-section" style="height: 200px;">
+                <i class="fas fa-house-chimney"></i>
+                <h3>Mutui</h3>
+                <p>Simula e gestisci il tuo mutuo in modo semplice e veloce.</p>
+            </div>
+        </section>
+
+        <section id="assicurazioni-content" class="content-section">
+            <h2 class="section-title-alt">Le tue assicurazioni</h2>
+            <div class="account-summary promo-pink">
+                <div class="header">
+                    <h3>Assicurazione Auto</h3>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <p>Polizza n. XYZ789</p>
+                <p>Scadenza: 31/12/2025</p>
+            </div>
+            <div class="account-summary promo-blue">
+                <div class="header">
+                    <h3>Assicurazione Casa</h3>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <p>Polizza n. ABC123</p>
+                <p>Scadenza: 15/07/2026</p>
+            </div>
+            <div class="view-all-link">
+                <a href="#">Visualizza tutte le polizze ></a>
+            </div>
+            <div class="promo-card" style="background-color: var(--g4); color: var(--g2);">
+                <div class="promo-content">
+                    <span class="promo-tag" style="background-color: var(--g3); color: var(--wc);">OFFERTA</span>
+                    <h4>Proteggi la tua famiglia</h4>
+                    <p>Scopri le nostre assicurazioni vita e salute per una protezione completa.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon" style="color: var(--g5);"></i>
+            </div>
+        </section>
+
+        <section id="mobilita-content" class="content-section">
+            <h2 class="section-title-alt">Soluzioni per la mobilità</h2>
+            <div class="promo-card" style="background-color: var(--g4); color: var(--g2);">
+                <div class="promo-content">
+                    <span class="promo-tag" style="background-color: var(--g3); color: var(--wc);">ESPLORA</span>
+                    <h4>Viaggia senza pensieri</h4>
+                    <p>Servizi dedicati alla mobilità: pagamento parcheggi, pedaggi e molto altro.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon" style="color: var(--g5);"></i>
+            </div>
+            <ul class="list-group" style="padding: 0 20px; list-style: none;">
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--bc); font-size: 16px;">
+                    <span><i class="fas fa-parking" style="margin-right: 10px;"></i> Parcheggi</span>
+                    <i class="fas fa-chevron-right"></i>
+                </li>
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--bc); font-size: 16px;">
+                    <span><i class="fas fa-road" style="margin-right: 10px;"></i> Pedaggi</span>
+                    <i class="fas fa-chevron-right"></i>
+                </li>
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-size: 16px;">
+                    <span><i class="fas fa-charging-station" style="margin-right: 10px;"></i> Ricarica Veicoli Elettrici</span>
+                    <i class="fas fa-chevron-right"></i>
+                </li>
+            </ul>
+            <div class="placeholder-section" style="height: 200px; margin-top: 20px;">
+                <i class="fas fa-car"></i>
+                <h3>Mobilità</h3>
+                <p>Tutti i servizi per i tuoi spostamenti a portata di mano.</p>
+            </div>
+        </section>
+
+        <div id="modal-backdrop"></div>
+
+        <section id="transaction-detail-content" class="content-section">
+            <div class="all-transactions-header">
+                <div class="all-transactions-title-bar">
+                    <i class="fas fa-arrow-left back-button"></i>
+                    <h1 class="title-with-subtitle">
+                        Dettaglio Movimento
+                    </h1>
+                </div>
+            </div>
+            <div class="transaction-detail-wrapper">
+                </div>
+        </section>
+
     </main>
     <nav class="bottom-nav">
-        <a href="#" class="nav-item active" data-target="conti-content">
-            <i class="fas fa-house"></i>
+        <a href="#" class="nav-item active">
+            <i class="fas fa-house-chimney"></i>
             <span>Home</span>
         </a>
-        <a href="#" class="nav-item" data-target="pagamenti-content">
-            <i class="fas fa-money-bill-transfer"></i>
+        <a href="#" class="nav-item">
+            <i class="fas fa-arrow-right-arrow-left"></i>
             <span>Pagamenti</span>
         </a>
-        <a href="#" class="nav-item" data-target="altro-content">
-            <i class="fas fa-ellipsis-h"></i>
-            <span>Altro</span>
+        <a href="#" class="nav-item">
+            <i class="fas fa-address-book"></i>
+            <span>Contatti</span>
         </a>
-        <a href="#" class="nav-item" data-target="supporto-content">
-            <i class="fas fa-headset"></i>
-            <span>Supporto</span>
+        <a href="#" class="nav-item">
+            <i class="fas fa-user-circle"></i>
+            <span>Profilo</span>
         </a>
     </nav>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const switchContent = (targetId) => {
-                document.querySelectorAll('.content-section').forEach(section => {
-                    section.classList.remove('active-content');
-                });
-                document.getElementById(targetId)?.classList.add('active-content');
-            };
-
-            const activateNavTab = (targetId) => {
-                document.querySelector('.nav-tab.active')?.classList.remove('active');
-                const targetTab = document.querySelector(`.nav-tab[data-target="${targetId}"]`);
-                if (targetTab) {
-                    targetTab.classList.add('active');
-                }
-            };
-
-            const activateBottomNav = (targetId) => {
-                document.querySelector('.bottom-nav .nav-item.active')?.classList.remove('active');
-                const targetNavItem = document.querySelector(`.bottom-nav .nav-item[data-target="${targetId}"]`);
-                if (targetNavItem) {
-                    targetNavItem.classList.add('active');
-                }
-            };
-
-            const updateTimeAndBattery = () => {
-                const now = new Date();
-                const hours = now.getHours().toString().padStart(2, '0');
-                const minutes = now.getMinutes().toString().padStart(2, '0');
-                document.querySelector('.status-bar .time').textContent = `${hours}:${minutes}`;
-                document.querySelector('.all-transactions-top-bar .all-transactions-time').textContent = `${hours}:${minutes}`;
-                document.querySelector('.status-bar .battery-percentage').textContent = '39%'; // Static for now
-                document.querySelector('.all-transactions-top-bar .battery-percentage').textContent = '39%'; // Static for now
-            };
-
-            updateTimeAndBattery();
-            setInterval(updateTimeAndBattery, 60000); // Update every minute
-
+            // Tab functionality
             const navTabs = document.querySelectorAll('.nav-tab');
+            const contentSections = document.querySelectorAll('.content-section');
+            const allTransactionsHeader = document.querySelector('#all-transactions-content .all-transactions-header'); // Select specific header
+
             navTabs.forEach(tab => {
                 tab.addEventListener('click', () => {
-                    const target = tab.dataset.target;
-                    activateNavTab(target);
-                    switchContent(target);
-                    // Always activate "Home" in bottom nav if "conti-content" is active, otherwise deselect
-                    activateBottomNav(target === 'conti-content' ? 'conti-content' : '');
+                    navTabs.forEach(item => item.classList.remove('active'));
+                    tab.classList.add('active');
 
-                    // Reset header display for main content sections
-                    document.querySelector('.app-header').style.display = 'block';
-                    document.querySelector('.nav-tabs').style.display = 'flex';
-                    document.querySelector('.header-top').style.marginBottom = '15px';
-                    document.querySelector('.app-header').style.paddingBottom = '0';
-                    document.querySelector('.status-bar').style.backgroundColor = 'var(--g1)';
-                    document.querySelector('.all-transactions-header').style.display = 'none';
+                    contentSections.forEach(section => section.classList.remove('active-content'));
+                    
+                    // Hide all-transactions header when switching tabs unless it's the target
+                    if (allTransactionsHeader) {
+                        allTransactionsHeader.style.display = 'none';
+                    }
 
-                    if (target === 'conti-content') {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    const targetId = tab.dataset.target;
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.classList.add('active-content');
+                        // If the target is all-transactions-content, show its header
+                        if (targetId === 'all-transactions-content' && allTransactionsHeader) {
+                            allTransactionsHeader.style.display = 'block';
+                        }
                     }
                 });
             });
 
-            const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
-            bottomNavItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    const target = item.dataset.target;
-                    activateBottomNav(target);
-                    switchContent(target);
-
-                    // Handle header display based on bottom nav selection
-                    if (target === 'conti-content') {
-                        activateNavTab('conti-content'); // Activate "Conti" tab when Home is selected
-                        document.querySelector('.app-header').style.display = 'block';
-                        document.querySelector('.nav-tabs').style.display = 'flex';
-                        document.querySelector('.header-top').style.marginBottom = '15px';
-                        document.querySelector('.app-header').style.paddingBottom = '0';
-                        document.querySelector('.status-bar').style.backgroundColor = 'var(--g1)';
-                    } else {
-                        // For other bottom nav items, deactivate top tabs and adjust header
-                        document.querySelector('.nav-tab.active')?.classList.remove('active');
-                        document.querySelector('.nav-tabs').style.display = 'none';
-                        document.querySelector('.header-top').style.marginBottom = '0';
-                        document.querySelector('.app-header').style.paddingBottom = '15px';
-                        document.querySelector('.status-bar').style.backgroundColor = 'var(--g1)';
-                    }
-                    document.querySelector('.all-transactions-header').style.display = 'none';
-                });
-            });
-
-
-            const toggleAllVisibility = document.getElementById('toggle-all-visibility');
+            // Toggle visibility for account balance
             const currentBalance = document.getElementById('current-balance');
-            const transactionAmounts = document.querySelectorAll('.transaction-amount');
-            let isBalanceHidden = false; // Initialize to false (visible)
+            const toggleVisibilityIcon = document.getElementById('toggle-all-visibility');
+            let isBalanceHidden = false;
+            const originalBalance = currentBalance.textContent; // Store the original balance
 
-            toggleAllVisibility.addEventListener('click', () => {
-                isBalanceHidden = !isBalanceHidden; // Toggle state
-
+            toggleVisibilityIcon.addEventListener('click', () => {
                 if (isBalanceHidden) {
-                    currentBalance.textContent = '****,** €';
-                    transactionAmounts.forEach(amount => {
-                        amount.textContent = '****,** €';
-                    });
-                    toggleAllVisibility.classList.remove('fa-eye-slash');
-                    toggleAllVisibility.classList.add('fa-eye');
+                    currentBalance.textContent = originalBalance;
+                    toggleVisibilityIcon.classList.remove('fa-eye');
+                    toggleVisibilityIcon.classList.add('fa-eye-slash');
                 } else {
-                    currentBalance.textContent = '161,46 €'; // Restore original balance
-                    transactionAmounts.forEach(amount => {
-                        amount.textContent = amount.dataset.originalAmount; // Restore from data attribute
-                    });
-                    toggleAllVisibility.classList.remove('fa-eye');
-                    toggleAllVisibility.classList.add('fa-eye-slash');
+                    currentBalance.textContent = '***,** €';
+                    toggleVisibilityIcon.classList.remove('fa-eye-slash');
+                    toggleVisibilityIcon.classList.add('fa-eye');
+                }
+                isBalanceHidden = !isBalanceHidden;
+
+                // Also toggle visibility for transaction amounts
+                document.querySelectorAll('.transactions .transaction-amount').forEach(amountEl => {
+                    const originalAmount = amountEl.dataset.originalAmount;
+                    if (isBalanceHidden) {
+                        amountEl.innerHTML = `**,** € <i class="fas ${amountEl.classList.contains('positive') ? 'fa-caret-up' : 'fa-caret-down'}"></i>`; // Re-add icon
+                    } else {
+                        amountEl.innerHTML = `${originalAmount} <i class="fas ${amountEl.classList.contains('positive') ? 'fa-caret-up' : 'fa-caret-down'}"></i>`; // Re-add icon
+                    }
+                });
+                document.querySelectorAll('.transactions-list-container .transaction-amount').forEach(amountEl => {
+                    const originalAmount = amountEl.dataset.originalAmount || amountEl.textContent.replace(/<[^>]*>/g, '').trim(); // Get original amount for full list
+                     if (isBalanceHidden) {
+                        amountEl.innerHTML = `**,** € <i class="fas ${amountEl.classList.contains('positive') ? 'fa-caret-up' : 'fa-caret-down'}"></i>`; // Re-add icon
+                    } else {
+                        amountEl.innerHTML = `${originalAmount} <i class="fas ${amountEl.classList.contains('positive') ? 'fa-caret-up' : 'fa-caret-down'}"></i>`; // Re-add icon
+                    }
+                });
+            });
+
+            // Copy IBAN functionality
+            const copyIbanButton = document.getElementById('copy-iban-button');
+            const ibanText = document.getElementById('iban-text');
+
+            copyIbanButton.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(ibanText.textContent);
+                    // Optional: Provide visual feedback (e.g., change icon, show tooltip)
+                    copyIbanButton.classList.remove('fa-arrow-up-from-bracket');
+                    copyIbanButton.classList.add('fa-check');
+                    setTimeout(() => {
+                        copyIbanButton.classList.remove('fa-check');
+                        copyIbanButton.classList.add('fa-arrow-up-from-bracket');
+                    }, 1500);
+                } catch (err) {
+                    console.error('Failed to copy IBAN: ', err);
+                    // Optional: Alert user of failure
+                    alert('Impossibile copiare IBAN. Si prega di riprovare.');
                 }
             });
 
+            // "View all transactions" link functionality
+            const viewAllTransactionsLink = document.querySelector('.view-all-transactions-link');
+            const backButtonAllTransactions = document.querySelector('#all-transactions-content .back-button');
 
-            const copyIbanButton = document.getElementById('copy-iban-button');
-            const ibanText = document.getElementById('iban-text');
-            if (copyIbanButton && ibanText) {
-                copyIbanButton.addEventListener('click', async () => {
-                    try {
-                        await navigator.clipboard.writeText(ibanText.textContent);
-                        alert('IBAN copiato negli appunti!');
-                    } catch (err) {
-                        console.error('Errore durante la copia dell\'IBAN: ', err);
-                        alert('Impossibile copiare l\'IBAN. Riprova o copia manualmente.');
-                    }
+            viewAllTransactionsLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('conti-content').classList.remove('active-content');
+                document.getElementById('all-transactions-content').classList.add('active-content');
+                if (allTransactionsHeader) {
+                    allTransactionsHeader.style.display = 'block'; // Show the all-transactions header
+                }
+                document.querySelector('main').scrollTop = 0; // Scroll to top of the new section
+            });
+
+            backButtonAllTransactions.addEventListener('click', () => {
+                document.getElementById('all-transactions-content').classList.remove('active-content');
+                document.getElementById('conti-content').classList.add('active-content');
+                if (allTransactionsHeader) {
+                    allTransactionsHeader.style.display = 'none'; // Hide the all-transactions header
+                }
+                document.querySelector('main').scrollTop = 0; // Scroll to top of the new section
+            });
+
+            // Filter tabs functionality for All Transactions
+            const filterTabs = document.querySelectorAll('.filter-tabs .filter-tab');
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    filterTabs.forEach(item => item.classList.remove('active'));
+                    tab.classList.add('active');
+                    // In a real app, you'd filter the transactions displayed here
+                });
+            });
+
+            // Close notification banner (example for Carte section)
+            const closeBtn = document.querySelector('#carte-content .notification-banner .close-btn');
+            const notificationBanner = document.querySelector('#carte-content .notification-banner');
+            if (closeBtn && notificationBanner) {
+                closeBtn.addEventListener('click', () => {
+                    notificationBanner.style.display = 'none';
                 });
             }
 
-            document.querySelectorAll('.transactions .transaction-item').forEach(item => {
+            // ---- NEW TRANSACTION DETAIL POP-UP LOGIC ----
+
+            // Global variable to keep track of the previous active content section
+            let previousActiveContentSectionId = 'conti-content'; // Default
+
+            const monthMapForDates = {
+                'gen': '01', 'feb': '02', 'mar': '03', 'apr': '04', 'mag': '05', 'giu': '06',
+                'lug': '07', 'ago': '08', 'set': '09', 'ott': '10', 'nov': '11', 'dic': '12'
+            };
+
+            const modalBackdrop = document.getElementById('modal-backdrop');
+            const transactionDetailContent = document.getElementById('transaction-detail-content');
+
+            // Function to handle showing transaction details (modified for pop-up)
+            function showTransactionDetail(transactionData) {
+                const currentActiveContent = document.querySelector('.content-section.active-content');
+                const detailWrapper = transactionDetailContent.querySelector('.transaction-detail-wrapper');
+                
+                // Store the ID of the current active content before showing the pop-up
+                if (currentActiveContent) {
+                    previousActiveContentSectionId = currentActiveContent.id;
+                    // IMPORTANT: We do NOT remove 'active-content' or hide the header here.
+                    // The background content should remain visible, just dimmed by the backdrop.
+                }
+
+                // Populate transaction detail content
+                detailWrapper.innerHTML = `
+                    <div class="detail-amount ${transactionData.amountClass}">${transactionData.amount}</div>
+                    <div class="detail-type">${transactionData.type}</div>
+
+                    <div class="detail-info-block">
+                        <h3>INFORMAZIONI</h3>
+                        <p>${transactionData.info1}</p>
+                        ${transactionData.info2 ? `<p>${transactionData.info2}</p>` : ''}
+                        ${transactionData.info3 ? `<p>${transactionData.info3}</p>` : ''}
+                        ${transactionData.info4 ? `<p>${transactionData.info4}</p>` : ''}
+                        ${transactionData.info5 ? `<p>${transactionData.info5}</p>` : ''}
+                        ${transactionData.info6 ? `<p>${transactionData.info6}</p>` : ''}
+                    </div>
+
+                    <div class="detail-date-row">
+                        <span>Data contabile</span>
+                        <span>${transactionData.dataContabile}</span>
+                    </div>
+                    <div class="detail-date-row">
+                        <span>Data valuta</span>
+                        <span>${transactionData.dataValuta}</span>
+                    </div>
+                `;
+
+                // Show backdrop and transaction detail section (triggers animation)
+                modalBackdrop.classList.add('active');
+                transactionDetailContent.classList.add('active-content');
+                document.querySelector('main').scrollTop = 0; // Scroll to top
+            }
+
+            // Function to hide transaction details (modified for pop-up)
+            function hideTransactionDetail() {
+                // Hide backdrop and transaction detail section (triggers animation)
+                modalBackdrop.classList.remove('active');
+                transactionDetailContent.classList.remove('active-content');
+
+                // After animation, there's no need to show the previous content again explicitly
+                // because it was never hidden. It was only dimmed by the backdrop.
+                setTimeout(() => { // Delay to allow animation to complete (0.3s as per CSS transition)
+                    document.querySelector('main').scrollTop = 0; // Scroll to top
+                }, 300); 
+            }
+
+            // Back button listener for transaction detail screen
+            const transactionDetailBackButton = document.querySelector('#transaction-detail-content .back-button');
+            if (transactionDetailBackButton) {
+                transactionDetailBackButton.addEventListener('click', hideTransactionDetail);
+            }
+
+            // Close modal if backdrop is clicked
+            if (modalBackdrop) {
+                modalBackdrop.addEventListener('click', hideTransactionDetail);
+            }
+
+            // Attach click listeners to transaction items for both lists
+            document.querySelectorAll('.transactions .transaction-item, .transactions-list-container .transaction-item').forEach((item, index) => {
                 item.addEventListener('click', () => {
-                    item.classList.toggle('expanded');
-                });
-            });
+                    let transactionData;
+                    const isMainList = item.closest('.transactions');
+                    const amountEl = item.querySelector('.transaction-amount');
+                    const descriptionEl = item.querySelector('.transaction-name');
+                    const typeEl = item.querySelector('.transaction-type');
+                    // Determine which date element to use based on the parent list
+                    const dateEl = isMainList ? item.querySelector('.transaction-date') : item.querySelector('.transaction-date-alt');
 
-            const viewAllLink = document.querySelector('.view-all-transactions-link');
-            if (viewAllLink) {
-                viewAllLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    switchContent('all-transactions-content');
-                    document.querySelector('.app-header').style.display = 'none'; // Hide main header
-                    document.querySelector('.all-transactions-header').style.display = 'block'; // Show all transactions header
-                    activateBottomNav('conti-content'); // Keep 'Home' active in bottom nav
-                    activateNavTab('conti-content'); // Keep 'Conti' active in top nav
-                    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
-                });
-            }
+                    let formattedDate = '';
+                    if (dateEl) {
+                        const dateParts = dateEl.innerHTML.split('<br>');
+                        const day = dateParts[0].trim();
+                        const month = monthMapForDates[dateParts[1].trim().toLowerCase()];
+                        const year = new Date().getFullYear(); 
+                        formattedDate = `${day}/${month}/${year}`;
+                    }
 
-            const backButton = document.querySelector('.all-transactions-title-bar .back-button');
-            if (backButton) {
-                backButton.addEventListener('click', () => {
-                    switchContent('conti-content');
-                    document.querySelector('.app-header').style.display = 'block'; // Show main header
-                    document.querySelector('.nav-tabs').style.display = 'flex'; // Ensure nav-tabs are visible
-                    document.querySelector('.header-top').style.marginBottom = '15px'; // Restore margin
-                    document.querySelector('.app-header').style.paddingBottom = '0'; // Restore padding
-                    document.querySelector('.all-transactions-header').style.display = 'none'; // Hide all transactions header
-                    activateBottomNav('conti-content'); // Keep 'Home' active
-                    activateNavTab('conti-content'); // Keep 'Conti' active
-                    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+                    // Special case for the "RATA FINANZIAMENTO" transaction
+                    // This is based on its position in the first list (index 7, 8th item)
+                    if (isMainList && index === 7) { 
+                        transactionData = {
+                            amount: '-145,60 €',
+                            amountClass: 'negative',
+                            type: 'RATA FINANZIAMENTO',
+                            info1: 'RATA PRESTITO BSS BIBANCA S.P.A.',
+                            info2: 'N: 1037910454/62',
+                            info3: 'ID:MNDTC0000000277856P001',
+                            info4: '0022381Fin. 070 00277856rata n.032del 25/06/ 25',
+                            info5: 'CO0396851 00010396851',
+                            info6: 'DEB: SY MOUHAMADOU 1037910454',
+                            dataContabile: '25/06/2025',
+                            dataValuta: '25/06/2025'
+                        };
+                    } else {
+                        // Generic data for other transactions
+                        transactionData = {
+                            amount: amountEl.dataset.originalAmount || amountEl.textContent.replace(/<[^>]*>/g, '').trim(),
+                            amountClass: amountEl.classList.contains('positive') ? 'positive' : 'negative',
+                            type: typeEl.textContent.trim(),
+                            info1: descriptionEl.textContent.trim(),
+                            info2: 'Riferimento operazione: N/A', // Placeholder if not available
+                            info3: 'Eseguito da: N/A', // Placeholder if not available
+                            info4: '', 
+                            info5: '', 
+                            info6: '', 
+                            dataContabile: formattedDate,
+                            dataValuta: formattedDate
+                        };
+                        // More specific generic data for the first transaction in each month of all-transactions-list
+                        const parentContainer = item.closest('.transactions-list-container');
+                        if (!isMainList && parentContainer) {
+                            const monthTitleElement = parentContainer.previousElementSibling;
+                            if (monthTitleElement && monthTitleElement.classList.contains('section-title-alt')) {
+                                const monthTitle = monthTitleElement.textContent.trim();
+                                if (monthTitle.includes('Luglio') && index === 0) {
+                                    transactionData = {
+                                        amount: '+500,00 €',
+                                        amountClass: 'positive',
+                                        type: 'BONIFICO RICEVUTO',
+                                        info1: 'BONIFICO DA ROSSI MARIO',
+                                        info2: 'Causale: Pagamento fattura per servizi',
+                                        info3: 'Riferimento: RIF001234',
+                                        info4: '',
+                                        info5: '',
+                                        info6: '',
+                                        dataContabile: '25/07/2024',
+                                        dataValuta: '25/07/2024'
+                                    };
+                                } else if (monthTitle.includes('Giugno') && index === 0) {
+                                    transactionData = {
+                                        amount: '+20,00 €',
+                                        amountClass: 'positive',
+                                        type: 'VERSAMENTO',
+                                        info1: 'VERSAMENTO CONTANTI DA ATM AZIENDALE',
+                                        info2: 'Numero operazione: 987654321',
+                                        info3: 'Filiale di origine: Bergamo Centro',
+                                        info4: '',
+                                        info5: '',
+                                        info6: '',
+                                        dataContabile: '23/06/2024',
+                                        dataValuta: '23/06/2024'
+                                    };
+                                }
+                            }
+                        }
+                    }
+                    showTransactionDetail(transactionData);
                 });
-            }
-
-            document.querySelectorAll('.filter-tabs .filter-tab').forEach(tab => {
-                tab.addEventListener('click', (e) => {
-                    document.querySelector('.filter-tab.active')?.classList.remove('active');
-                    e.target.classList.add('active');
-                    console.log(`Filtro selezionato: ${e.target.textContent}`);
-                });
-            });
-
-            document.querySelector('#carte-content .notification-banner .close-btn')?.addEventListener('click', (e) => {
-                e.target.closest('.notification-banner').style.display = 'none';
             });
         });
     </script>
