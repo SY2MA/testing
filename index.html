@@ -335,8 +335,8 @@
         <div class="header-top">
             <div class="profile-initials">MS</div>
             <div class="header-icons">
-                <i class="fas fa-bell"></i> 
-                <i class="fas fa-question-circle"></i> 
+                <i class="fas fa-bell"></i>
+                <i class="fas fa-question-circle"></i>
             </div>
         </div>
         <nav class="nav-tabs">
@@ -359,7 +359,7 @@
                 <div class="header">
                 </div>
                 <div class="account-balance">
-                    <span id="current-balance">161,46 €</span> <i class="fas fa-chevron-right arrow-icon"></i>
+                    <span id="current-balance" data-current-balance="161.46">161,46 €</span> <i class="fas fa-chevron-right arrow-icon"></i>
                 </div>
                 <p class="balance-info">Saldo disponibile al 23/06/2025<br><strong>Sy Mouhamadou</strong></p>
                 <div class="iban-details">
@@ -384,7 +384,7 @@
             <div class="transactions-card-wrapper">
                 <h2 class="section-title">ULTIMI MOVIMENTI</h2>
                 <div class="transactions">
-                    <div class="transaction-item">
+                    <div class="transaction-item" data-transaction-id="tx556677889" data-accounting-date="23/06/2025" data-currency-date="23/06/2025">
                         <div class="transaction-main-info">
                             <div class="transaction-info">
                                 <div class="transaction-date">23<br>giu</div>
@@ -393,14 +393,14 @@
                                     <div class="transaction-type">VERSAMENTO</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount positive" data-original-amount="+20,00 €">+20,00 € <i class="fas fa-caret-up"></i></div>
+                            <div class="transaction-amount positive" data-original-amount="20.00" id="amount-tx556677889">+20,00 € <i class="fas fa-caret-up"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Versamento contanti</p>
                             <p><strong>ID Transazione:</strong> 556677889</p>
                         </div>
                     </div>
-                    <div class="transaction-item">
+                    <div class="transaction-item" data-transaction-id="tx123456789" data-accounting-date="22/06/2025" data-currency-date="22/06/2025">
                         <div class="transaction-main-info">
                             <div class="transaction-info">
                                 <div class="transaction-date">22<br>giu</div>
@@ -410,14 +410,14 @@
                                     <div class="transaction-status">Da contabilizzare</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-5,28 €">-5,28 € <i class="fas fa-caret-down"></i></div>
+                            <div class="transaction-amount negative" data-original-amount="-5.28" id="amount-tx123456789">-5,28 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pagamento POS</p>
                             <p><strong>ID Transazione:</strong> 123456789</p>
                         </div>
                     </div>
-                    <div class="transaction-item">
+                    <div class="transaction-item" data-transaction-id="tx987654321a" data-accounting-date="21/06/2025" data-currency-date="21/06/2025">
                         <div class="transaction-main-info">
                             <div class="transaction-info">
                                 <div class="transaction-date">21<br>giu</div>
@@ -427,14 +427,14 @@
                                     <div class="transaction-status">Da contabilizzare</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-4,77 €">-4,77 € <i class="fas fa-caret-down"></i></div>
+                            <div class="transaction-amount negative" data-original-amount="-4.77" id="amount-tx987654321a">-4,77 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pagamento carburante</p>
                             <p><strong>ID Transazione:</strong> 987654321</p>
                         </div>
                     </div>
-                    <div class="transaction-item">
+                    <div class="transaction-item" data-transaction-id="tx112233445" data-accounting-date="20/06/2025" data-currency-date="20/06/2025">
                         <div class="transaction-main-info">
                             <div class="transaction-info">
                                 <div class="transaction-date">20<br>giu</div>
@@ -443,14 +443,14 @@
                                     <div class="transaction-type">PAGAMENTO</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-3,28 €">-3,28 € <i class="fas fa-caret-down"></i></div>
+                            <div class="transaction-amount negative" data-original-amount="-3.28" id="amount-tx112233445">-3,28 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pagamento POS</p>
                             <p><strong>ID Transazione:</strong> 112233445</p>
                         </div>
                     </div>
-                    <div class="transaction-item">
+                    <div class="transaction-item" data-transaction-id="tx123456789b" data-accounting-date="19/06/2025" data-currency-date="19/06/2025">
                         <div class="transaction-main-info">
                             <div class="transaction-info">
                                 <div class="transaction-date">19<br>giu</div>
@@ -459,14 +459,14 @@
                                     <div class="transaction-type">PAGAMENTO</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-4,24 €">-4,24 € <i class="fas fa-caret-down"></i></div>
+                            <div class="transaction-amount negative" data-original-amount="-4.24" id="amount-tx123456789b">-4,24 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Pagamento POS</p>
                             <p><strong>ID Transazione:</strong> 123456789</p>
                         </div>
                     </div>
-                    <div class="transaction-item">
+                    <div class="transaction-item" data-transaction-id="tx987654321c" data-accounting-date="17/06/2025" data-currency-date="17/06/2025">
                         <div class="transaction-main-info">
                             <div class="transaction-info">
                                 <div class="transaction-date">17<br>giu</div>
@@ -475,710 +475,545 @@
                                     <div class="transaction-type">PAGAMENTO ONLINE</div>
                                 </div>
                             </div>
-                            <div class="transaction-amount negative" data-original-amount="-10,00 €">-10,00 € <i class="fas fa-caret-down"></i></div>
+                            <div class="transaction-amount negative" data-original-amount="-10.00" id="amount-tx987654321c">-10,00 € <i class="fas fa-caret-down"></i></div>
                         </div>
                         <div class="transaction-details">
                             <p><strong>Dettagli:</strong> Ricarica mobile</p>
                             <p><strong>ID Transazione:</strong> 987654321</p>
                         </div>
                     </div>
-                    <div class="transaction-item">
-                        <div class="transaction-main-info">
-                            <div class="transaction-info">
-                                <div class="transaction-date">16<br>giu</div>
-                                <div class="transaction-description">
-                                    <div class="transaction-name">AUTOLAVAGGIO CASSA 2 CLUS...</div>
-                                    <div class="transaction-type">PAGAMENTO</div>
-                                </div>
-                            </div>
-                            <div class="transaction-amount negative" data-original-amount="-5,00 €">-5,00 € <i class="fas fa-caret-down"></i></div>
-                        </div>
-                        <div class="transaction-details">
-                            <p><strong>Dettagli:</strong> Autolavaggio self-service</p>
-                            <p><strong>ID Transazione:</strong> 112233445</p>
-                        </div>
-                    </div>
-                    <div class="transaction-item"> <div class="transaction-main-info">
-                            <div class="transaction-info">
-                                <div class="transaction-date">16<br>giu</div>
-                                <div class="transaction-description">
-                                    <div class="transaction-name">BELLA PIZZA KEBAP BERGAMO...</div>
-                                    <div class="transaction-type">PAGO BANCOMAT</div>
-                                </div>
-                            </div>
-                            <div class="transaction-amount negative" data-original-amount="-5,00 €">-5,00 € <i class="fas fa-caret-down"></i></div>
-                        </div>
-                        <div class="transaction-details">
-                            <p><strong>Dettagli:</strong> Pasto asporto</p>
-                            <p><strong>ID Transazione:</strong> 998877665</p>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="view-all-link">
-                <a href="#" class="view-all-transactions-link" data-target="all-transactions-content">Visualizza tutti ></a>
+                <a href="#">Vedi tutti i movimenti <i class="fas fa-chevron-right"></i></a>
             </div>
             <div class="promo-card">
                 <div class="promo-content">
-                    <span class="promo-tag">PROMO</span>
-                    <h4>Crescere</h4>
-                    <p>Per gli azionisti di Banca Popolare di Sondrio è partita l'Offerta Pubblica di Scambio promossa da BPER per il 100% delle azioni della Banca.</p>
+                    <span class="promo-tag">NOVITÀ</span>
+                    <h4>Prestiti Personali</h4>
+                    <p>Richiedi un prestito in pochi passaggi, direttamente dall'app!</p>
                 </div>
                 <i class="fas fa-chevron-right arrow-icon"></i>
-            </div>
-            <div class="placeholder-section" style="height: 100px; margin-top: 20px;">
-                <p>Spazio per il grafico "Entrate e Uscite"</p>
-            </div>
-        </section>
-
-        <section id="all-transactions-content" class="content-section">
-            <div class="all-transactions-header">
-                <div class="all-transactions-title-bar">
-                    <i class="fas fa-arrow-left back-button" data-target="conti-content"></i>
-                    <h1 class="title-with-subtitle">
-                        Movimenti
-                        <span class="subtitle">Conto 3657761</span>
-                    </h1>
-                    <div class="filter-icons">
-                        <i class="fas fa-search"></i>
-                        <i class="fas fa-filter"></i>
-                    </div>
-                </div>
-                <div class="search-filter-bar">
-                    <div class="search-input-wrapper">
-                        <input type="text" placeholder="Cerca movimenti">
-                        <i class="fas fa-search"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="all-transactions-content-wrapper">
-                <div class="filter-tabs">
-                    <div class="filter-tab active">Tutti</div>
-                    <div class="filter-tab">Entrate</div>
-                    <div class="filter-tab">Uscite</div>
-                </div>
-                <h2 class="section-title-alt">Luglio 2024</h2>
-                <div class="transactions-list-container">
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">25<br>lug</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">Bonifico ricevuto DA ROSSI MARIO</div>
-                                <div class="transaction-type">BONIFICO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount positive">+500,00 € <i class="fas fa-caret-up"></i></div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">24<br>lug</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">Acquisto online AMAZON</div>
-                                <div class="transaction-type">PAGAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-45,99 € <i class="fas fa-caret-down"></i></div>
-                    </div>
-                    </div>
-                <h2 class="section-title-alt" style="margin-top: 30px;">Giugno 2024</h2>
-                <div class="transactions-list-container">
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">23<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">VERSAMENTO DA ATM AZIENDALE</div>
-                                <div class="transaction-type">VERSAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount positive">+20,00 € <i class="fas fa-caret-up"></i></div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">22<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">LIDL 148 CLUSONE 24023 ITALIA</div>
-                                <div class="transaction-type">PAGAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-5,28 € <i class="fas fa-caret-down"></i></div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">21<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">ENERGY SELF ALBINO ALBINO ITALIA</div>
-                                <div class="transaction-type">PAGAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-4,77 € <i class="fas fa-caret-down"></i></div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">20<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">LIDL 2079 BERGAMO ITALIA Opera</div>
-                                <div class="transaction-type">PAGAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-3,28 € <i class="fas fa-caret-down"></i></div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">19<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">ALDI S.R.L. PEDRENGO ITALIA Opera</div>
-                                <div class="transaction-type">PAGAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-4,24 € <i class="fas fa-caret-down"></i></div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">17<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">HO-MOBILE.IT - RICARICA ONLINE</div>
-                                <div class="transaction-type">PAGAMENTO ONLINE</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-10,00 € <i class="fas fa-caret-down"></i></div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">16<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">AUTOLAVAGGIO CASSA 2 CLUSONE</div>
-                                <div class="transaction-type">PAGAMENTO</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-5,00 € <i class="fas fa-caret-down"></i></div>
-                    </div>
-                    <div class="transaction-item">
-                        <div class="transaction-info">
-                            <div class="transaction-date-alt">16<br>giu</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">BELLA PIZZA KEBAP BERGAMO</div>
-                                <div class="transaction-type">PAGO BANCOMAT</div>
-                            </div>
-                        </div>
-                        <div class="transaction-amount negative">-5,00 € <i class="fas fa-caret-down"></i></div>
-                    </div>
-                </div>
             </div>
         </section>
 
         <section id="carte-content" class="content-section">
-            <h2 class="section-title-alt">Le tue carte</h2>
+            <h3 class="account-title-outside">
+                <span>Le Tue Carte</span>
+            </h3>
             <div class="card-display">
-                <img src="https://via.placeholder.com/300x180?text=Your+Card+Image" alt="Carta di Debito">
-                <h3>Carta di Debito</h3>
+                <img src="https://via.placeholder.com/300x180?text=La+tua+Carta" alt="Esempio di carta BPER Banca">
+                <h3>BPER Card Platinum</h3>
                 <p>**** **** **** 1234</p>
-                <p>Scad. 12/26</p>
             </div>
             <div class="quick-actions card-actions">
                 <div class="action-item">
                     <div class="icon-wrapper inverted-colors"><i class="fas fa-lock"></i></div>
-                    <span>Blocca</span>
+                    <span>Blocca<br>Carta</span>
                 </div>
                 <div class="action-item">
-                    <div class="icon-wrapper inverted-colors"><i class="fas fa-cogs"></i></div>
-                    <span>Gestisci</span>
+                    <div class="icon-wrapper inverted-colors"><i class="fas fa-gear"></i></div>
+                    <span>Gestisci<br>Limiti</span>
                 </div>
                 <div class="action-item">
-                    <div class="icon-wrapper inverted-colors"><i class="fas fa-info-circle"></i></div>
-                    <span>Dettagli</span>
+                    <div class="icon-wrapper inverted-colors"><i class="fas fa-clock-rotate-left"></i></div>
+                    <span>Ultimi<br>Movimenti</span>
                 </div>
             </div>
             <div class="notification-banner">
                 <i class="fas fa-info-circle"></i>
-                <div>
-                    <strong>Avviso importante:</strong> La tua carta di credito è in scadenza. Clicca qui per richiederne una nuova.
-                </div>
+                <span>Hai delle spese non contabilizzate. Controlla i movimenti della tua carta.</span>
                 <button class="close-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <h2 class="section-title-alt">Richiedi una nuova carta</h2>
-            <div class="promo-card" style="background-color: var(--g4); color: var(--g2);">
-                <div class="promo-content">
-                    <span class="promo-tag" style="background-color: var(--g3); color: var(--wc);">NOVITÀ</span>
-                    <h4>Carta di Credito BPER</h4>
-                    <p>Ottieni la libertà finanziaria con la nostra nuova carta di credito, ricca di vantaggi esclusivi.</p>
-                </div>
-                <i class="fas fa-chevron-right arrow-icon" style="color: var(--g5);"></i>
             </div>
         </section>
 
         <section id="finanziamenti-content" class="content-section">
-            <h2 class="section-title-alt">I tuoi finanziamenti</h2>
+            <h3 class="account-title-outside">
+                <span>I Tuoi Finanziamenti</span>
+            </h3>
             <div class="promo-card">
                 <div class="promo-content">
-                    <span class="promo-tag">INFO</span>
-                    <h4>Non hai finanziamenti attivi.</h4>
-                    <p>Scopri le nostre soluzioni per realizzare i tuoi progetti.</p>
+                    <span class="promo-tag">SCOPRI</span>
+                    <h4>Richiedi un Nuovo Prestito</h4>
+                    <p>Simula la rata e ottieni subito un preventivo personalizzato.</p>
                 </div>
                 <i class="fas fa-chevron-right arrow-icon"></i>
             </div>
-            <h2 class="section-title-alt">Simula il tuo finanziamento</h2>
-            <div class="promo-card">
-                <div class="promo-content">
-                    <span class="promo-tag">NUOVO</span>
-                    <h4>Calcola la rata del mutuo</h4>
-                    <p>Utilizza il nostro simulatore per scoprire il finanziamento più adatto a te.</p>
+            <div class="account-summary">
+                <div class="header">
+                    <h3>Mutuo Casa</h3>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
                 </div>
-                <i class="fas fa-chevron-right arrow-icon"></i>
+                <p class="balance-info">Rata mensile: <strong>450,00 €</strong></p>
+                <p class="balance-info">Prossima scadenza: <strong>10/07/2025</strong></p>
             </div>
-            <div class="placeholder-section" style="height: 200px;">
-                <i class="fas fa-euro-sign"></i>
-                <h3>Finanziamenti</h3>
-                <p>Gestisci i tuoi prestiti e scopri nuove opportunità di finanziamento.</p>
+            <div class="account-summary">
+                <div class="header">
+                    <h3>Prestito Auto</h3>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <p class="balance-info">Rata mensile: <strong>180,00 €</strong></p>
+                <p class="balance-info">Prossima scadenza: <strong>05/07/2025</strong></p>
             </div>
         </section>
 
         <section id="investimenti-content" class="content-section">
-            <h2 class="section-title-alt">I tuoi investimenti</h2>
-            <div class="promo-card">
-                <div class="promo-content">
-                    <span class="promo-tag">GUIDA</span>
-                    <h4>Inizia a investire oggi</h4>
-                    <p>Scopri come far crescere il tuo capitale con i nostri piani di investimento personalizzati.</p>
+            <h3 class="account-title-outside">
+                <span>I Tuoi Investimenti</span>
+            </h3>
+            <div class="account-summary">
+                <div class="header">
+                    <h3>Portafoglio Fondi</h3>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
                 </div>
-                <i class="fas fa-chevron-right arrow-icon"></i>
+                <p class="balance-info">Valore totale: <strong>15.200,50 €</strong></p>
+                <p class="balance-info">Rendimento YTD: <strong style="color: green;">+3,5%</strong></p>
             </div>
-            <ul class="list-group" style="padding: 0 20px; list-style: none;">
-                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--bc); font-size: 16px;">
-                    <span><i class="fas fa-chart-line" style="margin-right: 10px;"></i> Portafoglio</span>
-                    <i class="fas fa-chevron-right"></i>
-                </li>
-                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--bc); font-size: 16px;">
-                    <span><i class="fas fa-coins" style="margin-right: 10px;"></i> Fondi Comuni</span>
-                    <i class="fas fa-chevron-right"></i>
-                </li>
-                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-size: 16px;">
-                    <span><i class="fas fa-money-bill-trend-up" style="margin-right: 10px;"></i> Gestione Patrimoniale</span>
-                    <i class="fas fa-chevron-right"></i>
-                </li>
-            </ul>
-            <div class="placeholder-section" style="height: 200px; margin-top: 20px;">
-                <i class="fas fa-chart-pie"></i>
-                <h3>Investimenti</h3>
-                <p>Consulta il tuo portafoglio e esplora nuove opportunità.</p>
+            <div class="account-summary">
+                <div class="header">
+                    <h3>Titoli Azionari</h3>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <p class="balance-info">Valore totale: <strong>8.750,20 €</strong></p>
+                <p class="balance-info">Rendimento YTD: <strong style="color: red;">-1,2%</strong></p>
             </div>
         </section>
-        
+
         <section id="mutui-content" class="content-section">
-            <h2 class="section-title-alt">I tuoi mutui</h2>
-            <div class="promo-card" style="background-color: var(--g4); color: var(--g2);">
-                <div class="promo-content">
-                    <span class="promo-tag" style="background-color: var(--g3); color: var(--wc);">NOVITÀ</span>
-                    <h4>Non hai mutui attivi.</h4>
-                    <p>Scopri le nostre soluzioni di mutuo per acquistare la casa dei tuoi sogni.</p>
+            <h3 class="account-title-outside">
+                <span>I Tuoi Mutui</span>
+            </h3>
+            <div class="account-summary">
+                <div class="header">
+                    <h3>Mutuo Prima Casa</h3>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
                 </div>
-                <i class="fas fa-chevron-right arrow-icon" style="color: var(--g5);"></i>
+                <p class="balance-info">Rata mensile: <strong>550,00 €</strong></p>
+                <p class="balance-info">Scadenza: <strong>15/07/2035</strong></p>
             </div>
-            <div class="placeholder-section" style="height: 200px;">
-                <i class="fas fa-house-chimney"></i>
-                <h3>Mutui</h3>
-                <p>Simula e gestisci il tuo mutuo in modo semplice e veloce.</p>
+            <div class="promo-card">
+                <div class="promo-content">
+                    <span class="promo-tag">NOVITÀ</span>
+                    <h4>Surroga il tuo Mutuo</h4>
+                    <p>Scopri le nostre offerte per migliorare le condizioni del tuo mutuo.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
             </div>
         </section>
 
         <section id="assicurazioni-content" class="content-section">
-            <h2 class="section-title-alt">Le tue assicurazioni</h2>
+            <h3 class="account-title-outside">
+                <span>Le Tue Assicurazioni</span>
+            </h3>
             <div class="account-summary promo-pink">
                 <div class="header">
                     <h3>Assicurazione Auto</h3>
                     <i class="fas fa-chevron-right toggle-icon"></i>
                 </div>
-                <p>Polizza n. XYZ789</p>
-                <p>Scadenza: 31/12/2025</p>
+                <p class="balance-info">Scadenza polizza: <strong>20/12/2025</strong></p>
+                <p class="balance-info">Premio annuale: <strong>350,00 €</strong></p>
             </div>
             <div class="account-summary promo-blue">
                 <div class="header">
                     <h3>Assicurazione Casa</h3>
                     <i class="fas fa-chevron-right toggle-icon"></i>
                 </div>
-                <p>Polizza n. ABC123</p>
-                <p>Scadenza: 15/07/2026</p>
+                <p class="balance-info">Scadenza polizza: <strong>01/09/2026</strong></p>
+                <p class="balance-info">Premio annuale: <strong>120,00 €</strong></p>
             </div>
             <div class="view-all-link">
-                <a href="#">Visualizza tutte le polizze ></a>
-            </div>
-            <div class="promo-card" style="background-color: var(--g4); color: var(--g2);">
-                <div class="promo-content">
-                    <span class="promo-tag" style="background-color: var(--g3); color: var(--wc);">OFFERTA</span>
-                    <h4>Proteggi la tua famiglia</h4>
-                    <p>Scopri le nostre assicurazioni vita e salute per una protezione completa.</p>
-                </div>
-                <i class="fas fa-chevron-right arrow-icon" style="color: var(--g5);"></i>
+                <a href="#">Vedi tutte le polizze <i class="fas fa-chevron-right"></i></a>
             </div>
         </section>
 
         <section id="mobilita-content" class="content-section">
-            <h2 class="section-title-alt">Soluzioni per la mobilità</h2>
-            <div class="promo-card" style="background-color: var(--g4); color: var(--g2);">
-                <div class="promo-content">
-                    <span class="promo-tag" style="background-color: var(--g3); color: var(--wc);">ESPLORA</span>
-                    <h4>Viaggia senza pensieri</h4>
-                    <p>Servizi dedicati alla mobilità: pagamento parcheggi, pedaggi e molto altro.</p>
+            <h3 class="account-title-outside">
+                <span>Servizi Mobilità</span>
+            </h3>
+            <div class="account-summary">
+                <div class="header">
+                    <h3>Pagamento Bollo Auto</h3>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
                 </div>
-                <i class="fas fa-chevron-right arrow-icon" style="color: var(--g5);"></i>
+                <p class="balance-info">Prossima scadenza: <strong>31/01/2026</strong></p>
             </div>
-            <ul class="list-group" style="padding: 0 20px; list-style: none;">
-                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--bc); font-size: 16px;">
-                    <span><i class="fas fa-parking" style="margin-right: 10px;"></i> Parcheggi</span>
-                    <i class="fas fa-chevron-right"></i>
-                </li>
-                <li style="display: flex; justify-ocntent: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--bc); font-size: 16px;">
-                    <span><i class="fas fa-road" style="margin-right: 10px;"></i> Pedaggi</span>
-                    <i class="fas fa-chevron-right"></i>
-                </li>
-                <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-size: 16px;">
-                    <span><i class="fas fa-charging-station" style="margin-right: 10px;"></i> Ricarica Veicoli Elettrici</span>
-                    <i class="fas fa-chevron-right"></i>
-                </li>
-            </ul>
-            <div class="placeholder-section" style="height: 200px; margin-top: 20px;">
-                <i class="fas fa-car"></i>
-                <h3>Mobilità</h3>
-                <p>Tutti i servizi per i tuoi spostamenti a portata di mano.</p>
+            <div class="promo-card">
+                <div class="promo-content">
+                    <span class="promo-tag">NUOVO</span>
+                    <h4>Ricarica la tua BPER Card Trasporti</h4>
+                    <p>Gestisci i pagamenti per i mezzi pubblici direttamente dall'app.</p>
+                </div>
+                <i class="fas fa-chevron-right arrow-icon"></i>
             </div>
         </section>
 
         <div id="modal-backdrop"></div>
 
-        <section id="transaction-detail-content" class="content-section">
+        <div id="transaction-detail-content">
             <div class="all-transactions-header">
                 <div class="all-transactions-title-bar">
-                    <i class="fas fa-arrow-left back-button"></i>
+                    <i class="fas fa-arrow-left back-button" id="detail-back-button"></i>
                     <h1 class="title-with-subtitle">
                         Dettaglio Movimento
                     </h1>
                 </div>
             </div>
             <div class="transaction-detail-wrapper">
-                </div>
-        </section>
+                <div id="detail-amount" class="detail-amount"></div>
+                <div id="detail-type" class="detail-type"></div>
 
+                <div class="detail-info-block">
+                    <h3 id="detail-info-block-title"></h3>
+                    <p id="detail-description"></p>
+                </div>
+
+                <div class="detail-date-row">
+                    <span>Data Contabile</span>
+                    <span id="detail-accounting-date"></span>
+                </div>
+                <div class="detail-date-row">
+                    <span>Data Valuta</span>
+                    <span id="detail-currency-date"></span>
+                </div>
+
+                <div class="detail-date-row">
+                    <span>ID Transazione</span>
+                    <span id="detail-transaction-id"></span>
+                </div>
+            </div>
+        </div>
     </main>
+
     <nav class="bottom-nav">
         <a href="#" class="nav-item active">
-            <i class="fas fa-house-chimney"></i>
+            <i class="fas fa-house"></i>
             <span>Home</span>
         </a>
         <a href="#" class="nav-item">
-            <i class="fas fa-arrow-right-arrow-left"></i>
+            <i class="fas fa-money-bill-transfer"></i>
             <span>Pagamenti</span>
         </a>
         <a href="#" class="nav-item">
-            <i class="fas fa-address-book"></i>
+            <i class="fas fa-chart-line"></i>
+            <span>Investi</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-headset"></i>
             <span>Contatti</span>
         </a>
         <a href="#" class="nav-item">
-            <i class="fas fa-user-circle"></i>
-            <span>Profilo</span>
+            <i class="fas fa-ellipsis"></i>
+            <span>Altro</span>
         </a>
     </nav>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Tab functionality
+            // --- Navigation Tabs Logic ---
             const navTabs = document.querySelectorAll('.nav-tab');
             const contentSections = document.querySelectorAll('.content-section');
-            const allTransactionsHeader = document.querySelector('#all-transactions-content .all-transactions-header'); // Select specific header
 
             navTabs.forEach(tab => {
                 tab.addEventListener('click', () => {
-                    navTabs.forEach(item => item.classList.remove('active'));
+                    // Remove active class from all tabs and content sections
+                    navTabs.forEach(t => t.classList.remove('active'));
+                    contentSections.forEach(s => s.classList.remove('active-content'));
+
+                    // Add active class to clicked tab
                     tab.classList.add('active');
 
-                    contentSections.forEach(section => section.classList.remove('active-content'));
-                    
-                    // Hide all-transactions header when switching tabs unless it's the target
-                    if (allTransactionsHeader) {
-                        allTransactionsHeader.style.display = 'none';
-                    }
-
+                    // Show the corresponding content section
                     const targetId = tab.dataset.target;
-                    const targetSection = document.getElementById(targetId);
-                    if (targetSection) {
-                        targetSection.classList.add('active-content');
-                        // If the target is all-transactions-content, show its header
-                        if (targetId === 'all-transactions-content' && allTransactionsHeader) {
-                            allTransactionsHeader.style.display = 'block';
-                        }
-                    }
+                    document.getElementById(targetId).classList.add('active-content');
                 });
             });
 
-            // Toggle visibility for account balance
-            const currentBalance = document.getElementById('current-balance');
-            const toggleVisibilityIcon = document.getElementById('toggle-all-visibility');
+            // --- Toggle Account Balance Visibility ---
+            const currentBalanceSpan = document.getElementById('current-balance');
+            const toggleAllVisibilityIcon = document.getElementById('toggle-all-visibility');
+            const originalBalanceText = currentBalanceSpan.textContent; // Store initial text content
             let isBalanceHidden = false;
-            const originalBalance = currentBalance.textContent; // Store the original balance
 
-            toggleVisibilityIcon.addEventListener('click', () => {
+            toggleAllVisibilityIcon.addEventListener('click', () => {
                 if (isBalanceHidden) {
-                    currentBalance.textContent = originalBalance;
-                    toggleVisibilityIcon.classList.remove('fa-eye');
-                    toggleVisibilityIcon.classList.add('fa-eye-slash');
+                    // If currently hidden, show original balance from data-current-balance
+                    const currentBalanceValue = parseFloat(currentBalanceSpan.dataset.currentBalance);
+                    currentBalanceSpan.textContent = currentBalanceValue.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+                    toggleAllVisibilityIcon.classList.remove('fa-eye');
+                    toggleAllVisibilityIcon.classList.add('fa-eye-slash');
                 } else {
-                    currentBalance.textContent = '***,** €';
-                    toggleVisibilityIcon.classList.remove('fa-eye-slash');
-                    toggleVisibilityIcon.classList.add('fa-eye');
+                    currentBalanceSpan.textContent = '****,** €';
+                    toggleAllVisibilityIcon.classList.remove('fa-eye-slash');
+                    toggleAllVisibilityIcon.classList.add('fa-eye');
                 }
                 isBalanceHidden = !isBalanceHidden;
-
-                // Also toggle visibility for transaction amounts
-                document.querySelectorAll('.transactions .transaction-amount').forEach(amountEl => {
-                    const originalAmount = amountEl.dataset.originalAmount;
-                    if (isBalanceHidden) {
-                        amountEl.innerHTML = `**,** € <i class="fas ${amountEl.classList.contains('positive') ? 'fa-caret-up' : 'fa-caret-down'}"></i>`; // Re-add icon
-                    } else {
-                        amountEl.innerHTML = `${originalAmount} <i class="fas ${amountEl.classList.contains('positive') ? 'fa-caret-up' : 'fa-caret-down'}"></i>`; // Re-add icon
-                    }
-                });
-                document.querySelectorAll('.transactions-list-container .transaction-amount').forEach(amountEl => {
-                    const originalAmount = amountEl.dataset.originalAmount || amountEl.textContent.replace(/<[^>]*>/g, '').trim(); // Get original amount for full list
-                     if (isBalanceHidden) {
-                        amountEl.innerHTML = `**,** € <i class="fas ${amountEl.classList.contains('positive') ? 'fa-caret-up' : 'fa-caret-down'}"></i>`; // Re-add icon
-                    } else {
-                        amountEl.innerHTML = `${originalAmount} <i class="fas ${amountEl.classList.contains('positive') ? 'fa-caret-up' : 'fa-caret-down'}"></i>`; // Re-add icon
-                    }
-                });
             });
 
-            // Copy IBAN functionality
+
+            // --- Copy IBAN functionality ---
             const copyIbanButton = document.getElementById('copy-iban-button');
             const ibanText = document.getElementById('iban-text');
 
-            copyIbanButton.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(ibanText.textContent);
-                    // Optional: Provide visual feedback (e.g., change icon, show tooltip)
-                    copyIbanButton.classList.remove('fa-arrow-up-from-bracket');
-                    copyIbanButton.classList.add('fa-check');
-                    setTimeout(() => {
-                        copyIbanButton.classList.remove('fa-check');
-                        copyIbanButton.classList.add('fa-arrow-up-from-bracket');
-                    }, 1500);
-                } catch (err) {
-                    console.error('Failed to copy IBAN: ', err);
-                    // Optional: Alert user of failure
-                    alert('Impossibile copiare IBAN. Si prega di riprovare.');
-                }
-            });
-
-            // "View all transactions" link functionality
-            const viewAllTransactionsLink = document.querySelector('.view-all-transactions-link');
-            const backButtonAllTransactions = document.querySelector('#all-transactions-content .back-button');
-
-            viewAllTransactionsLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.getElementById('conti-content').classList.remove('active-content');
-                document.getElementById('all-transactions-content').classList.add('active-content');
-                if (allTransactionsHeader) {
-                    allTransactionsHeader.style.display = 'block'; // Show the all-transactions header
-                }
-                document.querySelector('main').scrollTop = 0; // Scroll to top of the new section
-            });
-
-            backButtonAllTransactions.addEventListener('click', () => {
-                document.getElementById('all-transactions-content').classList.remove('active-content');
-                document.getElementById('conti-content').classList.add('active-content');
-                if (allTransactionsHeader) {
-                    allTransactionsHeader.style.display = 'none'; // Hide the all-transactions header
-                }
-                document.querySelector('main').scrollTop = 0; // Scroll to top of the new section
-            });
-
-            // Filter tabs functionality for All Transactions
-            const filterTabs = document.querySelectorAll('.filter-tabs .filter-tab');
-            filterTabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    filterTabs.forEach(item => item.classList.remove('active'));
-                    tab.classList.add('active');
-                    // In a real app, you'd filter the transactions displayed here
-                });
-            });
-
-            // Close notification banner (example for Carte section)
-            const closeBtn = document.querySelector('#carte-content .notification-banner .close-btn');
-            const notificationBanner = document.querySelector('#carte-content .notification-banner');
-            if (closeBtn && notificationBanner) {
-                closeBtn.addEventListener('click', () => {
-                    notificationBanner.style.display = 'none';
+            if (copyIbanButton) {
+                copyIbanButton.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(ibanText.textContent);
+                        alert('IBAN copiato negli appunti!');
+                    } catch (err) {
+                        console.error('Errore durante la copia dell\'IBAN: ', err);
+                        alert('Impossibile copiare l\'IBAN. Prova manualmente.');
+                    }
                 });
             }
 
-            // ---- NEW TRANSACTION DETAIL POP-UP LOGIC ----
+            // --- Long Press Logic for Balance & Transactions ---
+            const LONG_PRESS_DURATION = 500; // 0.5 seconds for a more responsive feel
 
-            // Global variable to keep track of the previous active content section
-            let previousActiveContentSectionId = 'conti-content'; // Default
+            let pressTimer;
+            let isLongPress = false; // Flag to differentiate between long press and click/tap
 
-            const monthMapForDates = {
-                'gen': '01', 'feb': '02', 'mar': '03', 'apr': '04', 'mag': '05', 'giu': '06',
-                'lug': '07', 'ago': '08', 'set': '09', 'ott': '10', 'nov': '11', 'dic': '12'
+            const startPressTimer = (callback) => {
+                isLongPress = false; // Reset flag for new press
+                clearTimeout(pressTimer); // Clear any existing timer
+                pressTimer = setTimeout(() => {
+                    isLongPress = true; // Mark as long press
+                    callback();
+                }, LONG_PRESS_DURATION);
             };
 
+            const endPressTimer = () => {
+                clearTimeout(pressTimer);
+            };
+
+            // --- PERSISTENCE: Load data on page load ---
+            // Load persisted balance
+            const persistedBalance = localStorage.getItem('persistedBalance');
+            if (persistedBalance !== null) {
+                const parsedBalance = parseFloat(persistedBalance);
+                if (!isNaN(parsedBalance)) {
+                    currentBalanceSpan.textContent = parsedBalance.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+                    currentBalanceSpan.dataset.currentBalance = parsedBalance;
+                }
+            }
+
+            // Load persisted transactions
+            const transactionItems = document.querySelectorAll('.transaction-item');
+            const persistedTransactions = JSON.parse(localStorage.getItem('persistedTransactions') || '[]');
+
+            persistedTransactions.forEach(pTrans => {
+                const targetTransactionAmountSpan = document.getElementById(`amount-${pTrans.id}`);
+                if (targetTransactionAmountSpan) {
+                    const newAmount = parseFloat(pTrans.amount);
+                    if (!isNaN(newAmount)) {
+                        let caretIcon = '';
+                        targetTransactionAmountSpan.classList.remove('positive', 'negative'); // Clear existing classes
+                        if (newAmount > 0) {
+                            caretIcon = ' <i class="fas fa-caret-up"></i>';
+                            targetTransactionAmountSpan.classList.add('positive');
+                        } else if (newAmount < 0) {
+                            caretIcon = ' <i class="fas fa-caret-down"></i>';
+                            targetTransactionAmountSpan.classList.add('negative');
+                        }
+                        targetTransactionAmountSpan.innerHTML = newAmount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' }) + caretIcon;
+                        targetTransactionAmountSpan.dataset.originalAmount = newAmount;
+                    }
+                }
+            });
+            // --- END PERSISTENCE LOADING ---
+
+            // --- Current Balance Long Press Handler ---
+            const handleBalanceLongPress = () => {
+                const currentBalanceValue = parseFloat(currentBalanceSpan.dataset.currentBalance);
+                const newBalanceStr = prompt(`Inserisci il nuovo saldo disponibile (attuale: ${currentBalanceValue.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}):`);
+                if (newBalanceStr !== null) {
+                    const newBalance = parseFloat(newBalanceStr.replace(',', '.')); // Handle comma as decimal
+                    if (!isNaN(newBalance)) {
+                        currentBalanceSpan.textContent = newBalance.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+                        currentBalanceSpan.dataset.currentBalance = newBalance; // Update data attribute
+
+                        // --- PERSISTENCE: Save the new balance ---
+                        localStorage.setItem('persistedBalance', newBalance.toString());
+                        // ------------------------------------------
+
+                        alert("Saldo aggiornato con successo!");
+                        // If balance was hidden, update it after modification
+                        if (isBalanceHidden) {
+                             currentBalanceSpan.textContent = '****,** €';
+                        }
+                    } else {
+                        alert("Importo non valido. Inserisci un numero.");
+                    }
+                }
+            };
+
+            currentBalanceSpan.addEventListener('touchstart', (e) => startPressTimer(handleBalanceLongPress));
+            currentBalanceSpan.addEventListener('touchend', endPressTimer);
+            currentBalanceSpan.addEventListener('touchcancel', endPressTimer);
+            currentBalanceSpan.addEventListener('mousedown', (e) => startPressTimer(handleBalanceLongPress));
+            currentBalanceSpan.addEventListener('mouseup', endPressTimer);
+            currentBalanceSpan.addEventListener('mouseleave', endPressTimer);
+
+
+            // --- Transaction Detail Pop-up Elements ---
             const modalBackdrop = document.getElementById('modal-backdrop');
             const transactionDetailContent = document.getElementById('transaction-detail-content');
+            const detailBackButton = document.getElementById('detail-back-button');
 
-            // Function to handle showing transaction details (modified for pop-up)
-            function showTransactionDetail(transactionData) {
-                const currentActiveContent = document.querySelector('.content-section.active-content');
-                const detailWrapper = transactionDetailContent.querySelector('.transaction-detail-wrapper');
-                
-                // Store the ID of the current active content before showing the pop-up
-                if (currentActiveContent) {
-                    previousActiveContentSectionId = currentActiveContent.id;
-                    // IMPORTANT: We do NOT remove 'active-content' or hide the header here.
-                    // The background content should remain visible, just dimmed by the backdrop.
+            const detailAmount = document.getElementById('detail-amount');
+            const detailType = document.getElementById('detail-type');
+            const detailInfoBlockTitle = document.getElementById('detail-info-block-title');
+            const detailDescription = document.getElementById('detail-description');
+            const detailAccountingDate = document.getElementById('detail-accounting-date');
+            const detailCurrencyDate = document.getElementById('detail-currency-date');
+            const detailTransactionId = document.getElementById('detail-transaction-id');
+
+            const showTransactionDetails = (item) => {
+                const name = item.querySelector('.transaction-name').textContent;
+                const type = item.querySelector('.transaction-type').textContent;
+                const amount = item.querySelector('.transaction-amount').dataset.originalAmount;
+                const transactionIdFromElement = item.dataset.transactionId;
+                const accountingDate = item.dataset.accountingDate || 'N/A';
+                const currencyDate = item.dataset.currencyDate || 'N/A';
+
+                let detailText = '';
+                let infoBlockTitle = 'Dettagli';
+
+                // Attempt to get details from the hidden transaction-details div first
+                const existingDetailsParagraph = item.querySelector('.transaction-details p:first-child');
+                if (existingDetailsParagraph) {
+                    detailText = existingDetailsParagraph.textContent.replace('Dettagli: ', '');
+                } else {
+                    // Fallback to specific logic if no generic details paragraph is found
+                    if (name.includes('VERSAMENTO')) {
+                        detailText = 'Versamento contanti presso ATM.';
+                        infoBlockTitle = 'Informazioni Operazione';
+                    } else if (name.includes('LIDL') || name.includes('ALDI')) {
+                        detailText = 'Pagamento POS presso supermercato.';
+                        infoBlockTitle = 'Acquisto';
+                    } else if (name.includes('ENERGY SELF')) {
+                        detailText = 'Pagamento carburante.';
+                        infoBlockTitle = 'Rifornimento';
+                    } else if (name.includes('HO-MOBILE.IT')) {
+                        detailText = 'Ricarica telefonica online.';
+                        infoBlockTitle = 'Servizio';
+                    } else {
+                        detailText = 'Dettagli non disponibili.';
+                    }
                 }
 
-                // Populate transaction detail content
-                detailWrapper.innerHTML = `
-                    <div class="detail-amount ${transactionData.amountClass}">${transactionData.amount}</div>
-                    <div class="detail-type">${transactionData.type}</div>
 
-                    <div class="detail-info-block">
-                        <h3>INFORMAZIONI</h3>
-                        <p>${transactionData.info1}</p>
-                        ${transactionData.info2 ? `<p>${transactionData.info2}</p>` : ''}
-                        ${transactionData.info3 ? `<p>${transactionData.info3}</p>` : ''}
-                        ${transactionData.info4 ? `<p>${transactionData.info4}</p>` : ''}
-                        ${transactionData.info5 ? `<p>${transactionData.info5}</p>` : ''}
-                        ${transactionData.info6 ? `<p>${transactionData.info6}</p>` : ''}
-                    </div>
+                // Populate the pop-up fields
+                detailAmount.textContent = parseFloat(amount).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+                detailAmount.classList.remove('positive', 'negative');
+                if (parseFloat(amount) >= 0) {
+                    detailAmount.classList.add('positive');
+                } else {
+                    detailAmount.classList.add('negative');
+                }
 
-                    <div class="detail-date-row">
-                        <span>Data contabile</span>
-                        <span>${transactionData.dataContabile}</span>
-                    </div>
-                    <div class="detail-date-row">
-                        <span>Data valuta</span>
-                        <span>${transactionData.dataValuta}</span>
-                    </div>
-                `;
+                detailType.textContent = type;
+                detailInfoBlockTitle.textContent = infoBlockTitle;
+                detailDescription.textContent = detailText;
+                detailAccountingDate.textContent = accountingDate;
+                detailCurrencyDate.textContent = currencyDate;
+                detailTransactionId.textContent = transactionIdFromElement;
 
-                // Show backdrop and transaction detail section (triggers animation)
+                // Show the pop-up and backdrop
                 modalBackdrop.classList.add('active');
                 transactionDetailContent.classList.add('active-content');
-                document.querySelector('main').scrollTop = 0; // Scroll to top
-            }
+            };
 
-            // Function to hide transaction details (modified for pop-up)
-            function hideTransactionDetail() {
-                // Hide backdrop and transaction detail section (triggers animation)
+            const hideTransactionDetails = () => {
                 modalBackdrop.classList.remove('active');
                 transactionDetailContent.classList.remove('active-content');
+            };
 
-                // After animation, there's no need to show the previous content again explicitly
-                // because it was never hidden. It was only dimmed by the backdrop.
-                setTimeout(() => { // Delay to allow animation to complete (0.3s as per CSS transition)
-                    document.querySelector('main').scrollTop = 0; // Scroll to top
-                }, 300); 
-            }
+            detailBackButton.addEventListener('click', hideTransactionDetails);
+            modalBackdrop.addEventListener('click', hideTransactionDetails);
 
-            // Back button listener for transaction detail screen
-            const transactionDetailBackButton = document.querySelector('#transaction-detail-content .back-button');
-            if (transactionDetailBackButton) {
-                transactionDetailBackButton.addEventListener('click', hideTransactionDetail);
-            }
+            // --- Transaction Item Long Press & Click Logic ---
+            transactionItems.forEach(item => {
+                item.addEventListener('touchstart', (e) => {
+                    startPressTimer(() => {
+                        handleTransactionLongPress(e);
+                    });
+                });
 
-            // Close modal if backdrop is clicked
-            if (modalBackdrop) {
-                modalBackdrop.addEventListener('click', hideTransactionDetail);
-            }
-
-            // Attach click listeners to transaction items for both lists
-            document.querySelectorAll('.transactions .transaction-item, .transactions-list-container .transaction-item').forEach((item, index) => {
-                item.addEventListener('click', () => {
-                    let transactionData;
-                    const isMainList = item.closest('.transactions');
-                    const amountEl = item.querySelector('.transaction-amount');
-                    const descriptionEl = item.querySelector('.transaction-name');
-                    const typeEl = item.querySelector('.transaction-type');
-                    // Determine which date element to use based on the parent list
-                    const dateEl = isMainList ? item.querySelector('.transaction-date') : item.querySelector('.transaction-date-alt');
-
-                    let formattedDate = '';
-                    if (dateEl) {
-                        const dateParts = dateEl.innerHTML.split('<br>');
-                        const day = dateParts[0].trim();
-                        const month = monthMapForDates[dateParts[1].trim().toLowerCase()];
-                        const year = new Date().getFullYear(); 
-                        formattedDate = `${day}/${month}/${year}`;
+                item.addEventListener('touchend', (e) => {
+                    endPressTimer();
+                    if (!isLongPress) {
+                        // It was a short tap/click, show details
+                        showTransactionDetails(item);
                     }
+                });
+                item.addEventListener('touchcancel', endPressTimer);
 
-                    // Special case for the "RATA FINANZIAMENTO" transaction
-                    // This is based on its position in the first list (index 7, 8th item)
-                    if (isMainList && index === 7) { 
-                        transactionData = {
-                            amount: '-145,60 €',
-                            amountClass: 'negative',
-                            type: 'RATA FINANZIAMENTO',
-                            info1: 'RATA PRESTITO BSS BIBANCA S.P.A.',
-                            info2: 'N: 1037910454/62',
-                            info3: 'ID:MNDTC0000000277856P001',
-                            info4: '0022381Fin. 070 00277856rata n.032del 25/06/ 25',
-                            info5: 'CO0396851 00010396851',
-                            info6: 'DEB: SY MOUHAMADOU 1037910454',
-                            dataContabile: '25/06/2025',
-                            dataValuta: '25/06/2025'
-                        };
-                    } else {
-                        // Generic data for other transactions
-                        transactionData = {
-                            amount: amountEl.dataset.originalAmount || amountEl.textContent.replace(/<[^>]*>/g, '').trim(),
-                            amountClass: amountEl.classList.contains('positive') ? 'positive' : 'negative',
-                            type: typeEl.textContent.trim(),
-                            info1: descriptionEl.textContent.trim(),
-                            info2: 'Riferimento operazione: N/A', // Placeholder if not available
-                            info3: 'Eseguito da: N/A', // Placeholder if not available
-                            info4: '', 
-                            info5: '', 
-                            info6: '', 
-                            dataContabile: formattedDate,
-                            dataValuta: formattedDate
-                        };
-                        // More specific generic data for the first transaction in each month of all-transactions-list
-                        const parentContainer = item.closest('.transactions-list-container');
-                        if (!isMainList && parentContainer) {
-                            const monthTitleElement = parentContainer.previousElementSibling;
-                            if (monthTitleElement && monthTitleElement.classList.contains('section-title-alt')) {
-                                const monthTitle = monthTitleElement.textContent.trim();
-                                if (monthTitle.includes('Luglio') && index === 0) {
-                                    transactionData = {
-                                        amount: '+500,00 €',
-                                        amountClass: 'positive',
-                                        type: 'BONIFICO RICEVUTO',
-                                        info1: 'BONIFICO DA ROSSI MARIO',
-                                        info2: 'Causale: Pagamento fattura per servizi',
-                                        info3: 'Riferimento: RIF001234',
-                                        info4: '',
-                                        info5: '',
-                                        info6: '',
-                                        dataContabile: '25/07/2024',
-                                        dataValuta: '25/07/2024'
-                                    };
-                                } else if (monthTitle.includes('Giugno') && index === 0) {
-                                    transactionData = {
-                                        amount: '+20,00 €',
-                                        amountClass: 'positive',
-                                        type: 'VERSAMENTO',
-                                        info1: 'VERSAMENTO CONTANTI DA ATM AZIENDALE',
-                                        info2: 'Numero operazione: 987654321',
-                                        info3: 'Filiale di origine: Bergamo Centro',
-                                        info4: '',
-                                        info5: '',
-                                        info6: '',
-                                        dataContabile: '23/06/2024',
-                                        dataValuta: '23/06/2024'
-                                    };
+                // For desktop (mouse events)
+                item.addEventListener('mousedown', (e) => {
+                    startPressTimer(() => {
+                        handleTransactionLongPress(e);
+                    });
+                });
+
+                item.addEventListener('mouseup', (e) => {
+                    endPressTimer();
+                    if (!isLongPress) {
+                        // It was a short tap/click, show details
+                        showTransactionDetails(item);
+                    }
+                });
+                item.addEventListener('mouseleave', endPressTimer);
+
+                // Long press handler for individual transactions
+                const handleTransactionLongPress = (event) => {
+                    const transactionItem = event.currentTarget;
+                    const transactionName = transactionItem.querySelector('.transaction-name').textContent;
+                    const transactionAmountSpan = transactionItem.querySelector('.transaction-amount');
+                    const originalAmount = parseFloat(transactionAmountSpan.dataset.originalAmount);
+
+                    const newAmountStr = prompt(`Inserisci il nuovo importo per "${transactionName}" (attuale: ${originalAmount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}):`);
+
+                    if (newAmountStr !== null) {
+                        const newAmount = parseFloat(newAmountStr.replace(',', '.'));
+                        if (!isNaN(newAmount)) {
+                            // Update display with caret icon
+                            let caretIcon = '';
+                            transactionAmountSpan.classList.remove('positive', 'negative'); // Clear existing classes
+                            if (newAmount > 0) {
+                                caretIcon = ' <i class="fas fa-caret-up"></i>';
+                                transactionAmountSpan.classList.add('positive');
+                            } else if (newAmount < 0) {
+                                caretIcon = ' <i class="fas fa-caret-down"></i>';
+                                transactionAmountSpan.classList.add('negative');
+                            }
+                            transactionAmountSpan.innerHTML = newAmount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' }) + caretIcon;
+                            transactionAmountSpan.dataset.originalAmount = newAmount; // Update data attribute
+
+                            // --- PERSISTENCE: Save the updated transaction ---
+                            const transactionId = transactionItem.dataset.transactionId;
+                            let persistedTransactions = JSON.parse(localStorage.getItem('persistedTransactions') || '[]');
+
+                            let found = false;
+                            for (let i = 0; i < persistedTransactions.length; i++) {
+                                if (persistedTransactions[i].id === transactionId) {
+                                    persistedTransactions[i].amount = newAmount;
+                                    found = true;
+                                    break;
                                 }
                             }
+                            if (!found) {
+                                // This case should ideally not happen for existing items, but ensures new ones are added
+                                persistedTransactions.push({ id: transactionId, amount: newAmount });
+                            }
+                            localStorage.setItem('persistedTransactions', JSON.stringify(persistedTransactions));
+                            // ------------------------------------------------
+
+                            alert("Importo transazione aggiornato con successo!");
+                        } else {
+                            alert("Importo non valido. Inserisci un numero.");
                         }
                     }
-                    showTransactionDetail(transactionData);
-                });
+                };
             });
         });
     </script>
