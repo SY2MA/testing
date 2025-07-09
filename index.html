@@ -83,6 +83,9 @@
             background-color: var(--wc);
             border-top-left-radius: 16px;
             border-top-right-radius: 16px;
+            /* Modifiche per i bordi arrotondati in fondo */
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
             padding: 0;
             margin-bottom: 25px;
             box-shadow: var(--sh);
@@ -103,6 +106,10 @@
             cursor: pointer;
             transition: all .2s ease;
             border-bottom: 1px solid var(--bc);
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none; /* Standard */
         }
 
         .transactions .transaction-item:last-child {
@@ -275,6 +282,10 @@
         .transaction-detail-wrapper {
             flex-grow: 1; padding: 20px; padding-bottom: 30px; overflow-y: auto;
             background-color: var(--wc); color: var(--g2);
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none; /* Standard */
         }
 
         .detail-amount { font-size: 32px; font-weight: 700; margin-bottom: 5px; color: var(--g2); }
@@ -323,9 +334,227 @@
             transition: opacity 0.3s, bottom 0.3s; visibility: hidden;
         }
         .toast-notification.show { opacity: 1; visibility: visible; bottom: 110px; }
+
+        /* Stile per il pulsante invisibile */
+        #invisible-edit-button {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 75px; /* Metà della larghezza precedente */
+            height: 30px; /* Metà dell'altezza precedente */
+            z-index: 1000; /* Assicura che sia sopra altri elementi */
+            cursor: pointer;
+            opacity: 0; /* Rendi invisibile */
+            transition: opacity 0.3s ease, background-color 0.3s ease; /* Aggiungi transizioni per fluidità */
+        }
+
+        /* Nuovo stile per il contenitore e il pulsante "Visualizza tutto" */
+        .view-all-container {
+            display: flex;
+            justify-content: flex-end; /* Allinea a destra */
+            padding: 15px 20px;
+            border-top: 1px solid var(--bc);
+            background-color: var(--wc); /* Sfondo uguale al wrapper */
+            border-bottom-left-radius: 16px; /* Bordi arrotondati come il wrapper */
+            border-bottom-right-radius: 16px;
+        }
+
+        .view-all-button {
+            background-color: var(--g1); /* Colore verde dal tema */
+            color: var(--wc);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .view-all-button:hover {
+            background-color: #003a40; /* Verde leggermente più scuro al passaggio del mouse */
+        }
+
+        /* Stili per la nuova schermata "Visualizza tutto" */
+        #all-transactions-content {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--wc); /* Changed to white */
+            z-index: 95; /* Sopra la main content ma sotto il header principale se sticky */
+            transform: translateX(100%); /* Inizialmente fuori schermo a destra */
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; /* Per lo scrolling delle transazioni */
+            padding-bottom: calc(80px + var(--pb)); /* Spazio per la bottom nav se rimane */
+            box-sizing: border-box;
+        }
+
+        #all-transactions-content.active {
+            transform: translateX(0); /* Entra in vista */
+        }
+
+        .all-transactions-header {
+            background-color: var(--wc); /* Changed to white */
+            color: var(--g1); /* Changed to green */
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .all-transactions-header .back-arrow {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .all-transactions-header .title-and-balance {
+            /* flex-grow: 1; Removed to allow centering */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Centered horizontally */
+            text-align: center; /* Ensures text inside is centered */
+            position: absolute; /* Position absolutely to center it relative to parent */
+            left: 50%;
+            transform: translateX(-50%); /* Adjust for absolute positioning to truly center */
+            width: calc(100% - 100px); /* Adjust width to not overlap back arrow */
+        }
+
+        .all-transactions-header .title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .all-transactions-header .subtitle {
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        .search-filter-section {
+            background-color: var(--wc); /* Changed to white to match new background */
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: sticky;
+            top: 60px; /* Altezza dell'header sopra */
+            z-index: 5;
+            padding-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Lighter shadow for this section */
+        }
+
+        .search-bar-container {
+            background-color: var(--g6); /* Changed from --wc to --g6 for contrast on white background */
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            box-shadow: none; /* Removed shadow, relying on background color for definition */
+            color: var(--g5);
+            border: 1px solid var(--bc); /* Added a subtle border */
+        }
+
+        .search-bar-container i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .search-bar-container input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            background: transparent;
+            color: var(--g2);
+        }
+        .search-bar-container input::placeholder {
+            color: var(--g5);
+            opacity: 0.7;
+        }
+
+        .filter-icons {
+            display: flex;
+            gap: 15px;
+            margin-left: auto; /* Push icons to the right */
+        }
+        .filter-icons i {
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--g1);
+            text-shadow: none; /* Removed text-shadow for better look on white background */
+        }
+
+        .all-transactions-tabs {
+            display: flex;
+            background-color: var(--g6); /* Changed from --wc to --g6 for contrast */
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: none; /* Removed shadow */
+            border: 1px solid var(--bc); /* Added subtle border */
+        }
+
+        .all-transactions-tabs .tab {
+            flex: 1;
+            padding: 12px 0;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--g5);
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-right: 1px solid var(--bc);
+        }
+        .all-transactions-tabs .tab:last-child {
+            border-right: none;
+        }
+        .all-transactions-tabs .tab.active {
+            background-color: var(--g1);
+            color: var(--wc);
+        }
+
+        .all-transactions-list-container {
+            padding: 0 20px;
+            margin-top: 20px; /* Spazio tra filtri e lista */
+        }
+
+        .all-transactions-list-container .section-title {
+            margin-top: 0;
+            padding-bottom: 10px;
+            color: var(--g2); /* Changed to g2 to be visible on white background */
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* Override specific transaction item styles for full screen */
+        #all-transactions-list .transaction-item {
+            border-radius: 16px; /* Arrotonda anche in fondo */
+            margin-bottom: 15px; /* Spazio tra le card */
+            border: none; /* Rimuovi bordo se ogni item è una card separata */
+            box-shadow: var(--sh); /* Aggiungi ombra per farle sembrare card */
+        }
+        #all-transactions-list .transaction-item:last-child {
+            margin-bottom: 0;
+        }
+        #all-transactions-list .transaction-main-info {
+            padding-right: 0; /* Rimuovi padding extra se non serve */
+        }
+        #all-transactions-list .transaction-amount {
+            padding-right: 15px; /* Ri-aggiungi padding qui */
+        }
     </style>
 </head>
 <body>
+    <div id="invisible-edit-button"></div>
+
     <header class="app-header">
         <div class="header-top">
             <div class="profile-initials">MS</div>
@@ -378,6 +607,9 @@
             <div class="transactions-card-wrapper">
                 <h2 class="section-title">ULTIMI MOVIMENTI</h2>
                 <div class="transactions"></div>
+                <div class="view-all-container">
+                    <button id="view-all-transactions-btn" class="view-all-button">Visualizza tutto</button>
+                </div>
             </div>
         </div>
 
@@ -388,6 +620,36 @@
         <section id="assicurazioni-content" class="content-section"><div class="placeholder-section"><i class="fas fa-shield-alt"></i><h3>Sezione Assicurazioni</h3><p>Visualizza e gestisci le tue polizze assicurative.</p></div></section>
         <section id="mobilita-content" class="content-section"><div class="placeholder-section"><i class="fas fa-car"></i><h3>Sezione Mobilità</h3><p>Servizi legati alla mobilità saranno disponibili qui.</p></div></section>
     </main>
+
+    <section id="all-transactions-content">
+        <div class="all-transactions-header">
+            <i class="fas fa-arrow-left back-arrow" id="back-to-conti"></i>
+            <div class="title-and-balance">
+                <h2 class="title">Ultimi movimenti</h2>
+                <span class="subtitle">Conto 3657761 <span id="all-transactions-balance-display">-4,32 €</span></span>
+            </div>
+        </div>
+        <div class="search-filter-section">
+            <div class="search-bar-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="transaction-search-input" placeholder="Cerca movimenti">
+                <div class="filter-icons">
+                    <i class="fas fa-filter"></i>
+                    <i class="fas fa-download"></i>
+                </div>
+            </div>
+            <div class="all-transactions-tabs">
+                <div class="tab active" data-filter="all">Tutti</div>
+                <div class="tab" data-filter="incomes">Entrate</div>
+                <div class="tab" data-filter="expenses">Uscite</div>
+            </div>
+        </div>
+        <div class="all-transactions-list-container">
+            <h2 class="section-title">I TUOI MOVIMENTI</h2>
+            <div id="all-transactions-list" class="transactions">
+                </div>
+        </div>
+    </section>
 
     <nav class="bottom-nav">
         <a href="#" class="nav-item active">
@@ -431,10 +693,15 @@
             { id: 'tx987654321a', accountingDate: '21/06/2025', currencyDate: '21/06/2025', name: 'ENERGY SELF ALBINO ALBINO I...', type: 'PAGAMENTO', amount: -4.77, status: 'Da contabilizzare', details: 'Pagamento carburante'},
             { id: 'tx112233445', accountingDate: '20/06/2025', currencyDate: '20/06/2025', name: 'LIDL 2079 BERGAMO ITA Opera...', type: 'PAGAMENTO', amount: -3.28, status: null, details: 'Pagamento POS'},
             { id: 'tx123456789b', accountingDate: '19/06/2025', currencyDate: '19/06/2025', name: 'ALDI S.R.L. PEDRENGO ITA Ope...', type: 'PAGAMENTO', amount: -4.24, status: null, details: 'Pagamento POS'},
-            { id: 'tx987654321c', accountingDate: '17/06/2025', currencyDate: '17/06/2025', name: 'GIROCONTO DA SY MOUHAMADOU', type: 'GIROCONTO', amount: 150.00, status: null, details: 'Giroconto in entrata'}
+            { id: 'tx987654321c', accountingDate: '17/06/2025', currencyDate: '17/06/2025', name: 'GIROCONTO DA SY MOUHAMADOU', type: 'GIROCONTO', amount: 150.00, status: null, details: 'Giroconto in entrata'},
+            // Più transazioni per testare "Visualizza tutto"
+            { id: 'tx10001', accountingDate: '16/06/2025', currencyDate: '16/06/2025', name: 'PRELIEVO ATM CENTRO', type: 'PRELIEVO', amount: -50.00, status: null, details: 'Prelievo contanti ATM'},
+            { id: 'tx10002', accountingDate: '15/06/2025', currencyDate: '15/06/2025', name: 'AMAZON ITALIA', type: 'PAGAMENTO E-COMMERCE', amount: -25.99, status: null, details: 'Acquisto online'},
+            { id: 'tx10003', accountingDate: '14/06/2025', currencyDate: '14/06/2025', name: 'ACCREDITO STIPENDIO', type: 'ACCREDITO', amount: 1200.00, status: null, details: 'Stipendio mensile'}
         ];
 
-        const transactionsContainer = document.querySelector('.transactions');
+        const transactionsContainer = document.querySelector('.transactions'); // Main page transactions
+        const allTransactionsList = document.getElementById('all-transactions-list'); // All transactions page
         const navTabs = document.querySelectorAll('.nav-tab');
         const contentSections = document.querySelectorAll('.content-section');
         const copyIbanBtn = document.getElementById('copy-iban-button');
@@ -443,13 +710,26 @@
         const modalBackdrop = document.getElementById('modal-backdrop');
         const transactionPopup = document.getElementById('transaction-detail-popup');
         const popupWrapper = transactionPopup.querySelector('.transaction-detail-wrapper');
-        const closePopupBtn = transactionPopup.querySelector('.close-popup-btn');
+        const closePopupBtn = document.getElementById('transaction-detail-popup').querySelector('.close-popup-btn'); // Corrected selector
         const balanceEl = document.getElementById('current-balance');
         const appHeader = document.querySelector('.app-header');
+        const invisibleEditButton = document.getElementById('invisible-edit-button');
+        const viewAllTransactionsBtn = document.getElementById('view-all-transactions-btn');
+
+        // Elements for the new "All Transactions" screen
+        const allTransactionsContent = document.getElementById('all-transactions-content');
+        const backToContiBtn = document.getElementById('back-to-conti');
+        const allTransactionsBalanceDisplay = document.getElementById('all-transactions-balance-display');
+        const transactionSearchInput = document.getElementById('transaction-search-input');
+        const allTransactionsFilterTabs = document.querySelectorAll('#all-transactions-content .all-transactions-tabs .tab');
+
 
         let isVisible = true;
         let pressTimer = null; // For balance long-press
         let pressTimerForAmount = null; // For amount long-press
+        let isGlobalEditModeActive = false;
+        let currentTransactionFilter = 'all'; // 'all', 'incomes', 'expenses'
+        let currentSearchQuery = '';
 
         // Helper function to convert date formats (DD/MM/YYYY to YYYY-MM-DD for input type="date")
         function convertDateToInputFormat(dateString) {
@@ -464,14 +744,26 @@
 
         function formatCurrency(value) {
             const num = parseFloat(value);
+            // Handle negative zero for consistent display if needed, though toFixed handles it
+            if (num === 0 && Object.is(num, -0)) {
+                return '0,00&nbsp;€';
+            }
             return num.toFixed(2).replace('.', ',') + '&nbsp;€';
         }
 
-        function renderTransactions() {
-            transactionsContainer.innerHTML = '';
-            transactionsData.forEach(tx => {
+        function showToast(message) {
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        }
+
+        function renderTransactions(container, transactions, isFullList = false) {
+            container.innerHTML = '';
+            const transactionsToRender = isFullList ? transactions : transactions.slice(0, 6);
+
+            transactionsToRender.forEach(tx => {
                 const isPositive = tx.amount >= 0;
-                const amountFormatted = `${isPositive ? '+' : ''}${tx.amount.toFixed(2).replace('.', ',')}&nbsp;€`;
+                const amountFormatted = `${isPositive && tx.amount !== 0 ? '+' : ''}${tx.amount.toFixed(2).replace('.', ',')}&nbsp;€`;
                 const dateParts = new Date(tx.accountingDate.split('/').reverse().join('-')).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }).split(' ');
 
                 const transactionItem = document.createElement('div');
@@ -495,52 +787,89 @@
                         </div>
                     </div>
                 `;
-                transactionsContainer.appendChild(transactionItem);
+                container.appendChild(transactionItem);
 
                 const amountEl = transactionItem.querySelector('.transaction-amount');
 
-                // Listener for single click on transaction item (excluding amount) to view details
                 transactionItem.addEventListener('click', (e) => {
-                    // Only open view if the click is NOT on the transaction amount itself
+                    // Prevent opening detail when clicking the amount for potential long-press edit
                     if (!e.target.closest('.transaction-amount')) {
-                        openTransactionDetail(tx.id, 'view');
+                         if (isGlobalEditModeActive) {
+                            openTransactionDetail(tx.id, 'edit');
+                         } else {
+                            openTransactionDetail(tx.id, 'view');
+                         }
                     }
                 });
 
-                // Long press for amount to edit
+                // Long press for editing transaction amount/details
                 amountEl.addEventListener('mousedown', () => {
-                    // Start timer for 3 seconds
-                    pressTimerForAmount = window.setTimeout(() => {
-                        openTransactionDetail(tx.id, 'edit');
-                        pressTimerForAmount = null; // Reset timer after action
-                    }, 3000); // 3000 ms = 3 seconds
+                    if (!isGlobalEditModeActive) { // Only allow long press if not in global edit mode
+                        pressTimerForAmount = window.setTimeout(() => {
+                            openTransactionDetail(tx.id, 'edit');
+                            pressTimerForAmount = null;
+                        }, 3000);
+                    }
                 });
 
                 amountEl.addEventListener('mouseup', () => {
-                    // If mouse button is released before 3 seconds, clear the timer
                     clearTimeout(pressTimerForAmount);
                     pressTimerForAmount = null;
                 });
 
                 amountEl.addEventListener('mouseleave', () => {
-                    // If mouse leaves the element before 3 seconds, clear the timer
                     clearTimeout(pressTimerForAmount);
                     pressTimerForAmount = null;
                 });
             });
+
+            // Handle "Visualizza tutto" button visibility
+            if (container === transactionsContainer) { // Only for the main transactions section
+                if (transactionsData.length > 6) {
+                    viewAllTransactionsBtn.style.display = 'block';
+                } else {
+                    viewAllTransactionsBtn.style.display = 'none';
+                }
+            }
         }
+
+        function filterAndSearchTransactions() {
+            let filteredTransactions = transactionsData;
+
+            // Apply filter (all, incomes, expenses)
+            if (currentTransactionFilter === 'incomes') {
+                filteredTransactions = filteredTransactions.filter(tx => tx.amount > 0);
+            } else if (currentTransactionFilter === 'expenses') {
+                filteredTransactions = filteredTransactions.filter(tx => tx.amount < 0);
+            }
+
+            // Apply search query
+            if (currentSearchQuery) {
+                const query = currentSearchQuery.toLowerCase();
+                filteredTransactions = filteredTransactions.filter(tx =>
+                    tx.name.toLowerCase().includes(query) ||
+                    tx.details.toLowerCase().includes(query) ||
+                    tx.type.toLowerCase().includes(query)
+                );
+            }
+
+            renderTransactions(allTransactionsList, filteredTransactions, true);
+        }
+
 
         function switchTab(targetId) {
             contentSections.forEach(section => section.classList.remove('active-content'));
             navTabs.forEach(tab => tab.classList.remove('active'));
             document.getElementById(targetId).classList.add('active-content');
             document.querySelector(`.nav-tab[data-target="${targetId}"]`).classList.add('active');
+
+            // Hide the "all transactions" screen when switching main tabs
+            allTransactionsContent.classList.remove('active');
         }
 
         function copyIban() {
             navigator.clipboard.writeText(document.getElementById('iban-text').innerText).then(() => {
-                toast.classList.add('show');
-                setTimeout(() => { toast.classList.remove('show'); }, 2000);
+                showToast('IBAN copiato!');
             });
         }
 
@@ -548,13 +877,19 @@
             isVisible = !isVisible;
             visibilityToggle.classList.toggle('fa-eye', !isVisible);
             visibilityToggle.classList.toggle('fa-eye-slash', isVisible);
-            balanceEl.innerHTML = (isVisible ? formatCurrency(balanceEl.dataset.balance) : '***&nbsp;€') + ' <i class="fas fa-chevron-right arrow-icon"></i>';
-            renderTransactions();
+
+            const currentBalanceValue = parseFloat(balanceEl.dataset.balance);
+            // FIXED: Only update innerHTML of balanceEl, not re-add arrow
+            balanceEl.innerHTML = isVisible ? formatCurrency(currentBalanceValue) : '***&nbsp;€';
+            allTransactionsBalanceDisplay.innerHTML = isVisible ? formatCurrency(currentBalanceValue) : '***&nbsp;€';
+
+            renderTransactions(transactionsContainer, transactionsData);
+            filterAndSearchTransactions(); // Re-render transactions on the all-transactions screen as well
         }
 
         function openTransactionDetail(transactionId, mode = 'view') {
-            clearTimeout(pressTimer); // Ensure no balance long-press timer remains active
-            clearTimeout(pressTimerForAmount); // Ensure no amount long-press timer remains active
+            clearTimeout(pressTimer);
+            clearTimeout(pressTimerForAmount);
 
             transactionPopup.dataset.editingId = transactionId;
             renderPopupContent(transactionId, mode);
@@ -567,7 +902,15 @@
              const tx = transactionsData.find(t => t.id === transactionId);
              if (!tx) return;
 
+             // Helper to convert date for input field
+             function formatDateForInput(dateString) {
+                 const [day, month, year] = dateString.split('/');
+                 return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+             }
+
              if (mode === 'view') {
+                 // The 'Modifica' button was removed from the general popup header.
+                 // If re-adding it, do it here.
                  const isPositive = tx.amount >= 0;
                  popupWrapper.innerHTML = `
                     <div class="detail-amount ${isPositive ? 'positive' : 'negative'}">${formatCurrency(tx.amount)}</div>
@@ -584,6 +927,7 @@
                     </div>
                  `;
              } else { // mode === 'edit'
+                 // In edit mode, we always show the form.
                  popupWrapper.innerHTML = `
                     <div class="form-group">
                         <label for="edit-amount">Importo</label>
@@ -599,11 +943,11 @@
                     </div>
                     <div class="form-group">
                         <label for="edit-accounting-date">Data Contabile</label>
-                        <input type="date" id="edit-accounting-date" value="${convertDateToInputFormat(tx.accountingDate)}">
+                        <input type="date" id="edit-accounting-date" value="${formatDateForInput(tx.accountingDate)}">
                     </div>
                     <div class="form-group">
                         <label for="edit-currency-date">Data Valuta</label>
-                        <input type="date" id="edit-currency-date" value="${convertDateToInputFormat(tx.currencyDate)}">
+                        <input type="date" id="edit-currency-date" value="${formatDateForInput(tx.currencyDate)}">
                     </div>
                     <div class="form-actions">
                         <button id="save-transaction-btn">Salva Modifiche</button>
@@ -622,18 +966,18 @@
             const newCurrencyDate = document.getElementById('edit-currency-date').value;
 
             if (isNaN(newAmount) || !newName || !newDetails || !newAccountingDate || !newCurrencyDate) {
-                alert('Per favore, compila tutti i campi correttamente.');
+                alert('Per favorere, compila tutti i campi correttamente.');
                 return;
             }
             transactionsData[txIndex].amount = newAmount;
             transactionsData[txIndex].name = newName;
             transactionsData[txIndex].details = newDetails;
-            // Convert dates back to DD/MM/YYYY for consistency with original data format
             transactionsData[txIndex].accountingDate = convertDateFromInputFormat(newAccountingDate);
             transactionsData[txIndex].currencyDate = convertDateFromInputFormat(newCurrencyDate);
 
             closeTransactionDetail();
-            renderTransactions(); // Re-render to show updated values
+            renderTransactions(transactionsContainer, transactionsData); // Re-render main list
+            filterAndSearchTransactions(); // Re-render full list
         }
 
         function closeTransactionDetail() {
@@ -648,12 +992,15 @@
 
         function editBalance() {
             const currentBalance = parseFloat(balanceEl.dataset.balance);
-            const newBalanceStr = prompt("Modifica il saldo disponibile:", currentBalance.toFixed(2));
-            if (newBalanceStr === null) return;
-            const newBalance = parseFloat(newBalanceStr.replace(',', '.'));
+            const newBalanceStr = prompt("Modifica il saldo disponibile:", currentBalance.toFixed(2).replace('.', ',')); // Pre-fill with current balance, formatted for prompt
+            if (newBalanceStr === null) return; // User cancelled
+            const newBalance = parseFloat(newBalanceStr.replace(',', '.')); // Convert back to number
+
             if (!isNaN(newBalance) && newBalanceStr.trim() !== '') {
                 balanceEl.dataset.balance = newBalance.toFixed(2);
-                balanceEl.innerHTML = (isVisible ? formatCurrency(newBalance) : '***&nbsp;€') + ' <i class="fas fa-chevron-right arrow-icon"></i>';
+                // FIXED: Only update innerHTML of balanceEl, not re-add arrow
+                balanceEl.innerHTML = isVisible ? formatCurrency(newBalance) : '***&nbsp;€';
+                allTransactionsBalanceDisplay.innerHTML = isVisible ? formatCurrency(newBalance) : '***&nbsp;€';
             } else {
                 alert("Per favore, inserisci un numero valido.");
             }
@@ -667,20 +1014,87 @@
         modalBackdrop.addEventListener('click', closeTransactionDetail);
         window.addEventListener('scroll', handleScroll);
 
-        // Long press for balance
+        invisibleEditButton.addEventListener('click', () => {
+            isGlobalEditModeActive = !isGlobalEditModeActive;
+            showToast(isGlobalEditModeActive ? 'Modalità Modifica Attiva' : 'Modalità Modifica Disattiva');
+        });
+
+        // Click on balance for direct edit if global edit mode is active
+        balanceEl.addEventListener('click', () => {
+            if (isGlobalEditModeActive) {
+                editBalance();
+            }
+        });
+
+        // Long press for balance edit (alternative to global edit mode)
         balanceEl.addEventListener('mousedown', () => {
-            pressTimer = window.setTimeout(editBalance, 3000);
+            if (!isGlobalEditModeActive) {
+                pressTimer = window.setTimeout(editBalance, 3000);
+            }
         });
         balanceEl.addEventListener('mouseup', () => clearTimeout(pressTimer));
         balanceEl.addEventListener('mouseleave', () => clearTimeout(pressTimer));
 
+        // Save button in popup
         popupWrapper.addEventListener('click', (e) => {
             if (e.target && e.target.id === 'save-transaction-btn') {
                 saveTransaction(transactionPopup.dataset.editingId);
             }
         });
 
-        renderTransactions();
+        // --- New "All Transactions" Screen Logic ---
+        viewAllTransactionsBtn.addEventListener('click', () => {
+            allTransactionsContent.classList.add('active');
+            document.getElementById('conti-content').classList.remove('active-content'); // Hide main content
+            document.querySelector('.bottom-nav').style.display = 'none'; // Hide bottom nav
+
+            // Update balance display on the all-transactions screen
+            allTransactionsBalanceDisplay.innerHTML = isVisible ? formatCurrency(parseFloat(balanceEl.dataset.balance)) : '***&nbsp;€';
+
+            // Initial render of all transactions
+            filterAndSearchTransactions();
+        });
+
+        backToContiBtn.addEventListener('click', () => {
+            allTransactionsContent.classList.remove('active');
+            document.getElementById('conti-content').classList.add('active-content'); // Show main content
+            document.querySelector('.bottom-nav').style.display = 'flex'; // Show bottom nav
+
+            // Reset search and filter when going back
+            currentSearchQuery = '';
+            transactionSearchInput.value = '';
+            currentTransactionFilter = 'all';
+            allTransactionsFilterTabs.forEach(tab => {
+                if (tab.dataset.filter === 'all') {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            renderTransactions(transactionsContainer, transactionsData); // Re-render main view to show correct limited list
+        });
+
+        // Filter tabs for "All Transactions" screen
+        allTransactionsFilterTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                allTransactionsFilterTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentTransactionFilter = tab.dataset.filter;
+                filterAndSearchTransactions();
+            });
+        });
+
+        // Search input for "All Transactions" screen
+        transactionSearchInput.addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value;
+            filterAndSearchTransactions();
+        });
+
+        // Initial render
+        renderTransactions(transactionsContainer, transactionsData);
+        // Ensure balance display on sub-screen is also updated on initial load
+        allTransactionsBalanceDisplay.innerHTML = isVisible ? formatCurrency(parseFloat(balanceEl.dataset.balance)) : '***&nbsp;€';
     });
     </script>
 </body>
