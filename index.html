@@ -53,7 +53,9 @@
             backdrop-filter: blur(5px);
         }
 
-        .header-top{display:flex;justify-content:space-between;align-items:center;padding:15px 0;margin-bottom:15px}.profile-initials{background-color:var(--wc);border-radius:18px;width:36px;height:36px;display:flex;justify-content:center;align-items:center;font-weight:600;font-size:16px;color:var(--g1);}.header-icons{display:flex;gap:20px;font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);}.nav-tabs{display:flex;padding-bottom:15px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;gap: 13px; -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%); mask-image: linear-gradient(to right, black 90%, transparent 100%);}.nav-tabs::-webkit-scrollbar{display:none}.nav-tab{padding:8px 15px;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background-color .3s ease,color .3s ease;text-align:center;background-color:#13666c;color:var(--wc);}.nav-tab.active{background-color:var(--wc);color:var(--g1);}main{flex-grow:1;padding-bottom:calc(80px + var(--pb));box-sizing:border-box;position:relative;background-color:var(--g3);padding-top:20px; width: 100%;}.content-section{display:none;padding:0 20px;box-sizing: border-box;}.content-section.active-content{display:block}.account-title-outside{font-size:20px;font-weight:700;color:var(--wc);margin-top:0;margin-bottom:10px;padding-left:0;display:flex;justify-content:space-between;align-items:center;}.account-title-outside .toggle-icon{font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);margin-right:0; cursor: pointer;}
+        .header-top{display:flex;justify-content:space-between;align-items:center;padding:15px 0;margin-bottom:15px}
+        .profile-initials{background-color:var(--wc);border-radius:18px;width:36px;height:36px;display:flex;justify-content:center;align-items:center;font-weight:600;font-size:16px;color:var(--g1);}
+        .header-icons{display:flex;gap:20px;font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);}.nav-tabs{display:flex;padding-bottom:15px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;gap: 13px; -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%); mask-image: linear-gradient(to right, black 90%, transparent 100%);}.nav-tabs::-webkit-scrollbar{display:none}.nav-tab{padding:8px 15px;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background-color .3s ease,color .3s ease;text-align:center;background-color:#13666c;color:var(--wc);}.nav-tab.active{background-color:var(--wc);color:var(--g1);}main{flex-grow:1;padding-bottom:calc(80px + var(--pb));box-sizing:border-box;position:relative;background-color:var(--g3);padding-top:20px; width: 100%;}.content-section{display:none;padding:0 20px;box-sizing: border-box;}.content-section.active-content{display:block}.account-title-outside{font-size:20px;font-weight:700;color:var(--wc);margin-top:0;margin-bottom:10px;padding-left:0;display:flex;justify-content:space-between;align-items:center;}.account-title-outside .toggle-icon{font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);margin-right:0; cursor: pointer;}
         .account-summary{
             background-color:var(--wc);
             border-radius:16px;
@@ -83,18 +85,20 @@
             background-color: var(--wc);
             border-top-left-radius: 16px;
             border-top-right-radius: 16px;
-            /* Modifiche per i bordi arrotondati in fondo */
             border-bottom-left-radius: 16px;
             border-bottom-right-radius: 16px;
             padding: 0;
             margin-bottom: 25px;
             box-shadow: var(--sh);
             color: var(--g2);
+            /* Padding for the top section containing the title */
+            padding-top: 15px;
         }
 
+        /* Adjusted .section-title for consistent padding */
         .transactions-card-wrapper .section-title {
-            margin-top: 15px;
-            padding: 20px 20px 10px 20px;
+            margin: 0;
+            padding: 0 20px 10px 20px; /* Consistent left/right padding, and bottom margin */
         }
 
         .transactions .transaction-item {
@@ -335,45 +339,49 @@
         }
         .toast-notification.show { opacity: 1; visibility: visible; bottom: 110px; }
 
-        /* Stile per il pulsante invisibile */
         #invisible-edit-button {
             position: fixed;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 75px; /* Metà della larghezza precedente */
-            height: 30px; /* Metà dell'altezza precedente */
-            z-index: 1000; /* Assicura che sia sopra altri elementi */
+            top: 50px;
+            right: 0;
+            left: auto;
+            transform: none;
+            width: 25px;
+            height: 10px;
+            z-index: 1000;
             cursor: pointer;
-            opacity: 0; /* Rendi invisibile */
-            transition: opacity 0.3s ease, background-color 0.3s ease; /* Aggiungi transizioni per fluidità */
+            opacity: 0;
+            transition: opacity 0.3s ease, background-color 0.3s ease;
         }
 
-        /* Nuovo stile per il contenitore e il pulsante "Visualizza tutto" */
+        /* MODIFIED: .view-all-container moved inside .transactions-card-wrapper, after .transactions */
         .view-all-container {
-            display: flex;
-            justify-content: flex-end; /* Allinea a destra */
-            padding: 15px 20px;
+            text-align: center; /* Center the button */
+            padding: 15px 20px; /* Add padding for visual separation */
+            /* Add top border to visually separate from transactions */
             border-top: 1px solid var(--bc);
-            background-color: var(--wc); /* Sfondo uguale al wrapper */
-            border-bottom-left-radius: 16px; /* Bordi arrotondati come il wrapper */
-            border-bottom-right-radius: 16px;
+            margin-top: 0; /* No top margin needed with padding */
+            border-bottom-left-radius: 16px; /* Match wrapper border radius */
+            border-bottom-right-radius: 16px; /* Match wrapper border radius */
         }
 
+        /* MODIFIED: Styles for the "Visualizza tutto" button (now just green text) */
         .view-all-button {
-            background-color: var(--g1); /* Colore verde dal tema */
-            color: var(--wc);
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
+            background-color: transparent; /* Remove green background */
+            color: var(--g1); /* Set text color to green */
+            border: none; /* Ensure no border */
+            padding: 0; /* Remove padding */
+            border-radius: 0; /* Remove border radius */
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: color 0.3s ease; /* Transition for text color only */
+            max-width: 100%;
+            width: auto;
+            white-space: nowrap;
         }
 
         .view-all-button:hover {
-            background-color: #003a40; /* Verde leggermente più scuro al passaggio del mouse */
+            color: #003a40; /* Slightly darker green on hover */
         }
 
         /* Stili per la nuova schermata "Visualizza tutto" */
@@ -697,7 +705,687 @@
             // Più transazioni per testare "Visualizza tutto"
             { id: 'tx10001', accountingDate: '16/06/2025', currencyDate: '16/06/2025', name: 'PRELIEVO ATM CENTRO', type: 'PRELIEVO', amount: -50.00, status: null, details: 'Prelievo contanti ATM'},
             { id: 'tx10002', accountingDate: '15/06/2025', currencyDate: '15/06/2025', name: 'AMAZON ITALIA', type: 'PAGAMENTO E-COMMERCE', amount: -25.99, status: null, details: 'Acquisto online'},
-            { id: 'tx10003', accountingDate: '14/06/2025', currencyDate: '14/06/2025', name: 'ACCREDITO STIPENDIO', type: 'ACCREDITO', amount: 1200.00, status: null, details: 'Stipendio mensile'}
+            { id: 'tx10003', accountingDate: '14/06/2025', currencyDate: '14/06/2025', name: 'ACCREDITO STIPENDIO', type: 'ACCREDITO', amount: 1200.00, status: null, details: 'Stipendio mensile'},
+            {
+    "id": "tx00001",
+    "accountingDate": "04/07/2025",
+    "currencyDate": "04/07/2025",
+    "name": "LIDL 148 CLUSONE ITA Operaz...",
+    "type": "PAGAMENTO",
+    "amount": -3.58,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00002",
+    "accountingDate": "03/07/2025",
+    "currencyDate": "03/07/2025",
+    "name": "COMPETENZE SPESE ED ONERI",
+    "type": "COMPETENZE",
+    "amount": -5.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00003",
+    "accountingDate": "30/06/2025",
+    "currencyDate": "30/06/2025",
+    "name": "AMP07 CLUSONE BG Operazio...",
+    "type": "PAGO BANCOMAT",
+    "amount": -11.60,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00004",
+    "accountingDate": "25/06/2025",
+    "currencyDate": "25/06/2025",
+    "name": "RATA PRESTITO BSS BIBANC...",
+    "type": "RATA FINANZIAMENTO",
+    "amount": -145.60,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00005",
+    "accountingDate": "24/06/2025",
+    "currencyDate": "24/06/2025",
+    "name": "LIDL 148 CLUSONE ITA Operazi...",
+    "type": "PAGAMENTO",
+    "amount": -5.28,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00006",
+    "accountingDate": "24/06/2025",
+    "currencyDate": "24/06/2025",
+    "name": "ENERGY SELF ALBINO ALBINO I...",
+    "type": "PAGAMENTO",
+    "amount": -4.77,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00007",
+    "accountingDate": "24/06/2025",
+    "currencyDate": "24/06/2025",
+    "name": "LIDL 2079 BERGAMO ITA Opera...",
+    "type": "PAGAMENTO",
+    "amount": -3.28,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00008",
+    "accountingDate": "23/06/2025",
+    "currencyDate": "23/06/2025",
+    "name": "VERSAMENTO DA ATM AZIEN...",
+    "type": "VERSAMENTO",
+    "amount": 20.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00009",
+    "accountingDate": "19/06/2025",
+    "currencyDate": "19/06/2025",
+    "name": "ALDI S.R.L. PEDRENGO ITA Ope...",
+    "type": "PAGAMENTO",
+    "amount": -4.24,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00010",
+    "accountingDate": "17/06/2025",
+    "currencyDate": "17/06/2025",
+    "name": "HO-MOBILE.IT - RICARIC MILA...",
+    "type": "PAGAMENTO",
+    "amount": -10.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00011",
+    "accountingDate": "16/06/2025",
+    "currencyDate": "16/06/2025",
+    "name": "AUTOLAVAGGIO CASSA 2 CLUS...",
+    "type": "PAGAMENTO",
+    "amount": -5.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00012",
+    "accountingDate": "16/06/2025",
+    "currencyDate": "16/06/2025",
+    "name": "VERSAMENTO DA ATM AZIEN...",
+    "type": "VERSAMENTO",
+    "amount": 150.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00013",
+    "accountingDate": "16/06/2025",
+    "currencyDate": "16/06/2025",
+    "name": "BELLA PIZZA KEBAP BERGAMO...",
+    "type": "PAGO BANCOMAT",
+    "amount": -5.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00014",
+    "accountingDate": "12/06/2025",
+    "currencyDate": "12/06/2025",
+    "name": "0208-ITALMARK BERGAMO BE...",
+    "type": "PAGO BANCOMAT",
+    "amount": -1.86,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00015",
+    "accountingDate": "12/06/2025",
+    "currencyDate": "12/06/2025",
+    "name": "PV1410 FIORANO AL SERIO Op...",
+    "type": "PAGO BANCOMAT",
+    "amount": -25.41,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00016",
+    "accountingDate": "12/06/2025",
+    "currencyDate": "12/06/2025",
+    "name": "LIDL 2079 BERGAMO ITA Opera...",
+    "type": "PAGAMENTO",
+    "amount": -2.79,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00017",
+    "accountingDate": "12/06/2025",
+    "currencyDate": "12/06/2025",
+    "name": "Prelievo atm c/o:CLUSONE Op...",
+    "type": "PRELIEVO",
+    "amount": -20.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00018",
+    "accountingDate": "11/06/2025",
+    "currencyDate": "11/06/2025",
+    "name": "Prelievo atm c/o:CLUSONE O...",
+    "type": "PRELIEVO",
+    "amount": -400.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00019",
+    "accountingDate": "10/06/2025",
+    "currencyDate": "10/06/2025",
+    "name": "EMOLUMENTI o/c: TERYA S...",
+    "type": "STIPENDIO",
+    "amount": 1424.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00020",
+    "accountingDate": "10/06/2025",
+    "currencyDate": "10/06/2025",
+    "name": "COMMISSIONI BONIFICI A FAVO...",
+    "type": "COMMISSIONE",
+    "amount": -5.50,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00021",
+    "accountingDate": "10/06/2025",
+    "currencyDate": "10/06/2025",
+    "name": "DISPOSIZIONE A FAVORE DI...",
+    "type": "BONIFICO",
+    "amount": -152.36,
+    "status": null,
+    "details": "Rateizza"
+  },
+  {
+    "id": "tx00022",
+    "accountingDate": "10/06/2025",
+    "currencyDate": "10/06/2025",
+    "name": "PREMI ASSICURATIVI POLIZ...",
+    "type": "Rateizza",
+    "amount": -776.00,
+    "status": null,
+    "details": "Rateizza"
+  },
+  {
+    "id": "tx00023",
+    "accountingDate": "05/06/2025",
+    "currencyDate": "05/06/2025",
+    "name": "RATA FINANZIAMENTO",
+    "type": "RATA FINANZIAMENTO",
+    "amount": -10.00,
+    "status": null,
+    "details": "Da contabilizzare"
+  },
+  {
+    "id": "tx00024",
+    "accountingDate": "19/05/2025",
+    "currencyDate": "19/05/2025",
+    "name": "Prelievo atm c/o:CLUSONE Op...",
+    "type": "PRELIEVO",
+    "amount": -150.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00025",
+    "accountingDate": "16/05/2025",
+    "currencyDate": "16/05/2025",
+    "name": "COMMISSIONI BONIFICI Bonific...",
+    "type": "COMMISSIONE",
+    "amount": -1.49,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00026",
+    "accountingDate": "16/05/2025",
+    "currencyDate": "16/05/2025",
+    "name": "DISPOSIZIONE a favore di Mo...",
+    "type": "BONIFICO",
+    "amount": -149.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00027",
+    "accountingDate": "13/05/2025",
+    "currencyDate": "13/05/2025",
+    "name": "Prelievo atm c/o:CLUSONE Op...",
+    "type": "PRELIEVO",
+    "amount": -70.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00028",
+    "accountingDate": "13/05/2025",
+    "currencyDate": "13/05/2025",
+    "name": "Prelievo atm c/o:CLUSONE O...",
+    "type": "PRELIEVO",
+    "amount": -850.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00029",
+    "accountingDate": "13/05/2025",
+    "currencyDate": "13/05/2025",
+    "name": "COMM. BON. ISTANTANEO a fav...",
+    "type": "COMMISSIONE",
+    "amount": -1.49,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00030",
+    "accountingDate": "13/05/2025",
+    "currencyDate": "13/05/2025",
+    "name": "DISPOSIZIONE BONIFICO IS...",
+    "type": "BONIFICO",
+    "amount": -266.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00031",
+    "accountingDate": "12/05/2025",
+    "currencyDate": "12/05/2025",
+    "name": "EMOLUMENTI o/c: TERYA...",
+    "type": "STIPENDIO",
+    "amount": 1504.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00032",
+    "accountingDate": "05/05/2025",
+    "currencyDate": "05/05/2025",
+    "name": "PREMI ASSICURATIVI POLIZZ...",
+    "type": "PREMI ASSICURATIVI",
+    "amount": -12.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00033",
+    "accountingDate": "28/04/2025",
+    "currencyDate": "28/04/2025",
+    "name": "RATA PRESTITO BSS BIBANC...",
+    "type": "RATA FINANZIAMENTO",
+    "amount": -145.60,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00034",
+    "accountingDate": "28/04/2025",
+    "currencyDate": "28/04/2025",
+    "name": "Prelievo atm c/o:CLUSONE O...",
+    "type": "PRELIEVO",
+    "amount": -160.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00035",
+    "accountingDate": "14/04/2025",
+    "currencyDate": "14/04/2025",
+    "name": "COLONNINA SELF 2 CLUSONE...",
+    "type": "PAGAMENTO",
+    "amount": -25.08,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00036",
+    "accountingDate": "11/04/2025",
+    "currencyDate": "11/04/2025",
+    "name": "Prelievo atm c/o:CLUSONE O...",
+    "type": "PRELIEVO",
+    "amount": -850.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00037",
+    "accountingDate": "10/04/2025",
+    "currencyDate": "10/04/2025",
+    "name": "COMM. BON. ISTANTANEO a fav...",
+    "type": "COMMISSIONE",
+    "amount": -1.49,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00038",
+    "accountingDate": "10/04/2025",
+    "currencyDate": "10/04/2025",
+    "name": "DISPOSIZIONE BONIFICO IST...",
+    "type": "BONIFICO",
+    "amount": -230.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00039",
+    "accountingDate": "10/04/2025",
+    "currencyDate": "10/04/2025",
+    "name": "EMOLUMENTI o/c: TERYA S...",
+    "type": "STIPENDIO",
+    "amount": 1411.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00040",
+    "accountingDate": "04/04/2025",
+    "currencyDate": "04/04/2025",
+    "name": "COMPETENZE SPESE ED ONERI",
+    "type": "COMPETENZE",
+    "amount": -5.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00041",
+    "accountingDate": "25/03/2025",
+    "currencyDate": "25/03/2025",
+    "name": "RATA PRESTITO BSS BIBANC...",
+    "type": "RATA FINANZIAMENTO",
+    "amount": -147.60,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00042",
+    "accountingDate": "24/03/2025",
+    "currencyDate": "24/03/2025",
+    "name": "COMM. BON. ISTANTANEO a fav...",
+    "type": "COMMISSIONE",
+    "amount": -1.49,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00043",
+    "accountingDate": "24/03/2025",
+    "currencyDate": "24/03/2025",
+    "name": "DISPOSIZIONE BONIFICO IST...",
+    "type": "BONIFICO",
+    "amount": -150.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00044",
+    "accountingDate": "17/03/2025",
+    "currencyDate": "17/03/2025",
+    "name": "Prelievo atm c/o:CLUSONE O...",
+    "type": "PRELIEVO",
+    "amount": -150.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00045",
+    "accountingDate": "12/03/2025",
+    "currencyDate": "12/03/2025",
+    "name": "Prelievo atm c/o:CLUSONE O...",
+    "type": "PRELIEVO",
+    "amount": -790.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00046",
+    "accountingDate": "12/02/2025",
+    "currencyDate": "12/02/2025",
+    "name": "COMM. BON. ISTANTANEO a fav...",
+    "type": "COMMISSIONE",
+    "amount": -1.49,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00047",
+    "accountingDate": "12/02/2025",
+    "currencyDate": "12/02/2025",
+    "name": "DISPOSIZIONE BONIFICO IST...",
+    "type": "BONIFICO",
+    "amount": -237.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00048",
+    "accountingDate": "11/02/2025",
+    "currencyDate": "11/02/2025",
+    "name": "LIDL 2079 BERGAMO ITA Operaz...",
+    "type": "PAGAMENTO",
+    "amount": -1.10,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00049",
+    "accountingDate": "11/02/2025",
+    "currencyDate": "11/02/2025",
+    "name": "LIDL 2079 BERGAMO ITA Operaz...",
+    "type": "PAGAMENTO",
+    "amount": -2.08,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00050",
+    "accountingDate": "11/02/2025",
+    "currencyDate": "11/02/2025",
+    "name": "MCDONALD S BERGAMO ITA O...",
+    "type": "PAGAMENTO",
+    "amount": -2.30,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00051",
+    "accountingDate": "11/02/2025",
+    "currencyDate": "11/02/2025",
+    "name": "EMOLUMENTI o/c: TERYA S...",
+    "type": "STIPENDIO",
+    "amount": 1387.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00052",
+    "accountingDate": "07/02/2025",
+    "currencyDate": "07/02/2025",
+    "name": "LIDL 148 CLUSONE ITA Operazi...",
+    "type": "PAGAMENTO",
+    "amount": -3.69,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00053",
+    "accountingDate": "06/02/2025",
+    "currencyDate": "06/02/2025",
+    "name": "IPERAL CLUSONEV V EMANUEL...",
+    "type": "PAGO BANCOMAT",
+    "amount": -2.79,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00054",
+    "accountingDate": "06/02/2025",
+    "currencyDate": "06/02/2025",
+    "name": "MCDONALD S BERGAMO ITA O...",
+    "type": "PAGAMENTO",
+    "amount": -5.90,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00055",
+    "accountingDate": "05/02/2025",
+    "currencyDate": "05/02/2025",
+    "name": "LIDL 148 CLUSONE ITA Operazi...",
+    "type": "PAGAMENTO",
+    "amount": -8.16,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00056",
+    "accountingDate": "05/02/2025",
+    "currencyDate": "05/02/2025",
+    "name": "BALA PARVEENVIA GIACOMO...",
+    "type": "PAGO BANCOMAT",
+    "amount": -15.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00057",
+    "accountingDate": "04/02/2025",
+    "currencyDate": "04/02/2025",
+    "name": "FARMACIA MALPENSATA S.VI...",
+    "type": "PAGO BANCOMAT",
+    "amount": -13.90,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00058",
+    "accountingDate": "04/02/2025",
+    "currencyDate": "04/02/2025",
+    "name": "PREMI ASSICURATIVI POLIZZ...",
+    "type": "PREMI ASSICURATIVI",
+    "amount": -12.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00059",
+    "accountingDate": "03/02/2025",
+    "currencyDate": "03/02/2025",
+    "name": "BONIFICO o/c: BIBANCA S.P.A....",
+    "type": "BONIFICO",
+    "amount": 1.80,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00060",
+    "accountingDate": "31/01/2025",
+    "currencyDate": "31/01/2025",
+    "name": "RC SNC BERGAMOVIA AUTOS...",
+    "type": "PAGO BANCOMAT",
+    "amount": -30.12,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00061",
+    "accountingDate": "28/01/2025",
+    "currencyDate": "28/01/2025",
+    "name": "Prelievo atm c/o:CLUSONE Op...",
+    "type": "PRELIEVO",
+    "amount": -70.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00062",
+    "accountingDate": "27/01/2025",
+    "currencyDate": "27/01/2025",
+    "name": "RATA PRESTITO BSS BIBANC...",
+    "type": "RATA FINANZIAMENTO",
+    "amount": -145.60,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00063",
+    "accountingDate": "15/01/2025",
+    "currencyDate": "15/01/2025",
+    "name": "Prelievo atm c/o:CLUSONE Op...",
+    "type": "PRELIEVO",
+    "amount": -40.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00064",
+    "accountingDate": "13/01/2025",
+    "currencyDate": "13/01/2025",
+    "name": "Prelievo atm c/o:CLUSONE...",
+    "type": "PRELIEVO",
+    "amount": -1150.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00065",
+    "accountingDate": "13/01/2025",
+    "currencyDate": "13/01/2025",
+    "name": "Prelievo atm c/o:CLUSONE Op...",
+    "type": "PRELIEVO",
+    "amount": -80.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00066",
+    "accountingDate": "10/01/2025",
+    "currencyDate": "10/01/2025",
+    "name": "COMM. BON. ISTANTANEO a fav...",
+    "type": "COMMISSIONE",
+    "amount": -1.49,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00067",
+    "accountingDate": "10/01/2025",
+    "currencyDate": "10/01/2025",
+    "name": "DISPOSIZIONE BONIFICO IST...",
+    "type": "BONIFICO",
+    "amount": -700.00,
+    "status": null,
+    "details": null
+  },
+  {
+    "id": "tx00068",
+    "accountingDate": "10/01/2025",
+    "currencyDate": "10/01/2025",
+    "name": "EMOLUMENTI o/c: TERYA S...",
+    "type": "STIPENDIO",
+    "amount": 2278.00,
+    "status": null,
+    "details": null
+  }
         ];
 
         const transactionsContainer = document.querySelector('.transactions'); // Main page transactions
@@ -759,7 +1447,8 @@
 
         function renderTransactions(container, transactions, isFullList = false) {
             container.innerHTML = '';
-            const transactionsToRender = isFullList ? transactions : transactions.slice(0, 6);
+            // MODIFICATO: Limita a 5 transazioni se non è la lista completa
+            const transactionsToRender = isFullList ? transactions : transactions.slice(0, 5);
 
             transactionsToRender.forEach(tx => {
                 const isPositive = tx.amount >= 0;
@@ -823,14 +1512,10 @@
                 });
             });
 
-            // Handle "Visualizza tutto" button visibility
-            if (container === transactionsContainer) { // Only for the main transactions section
-                if (transactionsData.length > 6) {
-                    viewAllTransactionsBtn.style.display = 'block';
-                } else {
-                    viewAllTransactionsBtn.style.display = 'none';
-                }
-            }
+            // Handle "Visualizza tutto" button visibility - now controlled by the parent flex
+            // The button itself will always be there, its display is handled by flexbox
+            // No explicit hide/show based on transaction count needed for the button itself
+            // as it's meant to always be next to the title.
         }
 
         function filterAndSearchTransactions() {
