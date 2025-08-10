@@ -8,66 +8,220 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="BPER Banking">
-    <link rel="apple-touch-icon" href="/path/to/apple-touch-icon.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/path/to/apple-touch-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/path/to/apple-touch-icon-180x180.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="/path/to/apple-touch-icon-167x167.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="apple-touch-icon" href="https://www.bper.it/o/bper-theme/images/bper/favicon/apple-touch-icon.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
     <style>
-        :root{
-            --g1:#005057;
-            --g2:#005057;
-            --g3:#005057;
-            --g4:#e0f2f1;
-            --g5:#005057;
-            --g6:#f0fafa;
-            --wc:#fff;
-            --lc:#f0f0f0;
-            --ic:var(--g5);
-            --bc:#e0e0e0;
-            --sh:0 4px 12px rgba(0,0,0,.08);
-            --mp:var(--g2);
-            --mn:var(--g2);
-            --pb:env(safe-area-inset-bottom);
+        /* --- THEME & VARIABLES --- */
+        :root {
+            --bper-green-dark: #005057;
+            --bper-green-medium: #13666c;
+            --bper-green-light: #e0f2f1;
+            --bper-green-background: #f0fafa;
+            --white: #fff;
+            --light-grey: #f0f0f0;
+            --border-color: #e0e0e0;
+            --text-dark: #003a40;
+            --text-light: #5f787a;
+            --shadow: 0 4px 15px rgba(0, 80, 87, 0.1);
+            --safe-area-bottom: env(safe-area-inset-bottom);
+            --edit-highlight-color: #ffc107; /* Giallo per la modalità modifica */
         }
-        html {
-            overflow-x: hidden;
-            width: 100%;
+
+        /* --- GLOBAL & BODY --- */
+        html { overflow-x: hidden; width: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bper-green-dark);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-        body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding:0;background-color:var(--g3);color:var(--g2);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;display:flex;flex-direction:column;min-height:100vh; width: 100%;}
         body.modal-open { overflow: hidden; }
 
-        .app-header{
-            background-color:var(--g1);
-            color:var(--wc);
-            padding:0 20px;
-            position:sticky;
-            top:0;
-            z-index:90;
-            box-shadow:none;
-            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+        /* --- EDIT MODE --- */
+        #edit-mode-banner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9998;
+            background-color: var(--edit-highlight-color);
+            color: var(--text-dark);
+            text-align: center;
+            padding: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .app-header.transparent {
-            background-color: rgba(0, 80, 87, 0.8);
-            -webkit-backdrop-filter: blur(5px);
-            backdrop-filter: blur(5px);
+        #edit-mode-banner button {
+            background: var(--text-dark);
+            color: var(--white);
+            border: none;
+            border-radius: 5px;
+            padding: 4px 8px;
+            font-size: 12px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .edit-mode-active {
+            padding-top: 38px; /* Spazio per il banner */
+        }
+        .edit-mode-active [data-editable="true"] {
+            outline: 2px dashed var(--edit-highlight-color);
+            outline-offset: 2px;
+            background-color: rgba(255, 193, 7, 0.1);
+            cursor: text;
+            border-radius: 4px;
         }
 
-        .header-top{display:flex;justify-content:space-between;align-items:center;padding:15px 0;margin-bottom:15px}
-        .profile-initials{background-color:var(--wc);border-radius:18px;width:36px;height:36px;display:flex;justify-content:center;align-items:center;font-weight:600;font-size:16px;color:var(--g1);}
-        .header-icons{display:flex;gap:20px;font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);}.nav-tabs{display:flex;padding-bottom:15px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;gap: 13px; -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%); mask-image: linear-gradient(to right, black 90%, transparent 100%);}.nav-tabs::-webkit-scrollbar{display:none}.nav-tab{padding:8px 15px;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background-color .3s ease,color .3s ease;text-align:center;background-color:#13666c;color:var(--wc);}.nav-tab.active{background-color:var(--wc);color:var(--g1);}main{flex-grow:1;padding-bottom:calc(80px + var(--pb));box-sizing:border-box;position:relative;background-color:var(--g3);padding-top:20px; width: 100%;}.content-section{display:none;padding:0 20px;box-sizing: border-box;}.content-section.active-content{display:block}.account-title-outside{font-size:20px;font-weight:700;color:var(--wc);margin-top:0;margin-bottom:10px;padding-left:0;display:flex;justify-content:space-between;align-items:center;}.account-title-outside .toggle-icon{font-size:20px;color:var(--g1);text-shadow: -1px -1px 0 var(--wc), 1px -1px 0 var(--wc), -1px 1px 0 var(--wc), 1px 1px 0 var(--wc);margin-right:0; cursor: pointer;}
-        .account-summary{
-            background-color:var(--wc);
-            border-radius:16px;
-            padding:10px;
-            margin-bottom:25px;
-            box-shadow:var(--sh);
-            position:relative;
-            z-index:10;
+        /* --- HEADER --- */
+        .app-header {
+            background-color: var(--bper-green-dark);
+            color: var(--white);
+            padding: 0 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
         }
-        .account-summary .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-        .account-balance{font-size:32px;font-weight:700;color:var(--g2);margin-bottom:5px;display:flex;align-items:center; cursor: pointer;}
-        .account-balance .arrow-icon{font-size:20px;margin-left:8px;color:var(--g5)}.balance-info{font-size:13px;color:var(--g5);margin-bottom:20px}.iban-details{display:flex;justify-content:space-between;align-items:center;background-color:var(--g6);border-radius:10px;padding:12px 15px;font-size:14px;font-weight:500;color:var(--g2)}.iban-details .copy-icon{color:var(--g5);font-size:18px;cursor:pointer}.quick-actions{display:flex;justify-content:space-around;margin-bottom:15px; padding: 0;}.action-item{display:flex;flex-direction:column;align-items:center;text-align:center;flex:1;position:relative;}.action-item .icon-wrapper{background-color:var(--lc);border-radius:12px;width:60px;height:60px;display:flex;justify-content:center;align-items:center;margin-bottom:8px;font-size:24px;color:var(--ic)}.action-item span{font-size:13px;color:var(--wc);font-weight:500}.action-item:not(:last-child)::after {
+        .edit-mode-active .app-header { top: 38px; } /* Sposta header sotto il banner */
+
+        .app-header.scrolled {
+            background-color: rgba(0, 80, 87, 0.8);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; }
+        .profile-initials {
+            background-color: var(--white);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--bper-green-dark);
+            cursor: pointer;
+            user-select: none;
+        }
+        .header-icons { display: flex; gap: 22px; font-size: 22px; color: var(--white); }
+        .nav-tabs {
+            display: flex;
+            padding-bottom: 15px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            gap: 12px;
+        }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .nav-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all .3s ease;
+            background-color: var(--bper-green-medium);
+            color: var(--white);
+            border: 1px solid transparent;
+        }
+        .nav-tab.active { background-color: var(--white); color: var(--bper-green-dark); }
+        
+        /* --- MAIN CONTENT --- */
+        main {
+            flex-grow: 1;
+            padding: 20px 0 calc(95px + var(--safe-area-bottom));
+            background-color: var(--bper-green-dark);
+        }
+        .content-section { display: none; padding: 0 20px; }
+        .content-section.active-content { display: block; }
+        
+        /* Account Summary */
+        .account-title-outside {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .account-title-outside .toggle-icon { font-size: 22px; color: var(--white); cursor: pointer; }
+        .account-summary {
+            background-color: var(--white);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        .account-balance {
+            font-size: 34px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .account-balance .arrow-icon { font-size: 20px; margin-left: 10px; color: var(--text-light); }
+        .balance-info { font-size: 14px; color: var(--text-light); margin-bottom: 20px; }
+        .iban-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bper-green-background);
+            border-radius: 12px;
+            padding: 12px 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .iban-details .copy-icon { color: var(--bper-green-dark); font-size: 18px; cursor: pointer; }
+        
+        /* Quick Actions (Reverted to original style as requested) */
+        .quick-actions {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+            padding: 0;
+        }
+        .action-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+        .action-item .icon-wrapper {
+            background-color: var(--light-grey);
+            border-radius: 16px;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 28px;
+            color: var(--text-dark);
+        }
+        .action-item span {
+            font-size: 13px;
+            color: var(--white);
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        .action-item:not(:last-child)::after {
             content: '';
             position: absolute;
             right: 0;
@@ -75,529 +229,307 @@
             transform: translateY(-50%);
             height: 60%;
             width: 1px;
-            background-color: rgba(255, 255, 255, 0.3);
-        }.action-item .icon-wrapper.inverted-colors {
-            background-color: var(--wc);
-            color: var(--g1);
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .action-item .icon-wrapper.inverted-colors {
+            background-color: var(--white);
+            color: var(--bper-green-dark);
         }
 
+
+        /* --- TRANSACTIONS LIST --- */
+        .loader { text-align: center; padding: 40px 0; }
+        .loader .fa-spinner { font-size: 30px; color: var(--white); }
         .transactions-card-wrapper {
-            background-color: var(--wc);
-            border-top-left-radius: 16px;
-            border-top-right-radius: 16px;
-            border-bottom-left-radius: 16px;
-            border-bottom-right-radius: 16px;
-            padding: 0;
-            margin-bottom: 25px;
-            box-shadow: var(--sh);
-            color: var(--g2);
-            /* Padding for the top section containing the title */
-            padding-top: 15px;
-        }
-
-        /* Adjusted .section-title for consistent padding */
-        .transactions-card-wrapper .section-title {
-            margin: 0;
-            padding: 0 20px 10px 20px; /* Consistent left/right padding, and bottom margin */
-        }
-
-        .transactions .transaction-item {
-            background-color: var(--wc);
-            padding: 0;
-            margin-bottom: 0px;
-            display: flex;
-            flex-direction: column;
-            cursor: pointer;
-            transition: all .2s ease;
-            border-bottom: 1px solid var(--bc);
-            -webkit-user-select: none; /* Safari */
-            -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* IE10+/Edge */
-            user-select: none; /* Standard */
-        }
-
-        .transactions .transaction-item:last-child {
-            border-bottom: none;
-        }
-
-        .transactions .transaction-main-info {
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            width: 100%;
-            padding: 15px 20px;
-        }
-
-        .transactions .transaction-info {
-            display: flex;
-            align-items: center;
-            min-width: 0;
-            flex-shrink: 1;
-            flex-grow: 1;
-        }
-
-        .transactions .transaction-date {
-            font-size: 13px;
-            font-weight: 600;
-            text-align: center;
-            line-height: 1.2;
-            color: var(--g5);
-            margin-right: 15px;
-            width: 50px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .transactions .transaction-description {
-            flex-grow: 1;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .transactions .transaction-name {
-            font-weight: 600;
-            font-size: 15px;
-            margin-bottom: 3px;
-            letter-spacing: -.3px;
-            color: var(--g2);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .transactions .transaction-type {
-            font-size: 12px;
-            color: var(--g5);
-            letter-spacing: -.2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .transactions .transaction-status {
-            background-color: var(--bc);
-            color: var(--g5);
-            font-size: 10px;
-            padding: 4px 8px;
-            border-radius: 12px;
-            display: inline-block;
-            margin-top: 5px;
-            white-space: nowrap;
-        }
-
-        .transactions .transaction-amount {
-            font-size: 15px;
-            font-weight: 600;
-            white-space: nowrap;
-            flex-shrink: 0;
-            min-width: 85px;
-            text-align: right;
-            padding: 5px 8px;
-            padding-right: 20px; /* Aggiunto o modificato */
-            border-radius: 8px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            cursor: pointer;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-
-        .transactions .transaction-amount i {
-            font-size: 8px;
-            margin-left: 3px;
-            vertical-align: middle;
-        }
-
-        .transactions .transaction-amount.positive{color:var(--mp)}
-        .transactions .transaction-amount.negative{color:var(--mn)}
-
-        #carte-content, #finanziamenti-content, #investimenti-content, #mutui-content, #assicurazioni-content, #mobilita-content { padding: 0; }
-        .placeholder-section{display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100vh - 400px);text-align:center;color:var(--g5)}.placeholder-section i{font-size:60px;color:rgba(255, 255, 255, 0.2);margin-bottom:20px}.placeholder-section h3{font-size:24px;margin-bottom:10px;color:var(--wc)}.placeholder-section p{font-size:16px;line-height:1.5;max-width:80%;color:var(--wc)}
-
-        .bottom-nav{
-            position: fixed;
-            bottom: calc(15px + var(--pb));
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%; /* LARGHEZZA MODIFICATA */
-            background-color: var(--wc);
-            border-radius: 50px;
-            padding: 8px 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            z-index: 100;
-        }
-        .bottom-nav .nav-item{
-            display:flex;
-            flex: 1; /* Per far occupare lo spazio equamente */
-            flex-direction:column;
-            align-items:center;
-            font-size: 11px;
-            color:var(--ic);
-            text-decoration:none;
-            padding: 5px 10px;
-            transition:color .3s ease;
+            background-color: var(--white);
             border-radius: 20px;
+            padding: 20px 0 0 0;
+            box-shadow: var(--shadow);
+            color: var(--text-dark);
         }
-        .bottom-nav .nav-item i{
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-        .bottom-nav .nav-item.active{
-            color: var(--g1);
-        }
-
-        #modal-backdrop {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5);
-            z-index: 109; opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-        }
-        #modal-backdrop.active { opacity: 1; visibility: visible; }
-
-        #transaction-detail-popup {
-            background-color: var(--wc); color: var(--g2); position: fixed; left: 0; right: 0; bottom: 0; max-height: 90vh;
-            border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
-            z-index: 110; display: flex; flex-direction: column; transform: translateY(100%);
-            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); visibility: hidden; overflow: hidden;
-        }
-        #transaction-detail-popup.active { transform: translateY(0); visibility: visible; }
-
-        #transaction-detail-popup .popup-header {
-            padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--bc); flex-shrink: 0;
-        }
-        #transaction-detail-popup .popup-header .popup-title { font-size: 18px; font-weight: 700; }
-        #transaction-detail-popup .popup-header button {
-            font-size: 14px; color: var(--g1); cursor: pointer; background: var(--g4);
-            border: none; border-radius: 8px; padding: 6px 12px; font-weight: 600;
-        }
-        #transaction-detail-popup .popup-header .close-popup-btn {
-            font-size: 24px; color: var(--g5); background: none; padding: 0;
-        }
-
-        .transaction-detail-wrapper {
-            flex-grow: 1; padding: 20px; padding-bottom: 30px; overflow-y: auto;
-            background-color: var(--wc); color: var(--g2);
-            -webkit-user-select: none; /* Safari */
-            -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* IE10+/Edge */
-            user-select: none; /* Standard */
-        }
-
-        .detail-amount { font-size: 32px; font-weight: 700; margin-bottom: 5px; color: var(--g2); }
-        .detail-amount.negative { color: var(--mn); }
-        .detail-amount.positive { color: var(--mp); }
-        .detail-type { font-size: 15px; font-weight: 600; color: var(--g5); margin-bottom: 25px; }
-
-        .detail-info-block {
-            background-color: var(--g6); border-radius: 10px; padding: 15px;
-            margin-bottom: 20px; color: var(--g2);
-        }
-        .detail-info-block h3 {
-            font-size: 14px; font-weight: 700; color: var(--g2);
-            margin-top: 0; margin-bottom: 10px;
-        }
-        .detail-info-block p { font-size: 13px; margin: 5px 0; line-height: 1.4; color: var(--g5); }
-
-        .detail-date-row {
-            display: flex; justify-content: space-between; padding: 15px 0;
-            border-bottom: 1px solid var(--bc); font-size: 14px; color: var(--g2);
-        }
-        .detail-date-row:last-of-type { border-bottom: none; }
-        .detail-date-row span:first-child { font-weight: 500; color: var(--g5); }
-        .detail-date-row span:last-child { font-weight: 600; }
-
-        .form-group { margin-bottom: 15px; }
-        .form-group label {
-            display: block; font-size: 13px; font-weight: 600;
-            color: var(--g5); margin-bottom: 5px;
-        }
-        .form-group input {
-            width: 100%; padding: 12px; font-size: 15px; border-radius: 8px;
-            border: 1px solid var(--bc); background-color: var(--g6);
-            box-sizing: border-box;
-        }
-        .form-actions button {
-            width: 100%; padding: 15px; font-size: 16px; font-weight: 700;
-            border-radius: 12px; border: none; background-color: var(--g1);
-            color: var(--wc); cursor: pointer;
-        }
-
-        .toast-notification {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background-color: rgba(0,0,0,0.8); color: white; padding: 10px 20px;
-            border-radius: 20px; z-index: 120; opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s; visibility: hidden;
-        }
-        .toast-notification.show { opacity: 1; visibility: visible; bottom: 110px; }
-
-        #invisible-edit-button {
-            position: fixed;
-            top: 50px;
-            right: 0;
-            left: auto;
-            transform: none;
-            width: 25px;
-            height: 10px;
-            z-index: 1000;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.3s ease, background-color 0.3s ease;
-        }
-
-        /* MODIFIED: .view-all-container moved inside .transactions-card-wrapper, after .transactions */
-        .view-all-container {
-            text-align: center; /* Center the button */
-            padding: 15px 20px; /* Add padding for visual separation */
-            /* Add top border to visually separate from transactions */
-            border-top: 1px solid var(--bc);
-            margin-top: 0; /* No top margin needed with padding */
-            border-bottom-left-radius: 16px; /* Match wrapper border radius */
-            border-bottom-right-radius: 16px; /* Match wrapper border radius */
-        }
-
-        /* MODIFIED: Styles for the "Visualizza tutto" button (now just green text) */
-        .view-all-button {
-            background-color: transparent; /* Remove green background */
-            color: var(--g1); /* Set text color to green */
-            border: none; /* Ensure no border */
-            padding: 0; /* Remove padding */
-            border-radius: 0; /* Remove border radius */
+        .section-title { font-size: 18px; font-weight: 700; padding: 0 20px 15px 20px; margin: 0; }
+        .transaction-group-header {
             font-size: 14px;
             font-weight: 600;
-            cursor: pointer;
-            transition: color 0.3s ease; /* Transition for text color only */
-            max-width: 100%;
-            width: auto;
-            white-space: nowrap;
-        }
-
-        .view-all-button:hover {
-            color: #003a40; /* Slightly darker green on hover */
-        }
-
-        /* Stili per la nuova schermata "Visualizza tutto" */
-        #all-transactions-content {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--wc); /* Changed to white */
-            z-index: 95; /* Sopra la main content ma sotto il header principale se sticky */
-            transform: translateX(100%); /* Inizialmente fuori schermo a destra */
-            transition: transform 0.3s ease-in-out;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto; /* Per lo scrolling delle transazioni */
-            padding-bottom: calc(80px + var(--pb)); /* Spazio per la bottom nav se rimane */
-            box-sizing: border-box;
-        }
-
-        #all-transactions-content.active {
-            transform: translateX(0); /* Entra in vista */
-        }
-
-        .all-transactions-header {
-            background-color: var(--wc); /* Changed to white */
-            color: var(--g1); /* Changed to green */
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .all-transactions-header .back-arrow {
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .all-transactions-header .title-and-balance {
-            /* flex-grow: 1; Removed to allow centering */
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Centered horizontally */
-            text-align: center; /* Ensures text inside is centered */
-            position: absolute; /* Position absolutely to center it relative to parent */
-            left: 50%;
-            transform: translateX(-50%); /* Adjust for absolute positioning to truly center */
-            width: calc(100% - 100px); /* Adjust width to not overlap back arrow */
-        }
-
-        .all-transactions-header .title {
-            font-size: 18px;
-            font-weight: 700;
+            color: var(--text-light);
+            background-color: var(--bper-green-background);
+            padding: 8px 20px;
             margin: 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
         }
-
-        .all-transactions-header .subtitle {
-            font-size: 13px;
-            opacity: 0.8;
-        }
-
-        .search-filter-section {
-            background-color: var(--wc); /* Changed to white to match new background */
-            padding: 15px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            position: sticky;
-            top: 60px; /* Altezza dell'header sopra */
-            z-index: 5;
-            padding-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Lighter shadow for this section */
-        }
-
-        .search-bar-container {
-            background-color: var(--g6); /* Changed from --wc to --g6 for contrast on white background */
-            border-radius: 12px;
+        #main-transactions-list .transaction-group-header:first-child { border-top: none; }
+        .transaction-item {
             display: flex;
             align-items: center;
-            padding: 10px 15px;
-            box-shadow: none; /* Removed shadow, relying on background color for definition */
-            color: var(--g5);
-            border: 1px solid var(--bc); /* Added a subtle border */
-        }
-
-        .search-bar-container i {
-            margin-right: 10px;
-            font-size: 18px;
-        }
-
-        .search-bar-container input {
-            flex-grow: 1;
-            border: none;
-            outline: none;
-            font-size: 16px;
-            background: transparent;
-            color: var(--g2);
-        }
-        .search-bar-container input::placeholder {
-            color: var(--g5);
-            opacity: 0.7;
-        }
-
-        .filter-icons {
-            display: flex;
-            gap: 15px;
-            margin-left: auto; /* Push icons to the right */
-        }
-        .filter-icons i {
-            font-size: 20px;
+            padding: 15px 20px;
             cursor: pointer;
-            color: var(--g1);
-            text-shadow: none; /* Removed text-shadow for better look on white background */
+            transition: background-color .2s ease;
+            border-bottom: 1px solid var(--border-color);
         }
-
-        .all-transactions-tabs {
+        .transaction-item:last-child { border-bottom: none; }
+        .transaction-item:hover { background-color: var(--bper-green-background); }
+        .transaction-item .category-icon {
+            font-size: 18px;
+            color: var(--white);
+            background-color: var(--bper-green-medium);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             display: flex;
-            background-color: var(--g6); /* Changed from --wc to --g6 for contrast */
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: none; /* Removed shadow */
-            border: 1px solid var(--bc); /* Added subtle border */
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
         }
-
-        .all-transactions-tabs .tab {
-            flex: 1;
-            padding: 12px 0;
+        .transaction-info { flex-grow: 1; min-width: 0; }
+        .transaction-name {
+            font-weight: 600;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        .transaction-type {
+            font-size: 13px;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .transaction-status {
+            font-size: 11px;
+            background: var(--light-grey);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .transaction-amount {
+            font-size: 16px;
+            font-weight: 700;
+            white-space: nowrap;
+            text-align: right;
+        }
+        .transaction-amount.positive { color: #2e7d32; } /* Green for income */
+        .transaction-amount.negative { color: var(--text-dark); }
+        .view-all-container {
             text-align: center;
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .view-all-button {
+            background: none;
+            border: none;
+            color: var(--bper-green-dark);
             font-size: 15px;
             font-weight: 600;
-            color: var(--g5);
             cursor: pointer;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            border-right: 1px solid var(--bc);
-        }
-        .all-transactions-tabs .tab:last-child {
-            border-right: none;
-        }
-        .all-transactions-tabs .tab.active {
-            background-color: var(--g1);
-            color: var(--wc);
         }
 
-        .all-transactions-list-container {
-            padding: 0 20px;
-            margin-top: 20px; /* Spazio tra filtri e lista */
+        /* --- PLACEHOLDER FOR OTHER SECTIONS --- */
+        .placeholder-section {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: calc(100vh - 400px); text-align: center; color: var(--white);
         }
-
-        .all-transactions-list-container .section-title {
-            margin-top: 0;
-            padding-bottom: 10px;
-            color: var(--g2); /* Changed to g2 to be visible on white background */
-            font-size: 16px;
-            font-weight: 700;
+        .placeholder-section i { font-size: 50px; color: rgba(255, 255, 255, 0.3); margin-bottom: 20px; }
+        .placeholder-section h3 { font-size: 22px; margin-bottom: 10px; }
+        .placeholder-section p { font-size: 16px; line-height: 1.5; max-width: 80%; opacity: 0.8; }
+        
+        /* --- ALL TRANSACTIONS SCREEN --- */
+        #all-transactions-content {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bper-green-background);
+            z-index: 200;
+            transform: translateX(100%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column;
         }
-
-        /* Override specific transaction item styles for full screen */
+        .edit-mode-active #all-transactions-content { top: 38px; height: calc(100% - 38px); }
+        #all-transactions-content.active { transform: translateX(0); }
+        .all-transactions-header {
+            background-color: var(--white);
+            color: var(--text-dark);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            position: sticky; top: 0; z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .all-transactions-header .back-arrow { font-size: 24px; cursor: pointer; padding-right: 15px; }
+        .all-transactions-header .title-and-balance { text-align: center; flex-grow: 1; }
+        .all-transactions-header .title { font-size: 18px; font-weight: 700; margin: 0; }
+        .all-transactions-header .subtitle { font-size: 13px; color: var(--text-light); }
+        .search-filter-section {
+            background-color: var(--white);
+            padding: 15px 20px;
+            position: sticky; top: 64px; /* Header height */ z-index: 9;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .search-bar-container {
+            display: flex; align-items: center; background-color: var(--bper-green-background);
+            border-radius: 12px; padding: 0 15px;
+        }
+        .search-bar-container i.fa-search { color: var(--text-light); }
+        .search-bar-container input {
+            flex-grow: 1; border: none; outline: none; font-size: 16px;
+            background: transparent; color: var(--text-dark); height: 44px; padding: 0 10px;
+        }
+        .clear-search-btn {
+            background: var(--text-light); color: var(--white); border: none; border-radius: 50%;
+            width: 20px; height: 20px; font-size: 12px; cursor: pointer;
+            display: none; /* Hidden by default */
+        }
+        .all-transactions-tabs {
+            display: flex; background-color: var(--bper-green-background);
+            border-radius: 12px; overflow: hidden; margin-top: 15px;
+        }
+        .all-transactions-tabs .tab {
+            flex: 1; padding: 12px 5px; text-align: center; font-size: 15px;
+            font-weight: 600; color: var(--text-light); cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .all-transactions-tabs .tab.active { background-color: var(--bper-green-dark); color: var(--white); }
+        .all-transactions-list-container { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .no-results-message {
+            text-align: center; padding: 50px 20px; color: var(--text-light); display: none;
+        }
+        .no-results-message i { font-size: 40px; margin-bottom: 15px; }
+        .no-results-message p { font-size: 16px; font-weight: 500; }
         #all-transactions-list .transaction-item {
-            border-radius: 16px; /* Arrotonda anche in fondo */
-            margin-bottom: 15px; /* Spazio tra le card */
-            border: none; /* Rimuovi bordo se ogni item è una card separata */
-            box-shadow: var(--sh); /* Aggiungi ombra per farle sembrare card */
+             background-color: var(--white); border-radius: 16px;
+             margin-bottom: 12px; box-shadow: var(--shadow);
+             border-bottom: none;
         }
-        #all-transactions-list .transaction-item:last-child {
-            margin-bottom: 0;
+        
+        /* --- BOTTOM NAV --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+            padding: 8px 10px var(--safe-area-bottom);
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            z-index: 150;
         }
-        #all-transactions-list .transaction-main-info {
-            padding-right: 0; /* Rimuovi padding extra se non serve */
+        .bottom-nav .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            font-size: 11px; color: var(--text-light); text-decoration: none;
+            padding: 5px 10px; transition: color .3s ease;
         }
-        #all-transactions-list .transaction-amount {
-            padding-right: 15px; /* Ri-aggiungi padding qui */
+        .bottom-nav .nav-item i { font-size: 22px; margin-bottom: 4px; }
+        .bottom-nav .nav-item.active { color: var(--bper-green-dark); }
+
+        /* --- TRANSACTION DETAIL POPUP --- */
+        #modal-backdrop {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 299; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease;
         }
+        .edit-mode-active #modal-backdrop { z-index: 999; }
+        #modal-backdrop.active { opacity: 1; visibility: visible; }
+        #transaction-detail-popup {
+            background-color: var(--bper-green-background);
+            position: fixed; left: 0; right: 0; bottom: 0;
+            max-height: 90vh; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.15); z-index: 300;
+            display: flex; flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .edit-mode-active #transaction-detail-popup { z-index: 1000; }
+        #transaction-detail-popup.active { transform: translateY(0); }
+        .popup-handle {
+            width: 40px; height: 5px; background-color: var(--border-color);
+            border-radius: 2.5px; margin: 10px auto;
+        }
+        .transaction-detail-wrapper {
+            flex-grow: 1; padding: 0 20px 30px 20px; overflow-y: auto;
+        }
+        .detail-header { text-align: center; padding-bottom: 20px; }
+        .detail-category-icon {
+            width: 60px; height: 60px; font-size: 28px; margin: 0 auto 15px auto;
+            color: var(--white); background-color: var(--bper-green-medium);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+        .detail-amount { font-size: 36px; font-weight: 700; }
+        .detail-name { font-size: 18px; font-weight: 500; margin-top: 5px; }
+        .detail-info-block {
+            background-color: var(--white); border-radius: 16px;
+            padding: 15px; margin-top: 20px;
+        }
+        .detail-info-row {
+            display: flex; justify-content: space-between; font-size: 15px;
+            padding: 12px 0; border-bottom: 1px solid var(--border-color);
+        }
+        .detail-info-row:last-child { border-bottom: none; }
+        .detail-info-row span:first-child { color: var(--text-light); }
+        .detail-info-row span:last-child { font-weight: 600; color: var(--text-dark); }
+        
+        /* --- TOAST NOTIFICATION --- */
+        .toast-notification {
+            position: fixed;
+            bottom: calc(95px + var(--safe-area-bottom)); /* Above bottom nav */
+            left: 50%;
+            transform: translate(-50%, 20px);
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .toast-notification.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
     </style>
 </head>
 <body>
-    <div id="invisible-edit-button"></div>
+
+    <div id="edit-mode-banner">
+        🕵️‍♂️ Modalità Modifica Attiva
+        <button id="exit-edit-mode">Esci</button>
+    </div>
 
     <header class="app-header">
         <div class="header-top">
             <div class="profile-initials">MS</div>
             <div class="header-icons">
-                <i class="fas fa-bell"></i>
-                <i class="fas fa-question-circle"></i>
+                <i class="fa-solid fa-bell"></i>
+                <i class="fa-solid fa-circle-question"></i>
             </div>
         </div>
         <nav class="nav-tabs">
-             <div class="nav-tab active" data-target="conti-content">Conti</div>
+            <div class="nav-tab active" data-target="conti-content">Conti</div>
             <div class="nav-tab" data-target="carte-content">Carte</div>
             <div class="nav-tab" data-target="finanziamenti-content">Finanziamenti</div>
             <div class="nav-tab" data-target="investimenti-content">Investimenti</div>
             <div class="nav-tab" data-target="mutui-content">Mutui</div>
             <div class="nav-tab" data-target="assicurazioni-content">Assicurazioni</div>
-            <div class="nav-tab" data-target="mobilita-content">Mobilità</div>
         </nav>
     </header>
-    <main>
+
+    <main id="main-content">
         <div id="conti-content" class="content-section active-content">
             <h3 class="account-title-outside">
-                <span>Conto 3657761</span>
-                <i id="toggle-all-visibility" class="fas fa-eye-slash toggle-icon"></i>
+                <span data-editable="true" data-field="account-title">Conto 3657761</span>
+                <i id="toggle-all-visibility" class="fa-solid fa-eye-slash toggle-icon"></i>
             </h3>
             <div class="account-summary">
-                <div class="header"></div>
                 <div class="account-balance">
-                    <span id="current-balance" data-balance="161.46">161,46&nbsp;€</span> <i class="fas fa-chevron-right arrow-icon"></i>
+                    <span id="current-balance" data-editable="true" data-field="balance" data-balance="161.46">161,46&nbsp;€</span>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
                 </div>
-                <p class="balance-info">Saldo disponibile al 09/07/2025<br><strong>Sy Mouhamadou</strong></p>
+                <p class="balance-info">Saldo disponibile al <span id="balance-date"></span><br><strong data-editable="true" data-field="account-holder">Sy Mouhamadou</strong></p>
                 <div class="iban-details">
-                    <span id="iban-text">IT25C0538753350000003657761</span>
-                    <i id="copy-iban-button" class="fas fa-arrow-up-from-bracket copy-icon"></i>
+                    <span id="iban-text" data-editable="true" data-field="iban">IT25 C053 8753 3500 0000 3657761</span>
+                    <i id="copy-iban-button" class="fa-solid fa-arrow-up-from-bracket copy-icon"></i>
                 </div>
             </div>
+            
             <div class="quick-actions">
                 <div class="action-item">
                     <div class="icon-wrapper inverted-colors"><i class="fas fa-hand-holding-dollar"></i></div>
@@ -612,39 +544,40 @@
                     <span>Cbill e<br>PagoPA</span>
                 </div>
             </div>
-            <div class="transactions-card-wrapper">
+            
+            <div class="loader">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+
+            <div class="transactions-card-wrapper" style="display: none;">
                 <h2 class="section-title">ULTIMI MOVIMENTI</h2>
-                <div class="transactions"></div>
+                <div class="transactions" id="main-transactions-list"></div>
                 <div class="view-all-container">
                     <button id="view-all-transactions-btn" class="view-all-button">Visualizza tutto</button>
                 </div>
             </div>
         </div>
 
-        <section id="carte-content" class="content-section"><div class="placeholder-section"><i class="fas fa-credit-card"></i><h3>Sezione Carte</h3><p>La gestione delle tue carte sarà presto disponibile qui.</p></div></section>
-        <section id="finanziamenti-content" class="content-section"><div class="placeholder-section"><i class="fas fa-chart-line"></i><h3>Sezione Finanziamenti</h3><p>I tuoi finanziamenti appariranno in questa sezione.</p></div></section>
-        <section id="investimenti-content" class="content-section"><div class="placeholder-section"><i class="fas fa-seedling"></i><h3>Sezione Investimenti</h3><p>Monitora i tuoi investimenti da questa pagina.</p></div></section>
-        <section id="mutui-content" class="content-section"><div class="placeholder-section"><i class="fas fa-home"></i><h3>Sezione Mutui</h3><p>Tutti i dettagli sui tuoi mutui verranno mostrati qui.</p></div></section>
-        <section id="assicurazioni-content" class="content-section"><div class="placeholder-section"><i class="fas fa-shield-alt"></i><h3>Sezione Assicurazioni</h3><p>Visualizza e gestisci le tue polizze assicurative.</p></div></section>
-        <section id="mobilita-content" class="content-section"><div class="placeholder-section"><i class="fas fa-car"></i><h3>Sezione Mobilità</h3><p>Servizi legati alla mobilità saranno disponibili qui.</p></div></section>
+        <section id="carte-content" class="content-section"><div class="placeholder-section"><i class="fa-solid fa-credit-card"></i><h3>Le tue Carte</h3><p>Gestisci limiti, pagamenti e sicurezza delle tue carte.</p></div></section>
+        <section id="finanziamenti-content" class="content-section"><div class="placeholder-section"><i class="fa-solid fa-chart-line"></i><h3>Finanziamenti</h3><p>Controlla lo stato dei tuoi prestiti e finanziamenti.</p></div></section>
+        <section id="investimenti-content" class="content-section"><div class="placeholder-section"><i class="fa-solid fa-seedling"></i><h3>Investimenti</h3><p>Monitora l'andamento del tuo portafoglio.</p></div></section>
+        <section id="mutui-content" class="content-section"><div class="placeholder-section"><i class="fa-solid fa-house-chimney"></i><h3>Mutui</h3><p>Visualizza i dettagli e le rate del tuo mutuo.</p></div></section>
+        <section id="assicurazioni-content" class="content-section"><div class="placeholder-section"><i class="fa-solid fa-shield-halved"></i><h3>Assicurazioni</h3><p>Gestisci le tue polizze e i tuoi sinistri.</p></div></section>
     </main>
 
     <section id="all-transactions-content">
         <div class="all-transactions-header">
-            <i class="fas fa-arrow-left back-arrow" id="back-to-conti"></i>
+            <i class="fa-solid fa-arrow-left back-arrow" id="back-to-conti"></i>
             <div class="title-and-balance">
-                <h2 class="title">Ultimi movimenti</h2>
-                <span class="subtitle">Conto 3657761 <span id="all-transactions-balance-display">-4,32 €</span></span>
+                <h2 class="title">Movimenti Conto</h2>
+                <span class="subtitle">Conto 3657761</span>
             </div>
         </div>
         <div class="search-filter-section">
             <div class="search-bar-container">
-                <i class="fas fa-search"></i>
-                <input type="text" id="transaction-search-input" placeholder="Cerca movimenti">
-                <div class="filter-icons">
-                    <i class="fas fa-filter"></i>
-                    <i class="fas fa-download"></i>
-                </div>
+                <i class="fa-solid fa-search"></i>
+                <input type="text" id="transaction-search-input" placeholder="Cerca per nome o importo">
+                <button class="clear-search-btn">&times;</button>
             </div>
             <div class="all-transactions-tabs">
                 <div class="tab active" data-filter="all">Tutti</div>
@@ -653,1134 +586,378 @@
             </div>
         </div>
         <div class="all-transactions-list-container">
-            <h2 class="section-title">I TUOI MOVIMENTI</h2>
-            <div id="all-transactions-list" class="transactions">
-                </div>
+            <div id="all-transactions-list" class="transactions"></div>
+            <div class="no-results-message">
+                <i class="fa-solid fa-box-open"></i>
+                <p>Nessun movimento trovato</p>
+            </div>
         </div>
     </section>
 
     <nav class="bottom-nav">
-        <a href="#" class="nav-item active">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="#" class="nav-item">
-            <i class="fas fa-exchange-alt"></i>
-            <span>Paga</span>
-        </a>
-        <a href="#" class="nav-item">
-            <i class="fas fa-th"></i>
-            <span>Prodotti</span>
-        </a>
-        <a href="#" class="nav-item">
-            <i class="fas fa-headset"></i>
-            <span>Hey BPER</span>
-        </a>
+        <a href="#" class="nav-item active"><i class="fa-solid fa-house"></i><span>Home</span></a>
+        <a href="#" class="nav-item"><i class="fa-solid fa-arrows-rotate"></i><span>Paga</span></a>
+        <a href="#" class="nav-item"><i class="fa-solid fa-qrcode"></i><span>QR</span></a>
+        <a href="#" class="nav-item"><i class="fa-solid fa-wallet"></i><span>Prodotti</span></a>
+        <a href="#" class="nav-item"><i class="fa-solid fa-bars"></i><span>Menu</span></a>
     </nav>
 
     <div id="modal-backdrop"></div>
-
     <div id="transaction-detail-popup">
-        <div class="popup-header">
-            <span class="popup-title">Dettaglio Movimento</span>
-            <div>
-                 <button class="close-popup-btn">&times;</button>
-            </div>
-        </div>
+        <div class="popup-handle"></div>
         <div class="transaction-detail-wrapper"></div>
     </div>
+    <div id="toast-notification" class="toast-notification">Testo del toast</div>
 
-    <div id="toast-notification" class="toast-notification">IBAN copiato!</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    // --- DATA ---
+    const categoryIcons = {
+        'payment': 'fa-solid fa-credit-card',
+        'transfer_in': 'fa-solid fa-arrow-down',
+        'transfer_out': 'fa-solid fa-arrow-up',
+        'salary': 'fa-solid fa-briefcase',
+        'groceries': 'fa-solid fa-cart-shopping',
+        'fuel': 'fa-solid fa-gas-pump',
+        'cash': 'fa-solid fa-money-bill-wave',
+        'bills': 'fa-solid fa-file-invoice-dollar',
+        'health': 'fa-solid fa-prescription-bottle-medical',
+        'loan': 'fa-solid fa-money-check-dollar',
+        'phone': 'fa-solid fa-mobile-screen-button',
+        'car_wash': 'fa-solid fa-car-wash',
+        'restaurant': 'fa-solid fa-utensils',
+        'default': 'fa-solid fa-receipt'
+    };
 
-        let transactionsData = [
-            { id: 'tx556677889', accountingDate: '23/06/2025', currencyDate: '23/06/2025', name: 'VERSAMENTO DA ATM AZIEN...', type: 'VERSAMENTO', amount: 20.00, status: null, details: 'Versamento contanti presso ATM'},
-            { id: 'tx123456789', accountingDate: '22/06/2025', currencyDate: '22/06/2025', name: 'LIDL 148 CLUSONE 24023 ITA...', type: 'PAGAMENTO', amount: -5.28, status: 'Da contabilizzare', details: 'Pagamento POS per spesa alimentare'},
-            { id: 'tx987654321a', accountingDate: '21/06/2025', currencyDate: '21/06/2025', name: 'ENERGY SELF ALBINO ALBINO I...', type: 'PAGAMENTO', amount: -4.77, status: 'Da contabilizzare', details: 'Pagamento carburante'},
-            { id: 'tx112233445', accountingDate: '20/06/2025', currencyDate: '20/06/2025', name: 'LIDL 2079 BERGAMO ITA Opera...', type: 'PAGAMENTO', amount: -3.28, status: null, details: 'Pagamento POS'},
-            { id: 'tx123456789b', accountingDate: '19/06/2025', currencyDate: '19/06/2025', name: 'ALDI S.R.L. PEDRENGO ITA Ope...', type: 'PAGAMENTO', amount: -4.24, status: null, details: 'Pagamento POS'},
-            { id: 'tx987654321c', accountingDate: '17/06/2025', currencyDate: '17/06/2025', name: 'GIROCONTO DA SY MOUHAMADOU', type: 'GIROCONTO', amount: 150.00, status: null, details: 'Giroconto in entrata'},
-            // Più transazioni per testare "Visualizza tutto"
-            { id: 'tx10001', accountingDate: '16/06/2025', currencyDate: '16/06/2025', name: 'PRELIEVO ATM CENTRO', type: 'PRELIEVO', amount: -50.00, status: null, details: 'Prelievo contanti ATM'},
-            { id: 'tx10002', accountingDate: '15/06/2025', currencyDate: '15/06/2025', name: 'AMAZON ITALIA', type: 'PAGAMENTO E-COMMERCE', amount: -25.99, status: null, details: 'Acquisto online'},
-            { id: 'tx10003', accountingDate: '14/06/2025', currencyDate: '14/06/2025', name: 'ACCREDITO STIPENDIO', type: 'ACCREDITO', amount: 1200.00, status: null, details: 'Stipendio mensile'},
-            {
-    "id": "tx00001",
-    "accountingDate": "04/07/2025",
-    "currencyDate": "04/07/2025",
-    "name": "LIDL 148 CLUSONE ITA Operaz...",
-    "type": "PAGAMENTO",
-    "amount": -3.58,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00002",
-    "accountingDate": "03/07/2025",
-    "currencyDate": "03/07/2025",
-    "name": "COMPETENZE SPESE ED ONERI",
-    "type": "COMPETENZE",
-    "amount": -5.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00003",
-    "accountingDate": "30/06/2025",
-    "currencyDate": "30/06/2025",
-    "name": "AMP07 CLUSONE BG Operazio...",
-    "type": "PAGO BANCOMAT",
-    "amount": -11.60,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00004",
-    "accountingDate": "25/06/2025",
-    "currencyDate": "25/06/2025",
-    "name": "RATA PRESTITO BSS BIBANC...",
-    "type": "RATA FINANZIAMENTO",
-    "amount": -145.60,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00005",
-    "accountingDate": "24/06/2025",
-    "currencyDate": "24/06/2025",
-    "name": "LIDL 148 CLUSONE ITA Operazi...",
-    "type": "PAGAMENTO",
-    "amount": -5.28,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00006",
-    "accountingDate": "24/06/2025",
-    "currencyDate": "24/06/2025",
-    "name": "ENERGY SELF ALBINO ALBINO I...",
-    "type": "PAGAMENTO",
-    "amount": -4.77,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00007",
-    "accountingDate": "24/06/2025",
-    "currencyDate": "24/06/2025",
-    "name": "LIDL 2079 BERGAMO ITA Opera...",
-    "type": "PAGAMENTO",
-    "amount": -3.28,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00008",
-    "accountingDate": "23/06/2025",
-    "currencyDate": "23/06/2025",
-    "name": "VERSAMENTO DA ATM AZIEN...",
-    "type": "VERSAMENTO",
-    "amount": 20.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00009",
-    "accountingDate": "19/06/2025",
-    "currencyDate": "19/06/2025",
-    "name": "ALDI S.R.L. PEDRENGO ITA Ope...",
-    "type": "PAGAMENTO",
-    "amount": -4.24,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00010",
-    "accountingDate": "17/06/2025",
-    "currencyDate": "17/06/2025",
-    "name": "HO-MOBILE.IT - RICARIC MILA...",
-    "type": "PAGAMENTO",
-    "amount": -10.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00011",
-    "accountingDate": "16/06/2025",
-    "currencyDate": "16/06/2025",
-    "name": "AUTOLAVAGGIO CASSA 2 CLUS...",
-    "type": "PAGAMENTO",
-    "amount": -5.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00012",
-    "accountingDate": "16/06/2025",
-    "currencyDate": "16/06/2025",
-    "name": "VERSAMENTO DA ATM AZIEN...",
-    "type": "VERSAMENTO",
-    "amount": 150.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00013",
-    "accountingDate": "16/06/2025",
-    "currencyDate": "16/06/2025",
-    "name": "BELLA PIZZA KEBAP BERGAMO...",
-    "type": "PAGO BANCOMAT",
-    "amount": -5.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00014",
-    "accountingDate": "12/06/2025",
-    "currencyDate": "12/06/2025",
-    "name": "0208-ITALMARK BERGAMO BE...",
-    "type": "PAGO BANCOMAT",
-    "amount": -1.86,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00015",
-    "accountingDate": "12/06/2025",
-    "currencyDate": "12/06/2025",
-    "name": "PV1410 FIORANO AL SERIO Op...",
-    "type": "PAGO BANCOMAT",
-    "amount": -25.41,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00016",
-    "accountingDate": "12/06/2025",
-    "currencyDate": "12/06/2025",
-    "name": "LIDL 2079 BERGAMO ITA Opera...",
-    "type": "PAGAMENTO",
-    "amount": -2.79,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00017",
-    "accountingDate": "12/06/2025",
-    "currencyDate": "12/06/2025",
-    "name": "Prelievo atm c/o:CLUSONE Op...",
-    "type": "PRELIEVO",
-    "amount": -20.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00018",
-    "accountingDate": "11/06/2025",
-    "currencyDate": "11/06/2025",
-    "name": "Prelievo atm c/o:CLUSONE O...",
-    "type": "PRELIEVO",
-    "amount": -400.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00019",
-    "accountingDate": "10/06/2025",
-    "currencyDate": "10/06/2025",
-    "name": "EMOLUMENTI o/c: TERYA S...",
-    "type": "STIPENDIO",
-    "amount": 1424.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00020",
-    "accountingDate": "10/06/2025",
-    "currencyDate": "10/06/2025",
-    "name": "COMMISSIONI BONIFICI A FAVO...",
-    "type": "COMMISSIONE",
-    "amount": -5.50,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00021",
-    "accountingDate": "10/06/2025",
-    "currencyDate": "10/06/2025",
-    "name": "DISPOSIZIONE A FAVORE DI...",
-    "type": "BONIFICO",
-    "amount": -152.36,
-    "status": null,
-    "details": "Rateizza"
-  },
-  {
-    "id": "tx00022",
-    "accountingDate": "10/06/2025",
-    "currencyDate": "10/06/2025",
-    "name": "PREMI ASSICURATIVI POLIZ...",
-    "type": "Rateizza",
-    "amount": -776.00,
-    "status": null,
-    "details": "Rateizza"
-  },
-  {
-    "id": "tx00023",
-    "accountingDate": "05/06/2025",
-    "currencyDate": "05/06/2025",
-    "name": "RATA FINANZIAMENTO",
-    "type": "RATA FINANZIAMENTO",
-    "amount": -10.00,
-    "status": null,
-    "details": "Da contabilizzare"
-  },
-  {
-    "id": "tx00024",
-    "accountingDate": "19/05/2025",
-    "currencyDate": "19/05/2025",
-    "name": "Prelievo atm c/o:CLUSONE Op...",
-    "type": "PRELIEVO",
-    "amount": -150.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00025",
-    "accountingDate": "16/05/2025",
-    "currencyDate": "16/05/2025",
-    "name": "COMMISSIONI BONIFICI Bonific...",
-    "type": "COMMISSIONE",
-    "amount": -1.49,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00026",
-    "accountingDate": "16/05/2025",
-    "currencyDate": "16/05/2025",
-    "name": "DISPOSIZIONE a favore di Mo...",
-    "type": "BONIFICO",
-    "amount": -149.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00027",
-    "accountingDate": "13/05/2025",
-    "currencyDate": "13/05/2025",
-    "name": "Prelievo atm c/o:CLUSONE Op...",
-    "type": "PRELIEVO",
-    "amount": -70.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00028",
-    "accountingDate": "13/05/2025",
-    "currencyDate": "13/05/2025",
-    "name": "Prelievo atm c/o:CLUSONE O...",
-    "type": "PRELIEVO",
-    "amount": -850.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00029",
-    "accountingDate": "13/05/2025",
-    "currencyDate": "13/05/2025",
-    "name": "COMM. BON. ISTANTANEO a fav...",
-    "type": "COMMISSIONE",
-    "amount": -1.49,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00030",
-    "accountingDate": "13/05/2025",
-    "currencyDate": "13/05/2025",
-    "name": "DISPOSIZIONE BONIFICO IS...",
-    "type": "BONIFICO",
-    "amount": -266.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00031",
-    "accountingDate": "12/05/2025",
-    "currencyDate": "12/05/2025",
-    "name": "EMOLUMENTI o/c: TERYA...",
-    "type": "STIPENDIO",
-    "amount": 1504.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00032",
-    "accountingDate": "05/05/2025",
-    "currencyDate": "05/05/2025",
-    "name": "PREMI ASSICURATIVI POLIZZ...",
-    "type": "PREMI ASSICURATIVI",
-    "amount": -12.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00033",
-    "accountingDate": "28/04/2025",
-    "currencyDate": "28/04/2025",
-    "name": "RATA PRESTITO BSS BIBANC...",
-    "type": "RATA FINANZIAMENTO",
-    "amount": -145.60,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00034",
-    "accountingDate": "28/04/2025",
-    "currencyDate": "28/04/2025",
-    "name": "Prelievo atm c/o:CLUSONE O...",
-    "type": "PRELIEVO",
-    "amount": -160.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00035",
-    "accountingDate": "14/04/2025",
-    "currencyDate": "14/04/2025",
-    "name": "COLONNINA SELF 2 CLUSONE...",
-    "type": "PAGAMENTO",
-    "amount": -25.08,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00036",
-    "accountingDate": "11/04/2025",
-    "currencyDate": "11/04/2025",
-    "name": "Prelievo atm c/o:CLUSONE O...",
-    "type": "PRELIEVO",
-    "amount": -850.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00037",
-    "accountingDate": "10/04/2025",
-    "currencyDate": "10/04/2025",
-    "name": "COMM. BON. ISTANTANEO a fav...",
-    "type": "COMMISSIONE",
-    "amount": -1.49,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00038",
-    "accountingDate": "10/04/2025",
-    "currencyDate": "10/04/2025",
-    "name": "DISPOSIZIONE BONIFICO IST...",
-    "type": "BONIFICO",
-    "amount": -230.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00039",
-    "accountingDate": "10/04/2025",
-    "currencyDate": "10/04/2025",
-    "name": "EMOLUMENTI o/c: TERYA S...",
-    "type": "STIPENDIO",
-    "amount": 1411.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00040",
-    "accountingDate": "04/04/2025",
-    "currencyDate": "04/04/2025",
-    "name": "COMPETENZE SPESE ED ONERI",
-    "type": "COMPETENZE",
-    "amount": -5.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00041",
-    "accountingDate": "25/03/2025",
-    "currencyDate": "25/03/2025",
-    "name": "RATA PRESTITO BSS BIBANC...",
-    "type": "RATA FINANZIAMENTO",
-    "amount": -147.60,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00042",
-    "accountingDate": "24/03/2025",
-    "currencyDate": "24/03/2025",
-    "name": "COMM. BON. ISTANTANEO a fav...",
-    "type": "COMMISSIONE",
-    "amount": -1.49,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00043",
-    "accountingDate": "24/03/2025",
-    "currencyDate": "24/03/2025",
-    "name": "DISPOSIZIONE BONIFICO IST...",
-    "type": "BONIFICO",
-    "amount": -150.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00044",
-    "accountingDate": "17/03/2025",
-    "currencyDate": "17/03/2025",
-    "name": "Prelievo atm c/o:CLUSONE O...",
-    "type": "PRELIEVO",
-    "amount": -150.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00045",
-    "accountingDate": "12/03/2025",
-    "currencyDate": "12/03/2025",
-    "name": "Prelievo atm c/o:CLUSONE O...",
-    "type": "PRELIEVO",
-    "amount": -790.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00046",
-    "accountingDate": "12/02/2025",
-    "currencyDate": "12/02/2025",
-    "name": "COMM. BON. ISTANTANEO a fav...",
-    "type": "COMMISSIONE",
-    "amount": -1.49,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00047",
-    "accountingDate": "12/02/2025",
-    "currencyDate": "12/02/2025",
-    "name": "DISPOSIZIONE BONIFICO IST...",
-    "type": "BONIFICO",
-    "amount": -237.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00048",
-    "accountingDate": "11/02/2025",
-    "currencyDate": "11/02/2025",
-    "name": "LIDL 2079 BERGAMO ITA Operaz...",
-    "type": "PAGAMENTO",
-    "amount": -1.10,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00049",
-    "accountingDate": "11/02/2025",
-    "currencyDate": "11/02/2025",
-    "name": "LIDL 2079 BERGAMO ITA Operaz...",
-    "type": "PAGAMENTO",
-    "amount": -2.08,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00050",
-    "accountingDate": "11/02/2025",
-    "currencyDate": "11/02/2025",
-    "name": "MCDONALD S BERGAMO ITA O...",
-    "type": "PAGAMENTO",
-    "amount": -2.30,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00051",
-    "accountingDate": "11/02/2025",
-    "currencyDate": "11/02/2025",
-    "name": "EMOLUMENTI o/c: TERYA S...",
-    "type": "STIPENDIO",
-    "amount": 1387.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00052",
-    "accountingDate": "07/02/2025",
-    "currencyDate": "07/02/2025",
-    "name": "LIDL 148 CLUSONE ITA Operazi...",
-    "type": "PAGAMENTO",
-    "amount": -3.69,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00053",
-    "accountingDate": "06/02/2025",
-    "currencyDate": "06/02/2025",
-    "name": "IPERAL CLUSONEV V EMANUEL...",
-    "type": "PAGO BANCOMAT",
-    "amount": -2.79,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00054",
-    "accountingDate": "06/02/2025",
-    "currencyDate": "06/02/2025",
-    "name": "MCDONALD S BERGAMO ITA O...",
-    "type": "PAGAMENTO",
-    "amount": -5.90,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00055",
-    "accountingDate": "05/02/2025",
-    "currencyDate": "05/02/2025",
-    "name": "LIDL 148 CLUSONE ITA Operazi...",
-    "type": "PAGAMENTO",
-    "amount": -8.16,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00056",
-    "accountingDate": "05/02/2025",
-    "currencyDate": "05/02/2025",
-    "name": "BALA PARVEENVIA GIACOMO...",
-    "type": "PAGO BANCOMAT",
-    "amount": -15.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00057",
-    "accountingDate": "04/02/2025",
-    "currencyDate": "04/02/2025",
-    "name": "FARMACIA MALPENSATA S.VI...",
-    "type": "PAGO BANCOMAT",
-    "amount": -13.90,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00058",
-    "accountingDate": "04/02/2025",
-    "currencyDate": "04/02/2025",
-    "name": "PREMI ASSICURATIVI POLIZZ...",
-    "type": "PREMI ASSICURATIVI",
-    "amount": -12.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00059",
-    "accountingDate": "03/02/2025",
-    "currencyDate": "03/02/2025",
-    "name": "BONIFICO o/c: BIBANCA S.P.A....",
-    "type": "BONIFICO",
-    "amount": 1.80,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00060",
-    "accountingDate": "31/01/2025",
-    "currencyDate": "31/01/2025",
-    "name": "RC SNC BERGAMOVIA AUTOS...",
-    "type": "PAGO BANCOMAT",
-    "amount": -30.12,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00061",
-    "accountingDate": "28/01/2025",
-    "currencyDate": "28/01/2025",
-    "name": "Prelievo atm c/o:CLUSONE Op...",
-    "type": "PRELIEVO",
-    "amount": -70.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00062",
-    "accountingDate": "27/01/2025",
-    "currencyDate": "27/01/2025",
-    "name": "RATA PRESTITO BSS BIBANC...",
-    "type": "RATA FINANZIAMENTO",
-    "amount": -145.60,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00063",
-    "accountingDate": "15/01/2025",
-    "currencyDate": "15/01/2025",
-    "name": "Prelievo atm c/o:CLUSONE Op...",
-    "type": "PRELIEVO",
-    "amount": -40.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00064",
-    "accountingDate": "13/01/2025",
-    "currencyDate": "13/01/2025",
-    "name": "Prelievo atm c/o:CLUSONE...",
-    "type": "PRELIEVO",
-    "amount": -1150.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00065",
-    "accountingDate": "13/01/2025",
-    "currencyDate": "13/01/2025",
-    "name": "Prelievo atm c/o:CLUSONE Op...",
-    "type": "PRELIEVO",
-    "amount": -80.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00066",
-    "accountingDate": "10/01/2025",
-    "currencyDate": "10/01/2025",
-    "name": "COMM. BON. ISTANTANEO a fav...",
-    "type": "COMMISSIONE",
-    "amount": -1.49,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00067",
-    "accountingDate": "10/01/2025",
-    "currencyDate": "10/01/2025",
-    "name": "DISPOSIZIONE BONIFICO IST...",
-    "type": "BONIFICO",
-    "amount": -700.00,
-    "status": null,
-    "details": null
-  },
-  {
-    "id": "tx00068",
-    "accountingDate": "10/01/2025",
-    "currencyDate": "10/01/2025",
-    "name": "EMOLUMENTI o/c: TERYA S...",
-    "type": "STIPENDIO",
-    "amount": 2278.00,
-    "status": null,
-    "details": null
-  }
-        ];
+let transactionsData = [
+{ id: 'tx_agosto_1', accountingDate: new Date('2025-08-04'), currencyDate: new Date('2025-08-04'), name: 'Premi assicurativi', type: 'ADDEBITO', amount: -12.00, status: null, details: 'Addebito premi assicurativi', category: 'bills'},
+        // Agosto
+        { id: 'tx_agosto_1', accountingDate: new Date('2025-08-04'), currencyDate: new Date('2025-08-04'), name: 'Premi assicurativi', type: 'ADDEBITO', amount: -12.00, status: null, details: 'Addebito premi assicurativi', category: 'bills'},
+        { id: 'tx_agosto_2', accountingDate: new Date('2025-08-04'), currencyDate: new Date('2025-08-04'), name: 'Richiesta lista mov. da ATM', type: 'SPESE BANCARIE', amount: -0.66, status: null, details: 'Costo per richiesta lista movimenti da ATM', category: 'payment'},
 
-        const transactionsContainer = document.querySelector('.transactions'); // Main page transactions
-        const allTransactionsList = document.getElementById('all-transactions-list'); // All transactions page
-        const navTabs = document.querySelectorAll('.nav-tab');
-        const contentSections = document.querySelectorAll('.content-section');
-        const copyIbanBtn = document.getElementById('copy-iban-button');
-        const toast = document.getElementById('toast-notification');
-        const visibilityToggle = document.getElementById('toggle-all-visibility');
-        const modalBackdrop = document.getElementById('modal-backdrop');
-        const transactionPopup = document.getElementById('transaction-detail-popup');
-        const popupWrapper = transactionPopup.querySelector('.transaction-detail-wrapper');
-        const closePopupBtn = document.getElementById('transaction-detail-popup').querySelector('.close-popup-btn'); // Corrected selector
-        const balanceEl = document.getElementById('current-balance');
-        const appHeader = document.querySelector('.app-header');
-        const invisibleEditButton = document.getElementById('invisible-edit-button');
-        const viewAllTransactionsBtn = document.getElementById('view-all-transactions-btn');
+        // Luglio
+        { id: 'tx_luglio_1', accountingDate: new Date('2025-07-25'), currencyDate: new Date('2025-07-25'), name: 'Rata prestito BSS Bibanc...', type: 'ADDEBITO RATA PRESTITO', amount: -145.60, status: null, details: 'Rata mensile prestito', category: 'loan'},
+        { id: 'tx_luglio_2', accountingDate: new Date('2025-07-18'), currencyDate: new Date('2025-07-18'), name: 'Prelievo da CSA', type: 'PRELIEVO CONTANTI', amount: -150.00, status: null, details: 'Prelievo contanti', category: 'cash'},
+        { id: 'tx_luglio_3', accountingDate: new Date('2025-07-14'), currencyDate: new Date('2025-07-14'), name: 'Prelievo ATM c/o Clusone O...', type: 'PRELIEVO CONTANTI', amount: -700.00, status: null, details: 'Prelievo contanti da ATM', category: 'cash'},
+        { id: 'tx_luglio_4', accountingDate: new Date('2025-07-11'), currencyDate: new Date('2025-07-11'), name: 'Comm. bon. istantaneo a fav...', type: 'SPESE BANCARIE', amount: -1.49, status: null, details: 'Commissione per bonifico istantaneo', category: 'payment'},
+        { id: 'tx_luglio_5', accountingDate: new Date('2025-07-11'), currencyDate: new Date('2025-07-11'), name: 'Disposizione bonifico IS...', type: 'BONIFICO IN USCITA', amount: -440.00, status: null, details: 'Bonifico istantaneo', category: 'transfer_out'},
+        { id: 'tx_luglio_6', accountingDate: new Date('2025-07-11'), currencyDate: new Date('2025-07-11'), name: 'Prelievo ATM c/o Clusone...', type: 'PRELIEVO CONTANTI', amount: -1040.00, status: null, details: 'Prelievo contanti da ATM', category: 'cash'},
+        { id: 'tx_luglio_7', accountingDate: new Date('2025-07-10'), currencyDate: new Date('2025-07-10'), name: 'Emolumenti o/c: Terya...', type: 'ACCREDITO STIPENDIO', amount: 2483.00, status: null, details: 'Accredito emolumenti', category: 'salary'},
+        { id: 'tx_luglio_8', accountingDate: new Date('2025-07-04'), currencyDate: new Date('2025-07-04'), name: 'Lidl 148 Clusone Ita Operazi...', type: 'PAGAMENTO CARTA', amount: -3.58, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
+        { id: 'tx_luglio_9', accountingDate: new Date('2025-07-03'), currencyDate: new Date('2025-07-03'), name: 'Competenze spese ed oneri', type: 'SPESE BANCARIE', amount: -5.00, status: null, details: 'Spese di gestione conto', category: 'payment'},
 
-        // Elements for the new "All Transactions" screen
-        const allTransactionsContent = document.getElementById('all-transactions-content');
-        const backToContiBtn = document.getElementById('back-to-conti');
-        const allTransactionsBalanceDisplay = document.getElementById('all-transactions-balance-display');
-        const transactionSearchInput = document.getElementById('transaction-search-input');
-        const allTransactionsFilterTabs = document.querySelectorAll('#all-transactions-content .all-transactions-tabs .tab');
+        // Giugno
+        { id: 'tx_giugno_1', accountingDate: new Date('2025-06-30'), currencyDate: new Date('2025-06-30'), name: 'AMP07 Clusone BG Operazio...', type: 'PAGAMENTO CARTA', amount: -11.60, status: 'Contabilizzato', details: 'Pagamento generico', category: 'payment'},
+        { id: 'tx_giugno_2', accountingDate: new Date('2025-06-25'), currencyDate: new Date('2025-06-25'), name: 'Rata prestito BSS Bibanc...', type: 'ADDEBITO RATA PRESTITO', amount: -145.60, status: null, details: 'Rata mensile prestito', category: 'loan'},
+        { id: 'tx_giugno_3', accountingDate: new Date('2025-06-24'), currencyDate: new Date('2025-06-24'), name: 'Lidl 148 Clusone Ita Operazi...', type: 'PAGAMENTO CARTA', amount: -5.28, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
+        { id: 'tx_giugno_4', accountingDate: new Date('2025-06-24'), currencyDate: new Date('2025-06-24'), name: 'Energy Self Albino Albino I...', type: 'PAGAMENTO CARTA', amount: -4.77, status: 'Contabilizzato', details: 'Rifornimento carburante', category: 'fuel'},
+        { id: 'tx_giugno_5', accountingDate: new Date('2025-06-24'), currencyDate: new Date('2025-06-24'), name: 'Lidl 2079 Bergamo Ita Opera...', type: 'PAGAMENTO CARTA', amount: -3.28, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
+        { id: 'tx_giugno_6', accountingDate: new Date('2025-06-23'), currencyDate: new Date('2025-06-23'), name: 'Versamento da ATM azien...', type: 'VERSAMENTO', amount: 20.00, status: null, details: 'Versamento contanti da ATM', category: 'cash'},
+        { id: 'tx_giugno_7', accountingDate: new Date('2025-06-19'), currencyDate: new Date('2025-06-19'), name: 'Aldi S.R.L. Pedrengo Ita Ope...', type: 'PAGAMENTO CARTA', amount: -4.24, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
+        { id: 'tx_giugno_8', accountingDate: new Date('2025-06-17'), currencyDate: new Date('2025-06-17'), name: 'HO-MOBILE.IT - Ricaric Mila...', type: 'RICARICA TELEFONICA', amount: -10.00, status: 'Contabilizzato', details: 'Ricarica telefonica', category: 'phone'},
+        { id: 'tx_giugno_9', accountingDate: new Date('2025-06-16'), currencyDate: new Date('2025-06-16'), name: 'Autolavaggio cassa 2 Clus...', type: 'PAGAMENTO CARTA', amount: -5.00, status: 'Contabilizzato', details: 'Pagamento autolavaggio', category: 'car_wash'},
+        { id: 'tx_giugno_10', accountingDate: new Date('2025-06-16'), currencyDate: new Date('2025-06-16'), name: 'Versamento da ATM azien...', type: 'VERSAMENTO', amount: 150.00, status: null, details: 'Versamento contanti da ATM', category: 'cash'},
+        { id: 'tx_giugno_11', accountingDate: new Date('2025-06-16'), currencyDate: new Date('2025-06-16'), name: 'Bella Pizza Kebap Bergamo...', type: 'PAGAMENTO CARTA', amount: -5.00, status: 'Contabilizzato', details: 'Pagamento ristorante/take-away', category: 'restaurant'},
+        { id: 'tx_giugno_12', accountingDate: new Date('2025-06-12'), currencyDate: new Date('2025-06-12'), name: '0208-Italmark Bergamo Be...', type: 'PAGAMENTO CARTA', amount: -1.86, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
+        
+        // Esempi precedenti mantenuti
+        { id: 'tx556677889', accountingDate: new Date('2025-05-20'), currencyDate: new Date('2025-05-20'), name: 'VERSAMENTO DA ATM', type: 'VERSAMENTO', amount: 20.00, status: null, details: 'Versamento contanti presso ATM', category: 'cash'},
+        { id: 'tx123456789', accountingDate: new Date('2025-05-19'), currencyDate: new Date('2025-05-19'), name: 'LIDL SUPERMERCATO', type: 'PAGAMENTO CARTA', amount: -5.28, status: 'Contabilizzato', details: 'Pagamento POS per spesa alimentare', category: 'groceries' },
+        { id: 'tx987654321', accountingDate: new Date('2025-05-18'), currencyDate: new Date('2025-05-18'), name: 'ACCREDITO STIPENDIO', type: 'BONIFICO IN ENTRATA', amount: 1850.00, status: null, details: 'Stipendio mensile - Tech Solutions S.R.L.', category: 'salary' },
+        { id: 'tx112233445', accountingDate: new Date('2025-05-15'), currencyDate: new Date('2025-05-15'), name: 'ENERGY SELF CARBURANTI', type: 'PAGAMENTO CARTA', amount: -55.00, status: 'Contabilizzato', details: 'Rifornimento carburante', category: 'fuel' },
+        { id: 'tx123456789b', accountingDate: new Date('2025-05-14'), currencyDate: new Date('2025-05-14'), name: 'CANONE NETFLIX', type: 'ADDEBITO DIRETTO', amount: -17.99, status: 'Contabilizzato', details: 'Abbonamento mensile', category: 'bills' },
+        { id: 'tx987654321c', accountingDate: new Date('2025-05-13'), currencyDate: new Date('2025-05-13'), name: 'GIROCONTO DA ANNA ROSSI', type: 'GIROCONTO', amount: 150.00, status: null, details: 'Quota cena', category: 'transfer_in' }
+    ];
 
+    // --- STATE VARIABLES ---
+    let balancesVisible = true;
+    let currentFilter = 'all';
+    let editMode = false;
+    let profileClickCount = 0;
+    let profileClickTimer = null;
 
-        let isVisible = true;
-        let pressTimer = null; // For balance long-press
-        let pressTimerForAmount = null; // For amount long-press
-        let isGlobalEditModeActive = false;
-        let currentTransactionFilter = 'all'; // 'all', 'incomes', 'expenses'
-        let currentSearchQuery = '';
+    // --- DOM ELEMENTS ---
+    const body = document.body;
+    const mainContent = document.getElementById('main-content');
+    const header = document.querySelector('.app-header');
+    const mainTransactionsList = document.getElementById('main-transactions-list');
+    const allTransactionsList = document.getElementById('all-transactions-list');
+    const searchInput = document.getElementById('transaction-search-input');
+    const clearSearchBtn = document.querySelector('.clear-search-btn');
+    const profileInitials = document.querySelector('.profile-initials');
+    const editModeBanner = document.getElementById('edit-mode-banner');
 
-        // Helper function to convert date formats (DD/MM/YYYY to YYYY-MM-DD for input type="date")
-        function convertDateToInputFormat(dateString) {
-            const parts = dateString.split('/');
-            return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-        // Helper function to convert date formats (YYYY-MM-DD to DD/MM/YYYY for data storage)
-        function convertDateFromInputFormat(dateString) {
-            const parts = dateString.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
+    // --- INITIALIZATION ---
+    function init() {
+        // Simulate data loading
+        setTimeout(() => {
+            document.querySelector('.loader').style.display = 'none';
+            document.querySelector('.transactions-card-wrapper').style.display = 'block';
+            rerenderAllLists();
+        }, 800);
 
-        function formatCurrency(value) {
-            const num = parseFloat(value);
-            // Handle negative zero for consistent display if needed, though toFixed handles it
-            if (num === 0 && Object.is(num, -0)) {
-                return '0,00&nbsp;€';
+        setupEventListeners();
+        updateBalanceDate();
+    }
+    
+    // --- EVENT LISTENERS SETUP ---
+    function setupEventListeners() {
+        mainContent.addEventListener('scroll', () => { header.classList.toggle('scrolled', mainContent.scrollTop > 10); });
+        
+        document.querySelector('.nav-tabs').addEventListener('click', (e) => {
+            if (e.target.classList.contains('nav-tab')) {
+                document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.content-section').forEach(content => content.classList.remove('active-content'));
+                e.target.classList.add('active');
+                document.getElementById(e.target.dataset.target).classList.add('active-content');
             }
-            return num.toFixed(2).replace('.', ',') + '&nbsp;€';
+        });
+        
+        document.getElementById('toggle-all-visibility').addEventListener('click', toggleBalanceVisibility);
+        document.getElementById('copy-iban-button').addEventListener('click', copyIban);
+        document.getElementById('view-all-transactions-btn').addEventListener('click', showAllTransactionsScreen);
+        document.getElementById('back-to-conti').addEventListener('click', hideAllTransactionsScreen);
+
+        // Search and filter
+        searchInput.addEventListener('input', handleSearchAndFilter);
+        clearSearchBtn.addEventListener('click', () => { searchInput.value = ''; handleSearchAndFilter(); });
+        document.querySelector('.all-transactions-tabs').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab')) {
+                document.querySelectorAll('.all-transactions-tabs .tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.dataset.filter;
+                handleSearchAndFilter();
+            }
+        });
+
+        // Transaction detail popup
+        body.addEventListener('click', (e) => {
+            if (editMode) return; // Disable popup in edit mode
+            const transactionItem = e.target.closest('.transaction-item');
+            if (transactionItem) {
+                const transaction = transactionsData.find(t => t.id === transactionItem.dataset.id);
+                if (transaction) showTransactionDetail(transaction);
+            }
+        });
+        document.getElementById('modal-backdrop').addEventListener('click', hideTransactionDetail);
+
+        // Edit Mode Listeners
+        profileInitials.addEventListener('click', handleProfileClick);
+        document.getElementById('exit-edit-mode').addEventListener('click', () => toggleEditMode(false));
+    }
+    
+    // --- RENDER & DATA UPDATE FUNCTIONS ---
+
+    function rerenderAllLists() {
+        renderTransactions(transactionsData.slice(0, 4), mainTransactionsList);
+        handleSearchAndFilter(); // This will render the full list
+    }
+    
+    function groupTransactionsByDate(transactions) {
+        const groups = {};
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+        const thisWeekStart = new Date(today); thisWeekStart.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+
+        transactions.forEach(tx => {
+            const txDate = new Date(tx.accountingDate); txDate.setHours(0, 0, 0, 0);
+            let groupKey;
+            if (txDate.getTime() === today.getTime()) groupKey = 'Oggi';
+            else if (txDate.getTime() === yesterday.getTime()) groupKey = 'Ieri';
+            else if (txDate >= thisWeekStart) groupKey = 'Questa Settimana';
+            else groupKey = txDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+            if (!groups[groupKey]) groups[groupKey] = [];
+            groups[groupKey].push(tx);
+        });
+        return groups;
+    }
+
+    function renderTransactions(transactions, container) {
+        container.innerHTML = '';
+        const groupedTransactions = groupTransactionsByDate(transactions);
+
+        if (transactions.length === 0 && container.id === 'all-transactions-list') {
+             document.querySelector('.no-results-message').style.display = 'block';
+        } else {
+             document.querySelector('.no-results-message').style.display = 'none';
         }
 
-        function showToast(message) {
-            toast.innerText = message;
-            toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); }, 2000);
-        }
+        Object.keys(groupedTransactions).forEach(groupName => {
+            if (container.id === 'main-transactions-list') {
+                const groupHeader = document.createElement('h3');
+                groupHeader.className = 'transaction-group-header';
+                groupHeader.textContent = groupName;
+                container.appendChild(groupHeader);
+            }
+            
+            groupedTransactions[groupName].forEach(tx => {
+                const item = document.createElement('div');
+                item.className = 'transaction-item';
+                item.dataset.id = tx.id;
+                
+                const amountClass = tx.amount > 0 ? 'positive' : 'negative';
+                const formattedAmount = `${tx.amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}`;
 
-        function renderTransactions(container, transactions, isFullList = false) {
-            container.innerHTML = '';
-            // MODIFICATO: Limita a 5 transazioni se non è la lista completa
-            const transactionsToRender = isFullList ? transactions : transactions.slice(0, 5);
-
-            transactionsToRender.forEach(tx => {
-                const isPositive = tx.amount >= 0;
-                const amountFormatted = `${isPositive && tx.amount !== 0 ? '+' : ''}${tx.amount.toFixed(2).replace('.', ',')}&nbsp;€`;
-                const dateParts = new Date(tx.accountingDate.split('/').reverse().join('-')).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }).split(' ');
-
-                const transactionItem = document.createElement('div');
-                transactionItem.className = 'transaction-item';
-                transactionItem.dataset.transactionId = tx.id;
-
-                let statusHtml = tx.status ? `<div class="transaction-status">${tx.status}</div>` : '';
-
-                transactionItem.innerHTML = `
-                    <div class="transaction-main-info">
-                        <div class="transaction-info">
-                            <div class="transaction-date">${dateParts[0]}<br>${dateParts[1]}</div>
-                            <div class="transaction-description">
-                                <div class="transaction-name">${tx.name}</div>
-                                <div class="transaction-type">${tx.type}</div>
-                                ${statusHtml}
-                            </div>
+                item.innerHTML = `
+                    <div class="category-icon">
+                        <i class="${categoryIcons[tx.category] || categoryIcons['default']}"></i>
+                    </div>
+                    <div class="transaction-info">
+                        <div class="transaction-name" data-editable="true" data-field="name">${tx.name}</div>
+                        <div class="transaction-type">
+                            <span data-editable="true" data-field="type">${tx.type}</span>
+                            ${tx.status ? `<span class="transaction-status" data-editable="true" data-field="status">${tx.status}</span>` : ''}
                         </div>
-                        <div class="transaction-amount ${isPositive ? 'positive' : 'negative'}" data-amount="${tx.amount}">
-                            ${isVisible ? amountFormatted : '***&nbsp;€'} <i class="fas fa-caret-${isPositive ? 'up' : 'down'}"></i>
-                        </div>
+                    </div>
+                    <div class="transaction-amount ${amountClass}" data-editable="true" data-field="amount">
+                        ${balancesVisible ? formattedAmount : '•••••'}
                     </div>
                 `;
-                container.appendChild(transactionItem);
-
-                const amountEl = transactionItem.querySelector('.transaction-amount');
-
-                transactionItem.addEventListener('click', (e) => {
-                    // Prevent opening detail when clicking the amount for potential long-press edit
-                    if (!e.target.closest('.transaction-amount')) {
-                         if (isGlobalEditModeActive) {
-                            openTransactionDetail(tx.id, 'edit');
-                         } else {
-                            openTransactionDetail(tx.id, 'view');
-                         }
-                    }
-                });
-
-                // Long press for editing transaction amount/details
-                amountEl.addEventListener('mousedown', () => {
-                    if (!isGlobalEditModeActive) { // Only allow long press if not in global edit mode
-                        pressTimerForAmount = window.setTimeout(() => {
-                            openTransactionDetail(tx.id, 'edit');
-                            pressTimerForAmount = null;
-                        }, 3000);
-                    }
-                });
-
-                amountEl.addEventListener('mouseup', () => {
-                    clearTimeout(pressTimerForAmount);
-                    pressTimerForAmount = null;
-                });
-
-                amountEl.addEventListener('mouseleave', () => {
-                    clearTimeout(pressTimerForAmount);
-                    pressTimerForAmount = null;
-                });
+                container.appendChild(item);
             });
+        });
+        if (editMode) setEditableState(true); // Re-apply editable state after render
+    }
 
-            // Handle "Visualizza tutto" button visibility - now controlled by the parent flex
-            // The button itself will always be there, its display is handled by flexbox
-            // No explicit hide/show based on transaction count needed for the button itself
-            // as it's meant to always be next to the title.
+    // --- FEATURE FUNCTIONS ---
+    
+    function handleProfileClick() {
+        profileClickCount++;
+        if (profileClickCount === 1) {
+            profileClickTimer = setTimeout(() => {
+                profileClickCount = 0;
+            }, 400); // Reset after 400ms
         }
-
-        function filterAndSearchTransactions() {
-            let filteredTransactions = transactionsData;
-
-            // Apply filter (all, incomes, expenses)
-            if (currentTransactionFilter === 'incomes') {
-                filteredTransactions = filteredTransactions.filter(tx => tx.amount > 0);
-            } else if (currentTransactionFilter === 'expenses') {
-                filteredTransactions = filteredTransactions.filter(tx => tx.amount < 0);
-            }
-
-            // Apply search query
-            if (currentSearchQuery) {
-                const query = currentSearchQuery.toLowerCase();
-                filteredTransactions = filteredTransactions.filter(tx =>
-                    tx.name.toLowerCase().includes(query) ||
-                    tx.details.toLowerCase().includes(query) ||
-                    tx.type.toLowerCase().includes(query)
-                );
-            }
-
-            renderTransactions(allTransactionsList, filteredTransactions, true);
+        if (profileClickCount === 3) {
+            clearTimeout(profileClickTimer);
+            profileClickCount = 0;
+            toggleEditMode(); // Toggle current state
         }
+    }
 
-
-        function switchTab(targetId) {
-            contentSections.forEach(section => section.classList.remove('active-content'));
-            navTabs.forEach(tab => tab.classList.remove('active'));
-            document.getElementById(targetId).classList.add('active-content');
-            document.querySelector(`.nav-tab[data-target="${targetId}"]`).classList.add('active');
-
-            // Hide the "all transactions" screen when switching main tabs
-            allTransactionsContent.classList.remove('active');
-        }
-
-        function copyIban() {
-            navigator.clipboard.writeText(document.getElementById('iban-text').innerText).then(() => {
-                showToast('IBAN copiato!');
-            });
-        }
-
-        function toggleVisibility() {
-            isVisible = !isVisible;
-            visibilityToggle.classList.toggle('fa-eye', !isVisible);
-            visibilityToggle.classList.toggle('fa-eye-slash', isVisible);
-
-            const currentBalanceValue = parseFloat(balanceEl.dataset.balance);
-            // FIXED: Only update innerHTML of balanceEl, not re-add arrow
-            balanceEl.innerHTML = isVisible ? formatCurrency(currentBalanceValue) : '***&nbsp;€';
-            allTransactionsBalanceDisplay.innerHTML = isVisible ? formatCurrency(currentBalanceValue) : '***&nbsp;€';
-
-            renderTransactions(transactionsContainer, transactionsData);
-            filterAndSearchTransactions(); // Re-render transactions on the all-transactions screen as well
-        }
-
-        function openTransactionDetail(transactionId, mode = 'view') {
-            clearTimeout(pressTimer);
-            clearTimeout(pressTimerForAmount);
-
-            transactionPopup.dataset.editingId = transactionId;
-            renderPopupContent(transactionId, mode);
-            document.body.classList.add('modal-open');
-            modalBackdrop.classList.add('active');
-            transactionPopup.classList.add('active');
-        }
-
-        function renderPopupContent(transactionId, mode = 'view') {
-             const tx = transactionsData.find(t => t.id === transactionId);
-             if (!tx) return;
-
-             // Helper to convert date for input field
-             function formatDateForInput(dateString) {
-                 const [day, month, year] = dateString.split('/');
-                 return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-             }
-
-             if (mode === 'view') {
-                 // The 'Modifica' button was removed from the general popup header.
-                 // If re-adding it, do it here.
-                 const isPositive = tx.amount >= 0;
-                 popupWrapper.innerHTML = `
-                    <div class="detail-amount ${isPositive ? 'positive' : 'negative'}">${formatCurrency(tx.amount)}</div>
-                    <div class="detail-type">${tx.name}</div>
-                    <div class="detail-info-block">
-                        <h3>Dettagli Operazione</h3>
-                        <p><strong>Causale:</strong> ${tx.details}</p>
-                        <p><strong>Tipo:</strong> ${tx.type}</p>
-                        ${tx.status ? `<p><strong>Stato:</strong> ${tx.status}</p>` : ''}
-                    </div>
-                    <div>
-                        <div class="detail-date-row"><span>Data Contabile</span><span>${tx.accountingDate}</span></div>
-                        <div class="detail-date-row"><span>Data Valuta</span><span>${tx.currencyDate}</span></div>
-                    </div>
-                 `;
-             } else { // mode === 'edit'
-                 // In edit mode, we always show the form.
-                 popupWrapper.innerHTML = `
-                    <div class="form-group">
-                        <label for="edit-amount">Importo</label>
-                        <input type="number" id="edit-amount" step="0.01" value="${tx.amount.toFixed(2)}">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-name">Titolo</label>
-                        <input type="text" id="edit-name" value="${tx.name}">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-details">Descrizione (Causale)</label>
-                        <input type="text" id="edit-details" value="${tx.details}">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-accounting-date">Data Contabile</label>
-                        <input type="date" id="edit-accounting-date" value="${formatDateForInput(tx.accountingDate)}">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-currency-date">Data Valuta</label>
-                        <input type="date" id="edit-currency-date" value="${formatDateForInput(tx.currencyDate)}">
-                    </div>
-                    <div class="form-actions">
-                        <button id="save-transaction-btn">Salva Modifiche</button>
-                    </div>
-                 `;
-             }
-        }
-
-        function saveTransaction(transactionId) {
-            const txIndex = transactionsData.findIndex(t => t.id === transactionId);
-            if (txIndex === -1) return;
-            const newAmount = parseFloat(document.getElementById('edit-amount').value);
-            const newName = document.getElementById('edit-name').value;
-            const newDetails = document.getElementById('edit-details').value;
-            const newAccountingDate = document.getElementById('edit-accounting-date').value;
-            const newCurrencyDate = document.getElementById('edit-currency-date').value;
-
-            if (isNaN(newAmount) || !newName || !newDetails || !newAccountingDate || !newCurrencyDate) {
-                alert('Per favorere, compila tutti i campi correttamente.');
-                return;
-            }
-            transactionsData[txIndex].amount = newAmount;
-            transactionsData[txIndex].name = newName;
-            transactionsData[txIndex].details = newDetails;
-            transactionsData[txIndex].accountingDate = convertDateFromInputFormat(newAccountingDate);
-            transactionsData[txIndex].currencyDate = convertDateFromInputFormat(newCurrencyDate);
-
-            closeTransactionDetail();
-            renderTransactions(transactionsContainer, transactionsData); // Re-render main list
-            filterAndSearchTransactions(); // Re-render full list
-        }
-
-        function closeTransactionDetail() {
-            document.body.classList.remove('modal-open');
-            modalBackdrop.classList.remove('active');
-            transactionPopup.classList.remove('active');
-        }
-
-        function handleScroll() {
-            appHeader.classList.toggle('transparent', window.scrollY > 10);
-        }
-
-        function editBalance() {
-            const currentBalance = parseFloat(balanceEl.dataset.balance);
-            const newBalanceStr = prompt("Modifica il saldo disponibile:", currentBalance.toFixed(2).replace('.', ',')); // Pre-fill with current balance, formatted for prompt
-            if (newBalanceStr === null) return; // User cancelled
-            const newBalance = parseFloat(newBalanceStr.replace(',', '.')); // Convert back to number
-
-            if (!isNaN(newBalance) && newBalanceStr.trim() !== '') {
-                balanceEl.dataset.balance = newBalance.toFixed(2);
-                // FIXED: Only update innerHTML of balanceEl, not re-add arrow
-                balanceEl.innerHTML = isVisible ? formatCurrency(newBalance) : '***&nbsp;€';
-                allTransactionsBalanceDisplay.innerHTML = isVisible ? formatCurrency(newBalance) : '***&nbsp;€';
+    function toggleEditMode(forceState) {
+        editMode = (forceState !== undefined) ? forceState : !editMode;
+        body.classList.toggle('edit-mode-active', editMode);
+        editModeBanner.style.display = editMode ? 'block' : 'none';
+        setEditableState(editMode);
+    }
+    
+    function setEditableState(isEditable) {
+        document.querySelectorAll('[data-editable="true"]').forEach(el => {
+            el.contentEditable = isEditable;
+            if (isEditable) {
+                el.addEventListener('blur', saveOnBlur);
             } else {
-                alert("Per favore, inserisci un numero valido.");
+                el.removeEventListener('blur', saveOnBlur);
+            }
+        });
+    }
+
+    function saveOnBlur(e) {
+        const element = e.target;
+        const field = element.dataset.field;
+        const transactionItem = element.closest('.transaction-item');
+        let newValue = element.innerText;
+
+        if (transactionItem) { // It's a transaction field
+            const txId = transactionItem.dataset.id;
+            const transaction = transactionsData.find(t => t.id === txId);
+            if (!transaction) return;
+
+            if (field === 'amount') {
+                newValue = parseFloat(newValue.replace(/[^0-9,-]+/g, "").replace(',', '.')) || 0;
+            }
+            transaction[field] = newValue;
+            
+        } else { // It's a general field (balance, name, etc.)
+            const balanceEl = document.getElementById('current-balance');
+            if (field === 'balance') {
+                const numericValue = parseFloat(newValue.replace(/[^0-9,-]+/g, "").replace(',', '.')) || 0;
+                balanceEl.dataset.balance = numericValue;
             }
         }
+        // No full re-render on blur to avoid losing focus, changes are saved in the data object.
+    }
 
-        // --- Event Listeners Setup ---
-        navTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.target)));
-        copyIbanBtn.addEventListener('click', copyIban);
-        visibilityToggle.addEventListener('click', toggleVisibility);
-        closePopupBtn.addEventListener('click', closeTransactionDetail);
-        modalBackdrop.addEventListener('click', closeTransactionDetail);
-        window.addEventListener('scroll', handleScroll);
+    function handleSearchAndFilter() {
+        const searchTerm = searchInput.value.toLowerCase();
+        clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
+        const filtered = transactionsData.filter(tx => 
+            (tx.name.toLowerCase().includes(searchTerm) || tx.amount.toString().includes(searchTerm)) &&
+            (currentFilter === 'all' || (currentFilter === 'incomes' && tx.amount > 0) || (currentFilter === 'expenses' && tx.amount < 0))
+        );
+        renderTransactions(filtered, allTransactionsList);
+    }
+    
+    function toggleBalanceVisibility() {
+        balancesVisible = !balancesVisible;
+        const icon = document.getElementById('toggle-all-visibility');
+        const balanceEl = document.getElementById('current-balance');
+        icon.className = `toggle-icon fa-solid ${balancesVisible ? 'fa-eye-slash' : 'fa-eye'}`;
+        
+        if (balancesVisible) {
+            const val = parseFloat(balanceEl.dataset.balance);
+            balanceEl.innerHTML = val.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        } else {
+            balanceEl.textContent = '•••••';
+        }
+        rerenderAllLists();
+    }
 
-        invisibleEditButton.addEventListener('click', () => {
-            isGlobalEditModeActive = !isGlobalEditModeActive;
-            showToast(isGlobalEditModeActive ? 'Modalità Modifica Attiva' : 'Modalità Modifica Disattiva');
-        });
+    function copyIban() {
+        const ibanText = document.getElementById('iban-text').textContent.replace(/\s/g, '');
+        navigator.clipboard.writeText(ibanText).then(() => showToast('IBAN copiato!'));
+    }
 
-        // Click on balance for direct edit if global edit mode is active
-        balanceEl.addEventListener('click', () => {
-            if (isGlobalEditModeActive) {
-                editBalance();
-            }
-        });
+    function showToast(message) {
+        const toast = document.getElementById('toast-notification');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
 
-        // Long press for balance edit (alternative to global edit mode)
-        balanceEl.addEventListener('mousedown', () => {
-            if (!isGlobalEditModeActive) {
-                pressTimer = window.setTimeout(editBalance, 3000);
-            }
-        });
-        balanceEl.addEventListener('mouseup', () => clearTimeout(pressTimer));
-        balanceEl.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+    function showTransactionDetail(tx) {
+        const popup = document.getElementById('transaction-detail-popup');
+        const backdrop = document.getElementById('modal-backdrop');
+        const wrapper = popup.querySelector('.transaction-detail-wrapper');
+        
+        const formattedAmount = tx.amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        wrapper.innerHTML = `
+            <div class="detail-header">
+                <div class="detail-category-icon"><i class="${categoryIcons[tx.category] || categoryIcons['default']}"></i></div>
+                <div class="detail-amount ${tx.amount > 0 ? 'positive' : 'negative'}">${formattedAmount}</div>
+                <div class="detail-name">${tx.name}</div>
+            </div>
+            <div class="detail-info-block">
+                <div class="detail-info-row"><span>Causale</span><span>${tx.details}</span></div>
+                <div class="detail-info-row"><span>Data contabile</span><span>${new Date(tx.accountingDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</span></div>
+                <div class="detail-info-row"><span>Data valuta</span><span>${new Date(tx.currencyDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}</span></div>
+                <div class="detail-info-row"><span>Tipo movimento</span><span>${tx.type}</span></div>
+            </div>
+        `;
 
-        // Save button in popup
-        popupWrapper.addEventListener('click', (e) => {
-            if (e.target && e.target.id === 'save-transaction-btn') {
-                saveTransaction(transactionPopup.dataset.editingId);
-            }
-        });
+        body.classList.add('modal-open');
+        backdrop.classList.add('active');
+        popup.classList.add('active');
+    }
 
-        // --- New "All Transactions" Screen Logic ---
-        viewAllTransactionsBtn.addEventListener('click', () => {
-            allTransactionsContent.classList.add('active');
-            document.getElementById('conti-content').classList.remove('active-content'); // Hide main content
-            document.querySelector('.bottom-nav').style.display = 'none'; // Hide bottom nav
+    function hideTransactionDetail() {
+        const popup = document.getElementById('transaction-detail-popup');
+        const backdrop = document.getElementById('modal-backdrop');
+        body.classList.remove('modal-open');
+        backdrop.classList.remove('active');
+        popup.classList.remove('active');
+    }
 
-            // Update balance display on the all-transactions screen
-            allTransactionsBalanceDisplay.innerHTML = isVisible ? formatCurrency(parseFloat(balanceEl.dataset.balance)) : '***&nbsp;€';
+    function showAllTransactionsScreen() { document.getElementById('all-transactions-content').classList.add('active'); }
+    function hideAllTransactionsScreen() { document.getElementById('all-transactions-content').classList.remove('active'); }
+    function updateBalanceDate() { document.getElementById('balance-date').textContent = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'numeric', year: 'numeric' }); }
 
-            // Initial render of all transactions
-            filterAndSearchTransactions();
-        });
+    // --- START THE APP ---
+    init();
+});
+</script>
 
-        backToContiBtn.addEventListener('click', () => {
-            allTransactionsContent.classList.remove('active');
-            document.getElementById('conti-content').classList.add('active-content'); // Show main content
-            document.querySelector('.bottom-nav').style.display = 'flex'; // Show bottom nav
-
-            // Reset search and filter when going back
-            currentSearchQuery = '';
-            transactionSearchInput.value = '';
-            currentTransactionFilter = 'all';
-            allTransactionsFilterTabs.forEach(tab => {
-                if (tab.dataset.filter === 'all') {
-                    tab.classList.add('active');
-                } else {
-                    tab.classList.remove('active');
-                }
-            });
-
-            renderTransactions(transactionsContainer, transactionsData); // Re-render main view to show correct limited list
-        });
-
-        // Filter tabs for "All Transactions" screen
-        allTransactionsFilterTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                allTransactionsFilterTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentTransactionFilter = tab.dataset.filter;
-                filterAndSearchTransactions();
-            });
-        });
-
-        // Search input for "All Transactions" screen
-        transactionSearchInput.addEventListener('input', (e) => {
-            currentSearchQuery = e.target.value;
-            filterAndSearchTransactions();
-        });
-
-        // Initial render
-        renderTransactions(transactionsContainer, transactionsData);
-        // Ensure balance display on sub-screen is also updated on initial load
-        allTransactionsBalanceDisplay.innerHTML = isVisible ? formatCurrency(parseFloat(balanceEl.dataset.balance)) : '***&nbsp;€';
-    });
-    </script>
 </body>
 </html>
