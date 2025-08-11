@@ -26,7 +26,7 @@
             --text-light: #5f787a;
             --shadow: 0 4px 15px rgba(0, 80, 87, 0.1);
             --safe-area-bottom: env(safe-area-inset-bottom);
-            --edit-highlight-color: #ffc107; /* Giallo per la modalità modifica */
+            --edit-highlight-color: #ffc107;
         }
 
         /* --- GLOBAL & BODY --- */
@@ -48,51 +48,35 @@
         /* --- EDIT MODE --- */
         #edit-mode-banner {
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+            position: fixed; top: 0; left: 0; right: 0;
             z-index: 9998;
             background-color: var(--edit-highlight-color);
             color: var(--text-dark);
-            text-align: center;
-            padding: 8px;
-            font-size: 14px;
-            font-weight: 600;
+            text-align: center; padding: 8px; font-size: 14px; font-weight: 600;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         #edit-mode-banner button {
-            background: var(--text-dark);
-            color: var(--white);
-            border: none;
-            border-radius: 5px;
-            padding: 4px 8px;
-            font-size: 12px;
-            margin-left: 10px;
-            cursor: pointer;
+            background: var(--text-dark); color: var(--white);
+            border: none; border-radius: 5px;
+            padding: 4px 8px; font-size: 12px;
+            margin-left: 10px; cursor: pointer;
         }
-        .edit-mode-active {
-            padding-top: 38px; /* Spazio per il banner */
-        }
+        .edit-mode-active { padding-top: 38px; }
         .edit-mode-active [data-editable="true"] {
             outline: 2px dashed var(--edit-highlight-color);
             outline-offset: 2px;
             background-color: rgba(255, 193, 7, 0.1);
-            cursor: text;
-            border-radius: 4px;
+            cursor: text; border-radius: 4px;
         }
 
         /* --- HEADER --- */
         .app-header {
             background-color: var(--bper-green-dark);
-            color: var(--white);
-            padding: 0 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            color: var(--white); padding: 0 20px;
+            position: sticky; top: 0; z-index: 100;
             transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
         }
-        .edit-mode-active .app-header { top: 38px; } /* Sposta header sotto il banner */
+        .edit-mode-active .app-header { top: 38px; }
 
         .app-header.scrolled {
             background-color: rgba(0, 80, 87, 0.8);
@@ -102,38 +86,24 @@
         .header-top { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; }
         .profile-initials {
             background-color: var(--white);
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 600;
-            font-size: 16px;
-            color: var(--bper-green-dark);
-            cursor: pointer;
-            user-select: none;
+            border-radius: 50%; width: 36px; height: 36px;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: 600; font-size: 16px; color: var(--bper-green-dark);
+            cursor: pointer; user-select: none;
         }
         .header-icons { display: flex; gap: 22px; font-size: 22px; color: var(--white); }
         .nav-tabs {
-            display: flex;
-            padding-bottom: 15px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            gap: 12px;
+            display: flex; padding-bottom: 15px;
+            overflow-x: auto; -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; gap: 12px;
         }
         .nav-tabs::-webkit-scrollbar { display: none; }
         .nav-tab {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            white-space: nowrap;
+            padding: 8px 16px; border-radius: 20px;
+            font-size: 15px; font-weight: 500;
+            cursor: pointer; white-space: nowrap;
             transition: all .3s ease;
-            background-color: var(--bper-green-medium);
-            color: var(--white);
+            background-color: var(--bper-green-medium); color: var(--white);
             border: 1px solid transparent;
         }
         .nav-tab.active { background-color: var(--white); color: var(--bper-green-dark); }
@@ -149,74 +119,56 @@
         
         /* Account Summary */
         .account-title-outside {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--white);
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            font-size: 22px; font-weight: 700; color: var(--white);
+            margin-bottom: 15px; display: flex;
+            justify-content: space-between; align-items: center;
         }
         .account-title-outside .toggle-icon { font-size: 22px; color: var(--white); cursor: pointer; }
         .account-summary {
-            background-color: var(--white);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 25px;
+            background-color: var(--white); border-radius: 20px;
+            padding: 20px; margin-bottom: 25px;
             box-shadow: var(--shadow);
         }
         .account-balance {
-            font-size: 34px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
+            font-size: 34px; font-weight: 700; color: var(--text-dark);
+            margin-bottom: 5px; display: flex;
+            align-items: center; cursor: pointer;
         }
         .account-balance .arrow-icon { font-size: 20px; margin-left: 10px; color: var(--text-light); }
         .balance-info { font-size: 14px; color: var(--text-light); margin-bottom: 20px; }
         .iban-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--bper-green-background);
-            border-radius: 12px;
-            padding: 12px 15px;
-            font-size: 14px;
-            font-weight: 500;
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: transparent; 
+            border-radius: 12px; padding: 12px 0; 
+            font-size: 14px; font-weight: 500; letter-spacing: 0.5px;
         }
         .iban-details .copy-icon { color: var(--bper-green-dark); font-size: 18px; cursor: pointer; }
         
-        /* Quick Actions (Reverted to original style as requested) */
+        /* Quick Actions */
         .quick-actions {
             display: flex;
             justify-content: space-around;
+            align-items: flex-start; 
             margin-bottom: 25px;
-            padding: 0;
+            padding: 10px 0;
+            text-align: center;
         }
         .action-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            text-align: center;
             flex: 1;
             position: relative;
         }
-        .action-item .icon-wrapper {
-            background-color: var(--light-grey);
-            border-radius: 16px;
-            width: 64px;
-            height: 64px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 28px;
-            color: var(--text-dark);
+        .action-item i {
+            font-size: 24px;
+            color: var(--white);
+            margin-bottom: 12px;
+            height: 25px; 
+            line-height: 25px;
         }
         .action-item span {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--white);
             font-weight: 500;
             line-height: 1.3;
@@ -227,103 +179,95 @@
             right: 0;
             top: 50%;
             transform: translateY(-50%);
-            height: 60%;
+            height: 40px; 
             width: 1px;
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.3);
         }
-        .action-item .icon-wrapper.inverted-colors {
-            background-color: var(--white);
-            color: var(--bper-green-dark);
-        }
-
 
         /* --- TRANSACTIONS LIST --- */
         .loader { text-align: center; padding: 40px 0; }
         .loader .fa-spinner { font-size: 30px; color: var(--white); }
         .transactions-card-wrapper {
             background-color: var(--white);
-            border-radius: 20px;
-            padding: 20px 0 0 0;
-            box-shadow: var(--shadow);
-            color: var(--text-dark);
+            border-radius: 20px; padding: 20px;
+            box-shadow: var(--shadow); color: var(--text-dark);
         }
-        .section-title { font-size: 18px; font-weight: 700; padding: 0 20px 15px 20px; margin: 0; }
-        .transaction-group-header {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-light);
-            background-color: var(--bper-green-background);
-            padding: 8px 20px;
-            margin: 0;
-            border-top: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-        #main-transactions-list .transaction-group-header:first-child { border-top: none; }
-        .transaction-item {
+        .card-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+            margin-bottom: 15px;
+        }
+        .section-title { 
+            font-size: 18px; font-weight: 700; 
+            padding: 0; margin: 0; 
+        }
+        .add-tx-button {
+            display: none; /* Nascondi di default */
+            background-color: var(--bper-green-medium);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
+            transition: background-color .2s;
+        }
+        .add-tx-button:hover {
+             background-color: var(--bper-green-dark);
+        }
+        .edit-mode-active .add-tx-button {
+            display: inline-block; /* Mostra solo in modalità modifica */
+        }
+        
+        .transaction-item {
+            display: flex; align-items: center;
+            padding: 12px 0; cursor: pointer;
             transition: background-color .2s ease;
             border-bottom: 1px solid var(--border-color);
         }
-        .transaction-item:last-child { border-bottom: none; }
-        .transaction-item:hover { background-color: var(--bper-green-background); }
-        .transaction-item .category-icon {
-            font-size: 18px;
-            color: var(--white);
-            background-color: var(--bper-green-medium);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            flex-shrink: 0;
+        .transactions-card-wrapper .transactions .transaction-item:last-child { 
+            border-bottom: none;
+        }
+        .transaction-date-block {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            width: 50px; flex-shrink: 0;
+            margin-right: 15px; color: var(--text-light);
+        }
+        .transaction-date-block .date-day {
+            font-size: 1.2rem; font-weight: 600; color: var(--text-dark);
+        }
+        .transaction-date-block .date-month {
+            font-size: 0.8rem; text-transform: uppercase;
         }
         .transaction-info { flex-grow: 1; min-width: 0; }
         .transaction-name {
-            font-weight: 600;
-            font-size: 15px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 4px;
+            font-weight: 600; font-size: 15px;
+            white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; margin-bottom: 4px;
         }
         .transaction-type {
-            font-size: 13px;
-            color: var(--text-light);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .transaction-status {
-            font-size: 11px;
-            background: var(--light-grey);
-            padding: 2px 8px;
-            border-radius: 10px;
+            font-size: 13px; color: var(--text-light);
+            text-transform: uppercase;
         }
         .transaction-amount {
-            font-size: 16px;
-            font-weight: 700;
-            white-space: nowrap;
-            text-align: right;
+            font-size: 16px; font-weight: 700;
+            white-space: nowrap; text-align: right;
+            margin-left: 10px;
         }
-        .transaction-amount.positive { color: #2e7d32; } /* Green for income */
+        .transaction-amount.positive { color: #2e7d32; }
         .transaction-amount.negative { color: var(--text-dark); }
         .view-all-container {
-            text-align: center;
-            padding: 15px 20px;
+            text-align: center; padding: 15px 0 0 0;
             border-top: 1px solid var(--border-color);
+            margin-top: 15px;
         }
         .view-all-button {
-            background: none;
-            border: none;
-            color: var(--bper-green-dark);
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
+            background: none; border: none;
+            color: var(--bper-green-dark); font-size: 15px;
+            font-weight: 600; cursor: pointer;
         }
 
         /* --- PLACEHOLDER FOR OTHER SECTIONS --- */
@@ -338,20 +282,15 @@
         /* --- ALL TRANSACTIONS SCREEN --- */
         #all-transactions-content {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--bper-green-background);
-            z-index: 200;
-            transform: translateX(100%);
-            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: var(--bper-green-background); z-index: 200;
+            transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; flex-direction: column;
         }
         .edit-mode-active #all-transactions-content { top: 38px; height: calc(100% - 38px); }
         #all-transactions-content.active { transform: translateX(0); }
         .all-transactions-header {
-            background-color: var(--white);
-            color: var(--text-dark);
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
+            background-color: var(--white); color: var(--text-dark);
+            padding: 15px 20px; display: flex; align-items: center;
             position: sticky; top: 0; z-index: 10;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
@@ -360,28 +299,39 @@
         .all-transactions-header .title { font-size: 18px; font-weight: 700; margin: 0; }
         .all-transactions-header .subtitle { font-size: 13px; color: var(--text-light); }
         .search-filter-section {
-            background-color: var(--white);
-            padding: 15px 20px;
-            position: sticky; top: 64px; /* Header height */ z-index: 9;
+            background-color: var(--white); padding: 10px 20px 15px;
+            position: sticky; top: 64px; z-index: 9;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
+        .search-and-sort-container {
+            display: flex; align-items: center;
+            gap: 10px; margin-bottom: 15px;
+        }
         .search-bar-container {
-            display: flex; align-items: center; background-color: var(--bper-green-background);
+            flex-grow: 1; display: flex; align-items: center; 
+            background-color: var(--bper-green-background);
             border-radius: 12px; padding: 0 15px;
         }
         .search-bar-container i.fa-search { color: var(--text-light); }
         .search-bar-container input {
             flex-grow: 1; border: none; outline: none; font-size: 16px;
-            background: transparent; color: var(--text-dark); height: 44px; padding: 0 10px;
+            background: transparent; color: var(--text-dark); 
+            height: 44px; padding: 0 10px;
         }
         .clear-search-btn {
-            background: var(--text-light); color: var(--white); border: none; border-radius: 50%;
-            width: 20px; height: 20px; font-size: 12px; cursor: pointer;
-            display: none; /* Hidden by default */
+            background: var(--text-light); color: var(--white); border: none; 
+            border-radius: 50%; width: 20px; height: 20px; 
+            font-size: 12px; cursor: pointer; display: none;
+        }
+        #sort-transactions-btn {
+            flex-shrink: 0; width: 44px; height: 44px;
+            border-radius: 12px; border: none;
+            background-color: var(--bper-green-background);
+            color: var(--text-dark); font-size: 18px; cursor: pointer;
         }
         .all-transactions-tabs {
             display: flex; background-color: var(--bper-green-background);
-            border-radius: 12px; overflow: hidden; margin-top: 15px;
+            border-radius: 12px; overflow: hidden;
         }
         .all-transactions-tabs .tab {
             flex: 1; padding: 12px 5px; text-align: center; font-size: 15px;
@@ -389,30 +339,27 @@
             transition: all 0.3s ease;
         }
         .all-transactions-tabs .tab.active { background-color: var(--bper-green-dark); color: var(--white); }
-        .all-transactions-list-container { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .all-transactions-list-container { flex-grow: 1; overflow-y: auto; padding: 0 20px; }
         .no-results-message {
-            text-align: center; padding: 50px 20px; color: var(--text-light); display: none;
+            text-align: center; padding: 50px 20px; 
+            color: var(--text-light); display: none;
         }
         .no-results-message i { font-size: 40px; margin-bottom: 15px; }
         .no-results-message p { font-size: 16px; font-weight: 500; }
         #all-transactions-list .transaction-item {
              background-color: var(--white); border-radius: 16px;
              margin-bottom: 12px; box-shadow: var(--shadow);
-             border-bottom: none;
+             border-bottom: none; padding: 15px;
         }
         
         /* --- BOTTOM NAV --- */
         .bottom-nav {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
+            position: fixed; bottom: 0; left: 0; right: 0;
             background-color: rgba(255, 255, 255, 0.9);
-            -webkit-backdrop-filter: blur(15px);
-            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px); backdrop-filter: blur(15px);
             padding: 8px 10px var(--safe-area-bottom);
-            display: flex;
-            justify-content: space-around;
-            border-top: 1px solid rgba(0,0,0,0.1);
-            z-index: 150;
+            display: flex; justify-content: space-around;
+            border-top: 1px solid rgba(0,0,0,0.1); z-index: 150;
         }
         .bottom-nav .nav-item {
             display: flex; flex-direction: column; align-items: center;
@@ -422,16 +369,16 @@
         .bottom-nav .nav-item i { font-size: 22px; margin-bottom: 4px; }
         .bottom-nav .nav-item.active { color: var(--bper-green-dark); }
 
-        /* --- TRANSACTION DETAIL POPUP --- */
+        /* --- POPUP GENERIC STYLES --- */
         #modal-backdrop {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 299; opacity: 0; visibility: hidden;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.3s ease, visibility 0s 0.3s;
         }
         .edit-mode-active #modal-backdrop { z-index: 999; }
-        #modal-backdrop.active { opacity: 1; visibility: visible; }
-        #transaction-detail-popup {
+        #modal-backdrop.active { opacity: 1; visibility: visible; transition: opacity 0.3s ease; }
+        .popup-sheet {
             background-color: var(--bper-green-background);
             position: fixed; left: 0; right: 0; bottom: 0;
             max-height: 90vh; border-top-left-radius: 20px; border-top-right-radius: 20px;
@@ -440,15 +387,16 @@
             transform: translateY(100%);
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .edit-mode-active #transaction-detail-popup { z-index: 1000; }
-        #transaction-detail-popup.active { transform: translateY(0); }
+        .edit-mode-active .popup-sheet { z-index: 1000; }
+        .popup-sheet.active { transform: translateY(0); }
+        .popup-sheet.dragging { transition: none; }
         .popup-handle {
             width: 40px; height: 5px; background-color: var(--border-color);
-            border-radius: 2.5px; margin: 10px auto;
+            border-radius: 2.5px; margin: 10px auto; flex-shrink: 0;
         }
-        .transaction-detail-wrapper {
-            flex-grow: 1; padding: 0 20px 30px 20px; overflow-y: auto;
-        }
+        
+        /* TRANSACTION DETAIL POPUP */
+        .transaction-detail-wrapper { flex-grow: 1; padding: 0 20px 30px 20px; overflow-y: auto; }
         .detail-header { text-align: center; padding-bottom: 20px; }
         .detail-category-icon {
             width: 60px; height: 60px; font-size: 28px; margin: 0 auto 15px auto;
@@ -469,19 +417,28 @@
         .detail-info-row span:first-child { color: var(--text-light); }
         .detail-info-row span:last-child { font-weight: 600; color: var(--text-dark); }
         
+        /* SORT OPTIONS POPUP */
+        #sort-options-popup .sort-options-wrapper { padding: 10px 20px calc(20px + var(--safe-area-bottom)); }
+        #sort-options-popup h3 {
+            font-size: 18px; font-weight: 700;
+            text-align: center; margin: 10px 0 20px 0;
+        }
+        .sort-option {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; background-color: var(--white);
+            border-radius: 12px; margin-bottom: 10px;
+            cursor: pointer; font-weight: 600;
+        }
+        .sort-option i { font-size: 18px; color: var(--bper-green-dark); visibility: hidden; }
+        .sort-option.selected i { visibility: visible; }
+        
         /* --- TOAST NOTIFICATION --- */
         .toast-notification {
-            position: fixed;
-            bottom: calc(95px + var(--safe-area-bottom)); /* Above bottom nav */
-            left: 50%;
-            transform: translate(-50%, 20px);
-            background-color: rgba(0,0,0,0.8);
-            color: white;
-            padding: 12px 25px;
-            border-radius: 25px;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
+            position: fixed; bottom: calc(95px + var(--safe-area-bottom));
+            left: 50%; transform: translate(-50%, 20px);
+            background-color: rgba(0,0,0,0.8); color: white;
+            padding: 12px 25px; border-radius: 25px;
+            z-index: 9999; opacity: 0; visibility: hidden;
             transition: all 0.3s ease;
         }
         .toast-notification.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
@@ -520,27 +477,27 @@
             </h3>
             <div class="account-summary">
                 <div class="account-balance">
-                    <span id="current-balance" data-editable="true" data-field="balance" data-balance="161.46">161,46&nbsp;€</span>
+                    <span id="current-balance" data-editable="true" data-field="balance" data-balance="-11.07">-11,07&nbsp;€</span>
                     <i class="fa-solid fa-chevron-right arrow-icon"></i>
                 </div>
                 <p class="balance-info">Saldo disponibile al <span id="balance-date"></span><br><strong data-editable="true" data-field="account-holder">Sy Mouhamadou</strong></p>
                 <div class="iban-details">
-                    <span id="iban-text" data-editable="true" data-field="iban">IT25 C053 8753 3500 0000 3657761</span>
+                    <span id="iban-text" data-editable="true" data-field="iban">IT25C0538753350000003657761</span>
                     <i id="copy-iban-button" class="fa-solid fa-arrow-up-from-bracket copy-icon"></i>
                 </div>
             </div>
             
             <div class="quick-actions">
                 <div class="action-item">
-                    <div class="icon-wrapper inverted-colors"><i class="fas fa-hand-holding-dollar"></i></div>
+                    <i class="fa-solid fa-money-bill-transfer"></i>
                     <span>Bonifico<br>ordinario</span>
                 </div>
                 <div class="action-item">
-                    <div class="icon-wrapper inverted-colors"><i class="fas fa-mobile-screen-button"></i></div>
+                    <i class="fa-solid fa-mobile-screen"></i>
                     <span>Ricarica<br>Telefonica</span>
                 </div>
                 <div class="action-item">
-                    <div class="icon-wrapper inverted-colors"><i class="fas fa-file-invoice"></i></div>
+                    <i class="fa-solid fa-receipt"></i>
                     <span>Cbill e<br>PagoPA</span>
                 </div>
             </div>
@@ -550,7 +507,10 @@
             </div>
 
             <div class="transactions-card-wrapper" style="display: none;">
-                <h2 class="section-title">ULTIMI MOVIMENTI</h2>
+                <div class="card-header">
+                    <h2 class="section-title">ULTIMI MOVIMENTI</h2>
+                    <button id="add-predefined-tx-btn" class="add-tx-button" title="Aggiungi accredito stipendio">+ Stipendio</button>
+                </div>
                 <div class="transactions" id="main-transactions-list"></div>
                 <div class="view-all-container">
                     <button id="view-all-transactions-btn" class="view-all-button">Visualizza tutto</button>
@@ -574,10 +534,15 @@
             </div>
         </div>
         <div class="search-filter-section">
-            <div class="search-bar-container">
-                <i class="fa-solid fa-search"></i>
-                <input type="text" id="transaction-search-input" placeholder="Cerca per nome o importo">
-                <button class="clear-search-btn">&times;</button>
+            <div class="search-and-sort-container">
+                <div class="search-bar-container">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="transaction-search-input" placeholder="Cerca per nome o importo">
+                    <button class="clear-search-btn">&times;</button>
+                </div>
+                <button id="sort-transactions-btn" title="Ordina movimenti">
+                    <i class="fa-solid fa-arrow-up-wide-short"></i>
+                </button>
             </div>
             <div class="all-transactions-tabs">
                 <div class="tab active" data-filter="all">Tutti</div>
@@ -603,10 +568,35 @@
     </nav>
 
     <div id="modal-backdrop"></div>
-    <div id="transaction-detail-popup">
+
+    <div id="transaction-detail-popup" class="popup-sheet">
         <div class="popup-handle"></div>
         <div class="transaction-detail-wrapper"></div>
     </div>
+    
+    <div id="sort-options-popup" class="popup-sheet">
+        <div class="popup-handle"></div>
+        <div class="sort-options-wrapper">
+            <h3>Ordina movimenti per</h3>
+            <div class="sort-option" data-sort="date_desc">
+                <span>Data (più recenti)</span>
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div class="sort-option" data-sort="date_asc">
+                <span>Data (meno recenti)</span>
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div class="sort-option" data-sort="amount_desc">
+                <span>Importo (dal più alto)</span>
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div class="sort-option" data-sort="amount_asc">
+                <span>Importo (dal più basso)</span>
+                <i class="fa-solid fa-check"></i>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-notification" class="toast-notification">Testo del toast</div>
 
 <script>
@@ -614,68 +604,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- DATA ---
     const categoryIcons = {
-        'payment': 'fa-solid fa-credit-card',
-        'transfer_in': 'fa-solid fa-arrow-down',
-        'transfer_out': 'fa-solid fa-arrow-up',
-        'salary': 'fa-solid fa-briefcase',
-        'groceries': 'fa-solid fa-cart-shopping',
-        'fuel': 'fa-solid fa-gas-pump',
-        'cash': 'fa-solid fa-money-bill-wave',
-        'bills': 'fa-solid fa-file-invoice-dollar',
-        'health': 'fa-solid fa-prescription-bottle-medical',
-        'loan': 'fa-solid fa-money-check-dollar',
-        'phone': 'fa-solid fa-mobile-screen-button',
-        'car_wash': 'fa-solid fa-car-wash',
-        'restaurant': 'fa-solid fa-utensils',
-        'default': 'fa-solid fa-receipt'
+        'payment': 'fa-solid fa-credit-card', 'transfer_in': 'fa-solid fa-arrow-down',
+        'transfer_out': 'fa-solid fa-arrow-up', 'salary': 'fa-solid fa-briefcase',
+        'groceries': 'fa-solid fa-cart-shopping', 'fuel': 'fa-solid fa-gas-pump',
+        'cash': 'fa-solid fa-money-bill-wave', 'bills': 'fa-solid fa-file-invoice-dollar',
+        'health': 'fa-solid fa-prescription-bottle-medical', 'loan': 'fa-solid fa-money-check-dollar',
+        'phone': 'fa-solid fa-mobile-screen-button', 'car_wash': 'fa-solid fa-car-wash',
+        'restaurant': 'fa-solid fa-utensils', 'default': 'fa-solid fa-receipt'
     };
 
-let transactionsData = [
-{ id: 'tx_agosto_1', accountingDate: new Date('2025-08-04'), currencyDate: new Date('2025-08-04'), name: 'Premi assicurativi', type: 'ADDEBITO', amount: -12.00, status: null, details: 'Addebito premi assicurativi', category: 'bills'},
-        // Agosto
-        { id: 'tx_agosto_1', accountingDate: new Date('2025-08-04'), currencyDate: new Date('2025-08-04'), name: 'Premi assicurativi', type: 'ADDEBITO', amount: -12.00, status: null, details: 'Addebito premi assicurativi', category: 'bills'},
-        { id: 'tx_agosto_2', accountingDate: new Date('2025-08-04'), currencyDate: new Date('2025-08-04'), name: 'Richiesta lista mov. da ATM', type: 'SPESE BANCARIE', amount: -0.66, status: null, details: 'Costo per richiesta lista movimenti da ATM', category: 'payment'},
-
-        // Luglio
-        { id: 'tx_luglio_1', accountingDate: new Date('2025-07-25'), currencyDate: new Date('2025-07-25'), name: 'Rata prestito BSS Bibanc...', type: 'ADDEBITO RATA PRESTITO', amount: -145.60, status: null, details: 'Rata mensile prestito', category: 'loan'},
-        { id: 'tx_luglio_2', accountingDate: new Date('2025-07-18'), currencyDate: new Date('2025-07-18'), name: 'Prelievo da CSA', type: 'PRELIEVO CONTANTI', amount: -150.00, status: null, details: 'Prelievo contanti', category: 'cash'},
-        { id: 'tx_luglio_3', accountingDate: new Date('2025-07-14'), currencyDate: new Date('2025-07-14'), name: 'Prelievo ATM c/o Clusone O...', type: 'PRELIEVO CONTANTI', amount: -700.00, status: null, details: 'Prelievo contanti da ATM', category: 'cash'},
-        { id: 'tx_luglio_4', accountingDate: new Date('2025-07-11'), currencyDate: new Date('2025-07-11'), name: 'Comm. bon. istantaneo a fav...', type: 'SPESE BANCARIE', amount: -1.49, status: null, details: 'Commissione per bonifico istantaneo', category: 'payment'},
-        { id: 'tx_luglio_5', accountingDate: new Date('2025-07-11'), currencyDate: new Date('2025-07-11'), name: 'Disposizione bonifico IS...', type: 'BONIFICO IN USCITA', amount: -440.00, status: null, details: 'Bonifico istantaneo', category: 'transfer_out'},
-        { id: 'tx_luglio_6', accountingDate: new Date('2025-07-11'), currencyDate: new Date('2025-07-11'), name: 'Prelievo ATM c/o Clusone...', type: 'PRELIEVO CONTANTI', amount: -1040.00, status: null, details: 'Prelievo contanti da ATM', category: 'cash'},
-        { id: 'tx_luglio_7', accountingDate: new Date('2025-07-10'), currencyDate: new Date('2025-07-10'), name: 'Emolumenti o/c: Terya...', type: 'ACCREDITO STIPENDIO', amount: 2483.00, status: null, details: 'Accredito emolumenti', category: 'salary'},
-        { id: 'tx_luglio_8', accountingDate: new Date('2025-07-04'), currencyDate: new Date('2025-07-04'), name: 'Lidl 148 Clusone Ita Operazi...', type: 'PAGAMENTO CARTA', amount: -3.58, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
-        { id: 'tx_luglio_9', accountingDate: new Date('2025-07-03'), currencyDate: new Date('2025-07-03'), name: 'Competenze spese ed oneri', type: 'SPESE BANCARIE', amount: -5.00, status: null, details: 'Spese di gestione conto', category: 'payment'},
-
-        // Giugno
-        { id: 'tx_giugno_1', accountingDate: new Date('2025-06-30'), currencyDate: new Date('2025-06-30'), name: 'AMP07 Clusone BG Operazio...', type: 'PAGAMENTO CARTA', amount: -11.60, status: 'Contabilizzato', details: 'Pagamento generico', category: 'payment'},
-        { id: 'tx_giugno_2', accountingDate: new Date('2025-06-25'), currencyDate: new Date('2025-06-25'), name: 'Rata prestito BSS Bibanc...', type: 'ADDEBITO RATA PRESTITO', amount: -145.60, status: null, details: 'Rata mensile prestito', category: 'loan'},
-        { id: 'tx_giugno_3', accountingDate: new Date('2025-06-24'), currencyDate: new Date('2025-06-24'), name: 'Lidl 148 Clusone Ita Operazi...', type: 'PAGAMENTO CARTA', amount: -5.28, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
-        { id: 'tx_giugno_4', accountingDate: new Date('2025-06-24'), currencyDate: new Date('2025-06-24'), name: 'Energy Self Albino Albino I...', type: 'PAGAMENTO CARTA', amount: -4.77, status: 'Contabilizzato', details: 'Rifornimento carburante', category: 'fuel'},
-        { id: 'tx_giugno_5', accountingDate: new Date('2025-06-24'), currencyDate: new Date('2025-06-24'), name: 'Lidl 2079 Bergamo Ita Opera...', type: 'PAGAMENTO CARTA', amount: -3.28, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
-        { id: 'tx_giugno_6', accountingDate: new Date('2025-06-23'), currencyDate: new Date('2025-06-23'), name: 'Versamento da ATM azien...', type: 'VERSAMENTO', amount: 20.00, status: null, details: 'Versamento contanti da ATM', category: 'cash'},
-        { id: 'tx_giugno_7', accountingDate: new Date('2025-06-19'), currencyDate: new Date('2025-06-19'), name: 'Aldi S.R.L. Pedrengo Ita Ope...', type: 'PAGAMENTO CARTA', amount: -4.24, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
-        { id: 'tx_giugno_8', accountingDate: new Date('2025-06-17'), currencyDate: new Date('2025-06-17'), name: 'HO-MOBILE.IT - Ricaric Mila...', type: 'RICARICA TELEFONICA', amount: -10.00, status: 'Contabilizzato', details: 'Ricarica telefonica', category: 'phone'},
-        { id: 'tx_giugno_9', accountingDate: new Date('2025-06-16'), currencyDate: new Date('2025-06-16'), name: 'Autolavaggio cassa 2 Clus...', type: 'PAGAMENTO CARTA', amount: -5.00, status: 'Contabilizzato', details: 'Pagamento autolavaggio', category: 'car_wash'},
-        { id: 'tx_giugno_10', accountingDate: new Date('2025-06-16'), currencyDate: new Date('2025-06-16'), name: 'Versamento da ATM azien...', type: 'VERSAMENTO', amount: 150.00, status: null, details: 'Versamento contanti da ATM', category: 'cash'},
-        { id: 'tx_giugno_11', accountingDate: new Date('2025-06-16'), currencyDate: new Date('2025-06-16'), name: 'Bella Pizza Kebap Bergamo...', type: 'PAGAMENTO CARTA', amount: -5.00, status: 'Contabilizzato', details: 'Pagamento ristorante/take-away', category: 'restaurant'},
-        { id: 'tx_giugno_12', accountingDate: new Date('2025-06-12'), currencyDate: new Date('2025-06-12'), name: '0208-Italmark Bergamo Be...', type: 'PAGAMENTO CARTA', amount: -1.86, status: 'Contabilizzato', details: 'Pagamento spesa alimentare', category: 'groceries'},
-        
-        // Esempi precedenti mantenuti
-        { id: 'tx556677889', accountingDate: new Date('2025-05-20'), currencyDate: new Date('2025-05-20'), name: 'VERSAMENTO DA ATM', type: 'VERSAMENTO', amount: 20.00, status: null, details: 'Versamento contanti presso ATM', category: 'cash'},
-        { id: 'tx123456789', accountingDate: new Date('2025-05-19'), currencyDate: new Date('2025-05-19'), name: 'LIDL SUPERMERCATO', type: 'PAGAMENTO CARTA', amount: -5.28, status: 'Contabilizzato', details: 'Pagamento POS per spesa alimentare', category: 'groceries' },
-        { id: 'tx987654321', accountingDate: new Date('2025-05-18'), currencyDate: new Date('2025-05-18'), name: 'ACCREDITO STIPENDIO', type: 'BONIFICO IN ENTRATA', amount: 1850.00, status: null, details: 'Stipendio mensile - Tech Solutions S.R.L.', category: 'salary' },
-        { id: 'tx112233445', accountingDate: new Date('2025-05-15'), currencyDate: new Date('2025-05-15'), name: 'ENERGY SELF CARBURANTI', type: 'PAGAMENTO CARTA', amount: -55.00, status: 'Contabilizzato', details: 'Rifornimento carburante', category: 'fuel' },
-        { id: 'tx123456789b', accountingDate: new Date('2025-05-14'), currencyDate: new Date('2025-05-14'), name: 'CANONE NETFLIX', type: 'ADDEBITO DIRETTO', amount: -17.99, status: 'Contabilizzato', details: 'Abbonamento mensile', category: 'bills' },
-        { id: 'tx987654321c', accountingDate: new Date('2025-05-13'), currencyDate: new Date('2025-05-13'), name: 'GIROCONTO DA ANNA ROSSI', type: 'GIROCONTO', amount: 150.00, status: null, details: 'Quota cena', category: 'transfer_in' }
+    let transactionsData = [
+        { id: 'tx_agosto_3', accountingDate: new Date('2025-08-11'), currencyDate: new Date('2025-08-11'), name: 'PAGAMENTO DELEGA F24', type: 'TASSE E IMPOSTE', amount: -172.53, status: null, details: 'Pagamento delega F24 online', category: 'bills'},
+        { id: 'tx_agosto_1', accountingDate: new Date('2025-08-04'), currencyDate: new Date('2025-08-04'), name: 'PREMI ASSICURATIVI POLIZZ...', type: 'ADDEBITO', amount: -12.00, status: null, details: 'Addebito premi assicurativi', category: 'bills'},
+        { id: 'tx_agosto_2', accountingDate: new Date('2025-08-04'), currencyDate: new Date('2025-08-04'), name: 'RICHIESTE LISTA MOV. DA ATM...', type: 'SPESE', amount: -0.66, status: null, details: 'Costo per richiesta lista movimenti da ATM', category: 'payment'},
+        { id: 'tx_luglio_1', accountingDate: new Date('2025-07-25'), currencyDate: new Date('2025-07-25'), name: 'RATA PRESTITO BSS BIBANC...', type: 'RATA FINANZIAMENTO', amount: -145.60, status: null, details: 'Rata mensile prestito', category: 'loan'},
+        { id: 'tx_luglio_2', accountingDate: new Date('2025-07-18'), currencyDate: new Date('2025-07-18'), name: 'PRELEVAMENTO DA CSA', type: 'PRELIEVO', amount: -150.00, status: null, details: 'Prelievo contanti', category: 'cash'},
+        { id: 'tx_luglio_3', accountingDate: new Date('2025-07-14'), currencyDate: new Date('2025-07-14'), name: 'Prelievo atm c/o:CLUSONE O...', type: 'PRELIEVO', amount: -700.00, status: null, details: 'Prelievo contanti da ATM', category: 'cash'},
+        { id: 'tx_luglio_7', accountingDate: new Date('2025-07-10'), currencyDate: new Date('2025-07-10'), name: 'Emolumenti o/c: Terya...', type: 'ACCREDITO', amount: 2483.00, status: null, details: 'Accredito emolumenti', category: 'salary'},
     ];
 
     // --- STATE VARIABLES ---
     let balancesVisible = true;
-    let currentFilter = 'all';
     let editMode = false;
     let profileClickCount = 0;
     let profileClickTimer = null;
+    let currentFilter = 'all';
+    let currentSort = 'date_desc';
 
     // --- DOM ELEMENTS ---
     const body = document.body;
@@ -687,18 +641,20 @@ let transactionsData = [
     const clearSearchBtn = document.querySelector('.clear-search-btn');
     const profileInitials = document.querySelector('.profile-initials');
     const editModeBanner = document.getElementById('edit-mode-banner');
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const txDetailPopup = document.getElementById('transaction-detail-popup');
+    const sortOptionsPopup = document.getElementById('sort-options-popup');
 
     // --- INITIALIZATION ---
     function init() {
-        // Simulate data loading
         setTimeout(() => {
             document.querySelector('.loader').style.display = 'none';
             document.querySelector('.transactions-card-wrapper').style.display = 'block';
             rerenderAllLists();
         }, 800);
-
         setupEventListeners();
         updateBalanceDate();
+        updateSortOptionsUI();
     }
     
     // --- EVENT LISTENERS SETUP ---
@@ -719,120 +675,160 @@ let transactionsData = [
         document.getElementById('view-all-transactions-btn').addEventListener('click', showAllTransactionsScreen);
         document.getElementById('back-to-conti').addEventListener('click', hideAllTransactionsScreen);
 
-        // Search and filter
-        searchInput.addEventListener('input', handleSearchAndFilter);
-        clearSearchBtn.addEventListener('click', () => { searchInput.value = ''; handleSearchAndFilter(); });
+        document.getElementById('add-predefined-tx-btn').addEventListener('click', addPredefinedTransaction);
+
+        searchInput.addEventListener('input', handleSearchFilterAndSort);
+        clearSearchBtn.addEventListener('click', () => { searchInput.value = ''; handleSearchFilterAndSort(); });
         document.querySelector('.all-transactions-tabs').addEventListener('click', (e) => {
             if (e.target.classList.contains('tab')) {
                 document.querySelectorAll('.all-transactions-tabs .tab').forEach(t => t.classList.remove('active'));
                 e.target.classList.add('active');
                 currentFilter = e.target.dataset.filter;
-                handleSearchAndFilter();
+                handleSearchFilterAndSort();
             }
         });
 
-        // Transaction detail popup
+        document.getElementById('sort-transactions-btn').addEventListener('click', showSortOptions);
+        document.querySelector('#sort-options-popup .sort-options-wrapper').addEventListener('click', (e) => {
+            const sortOption = e.target.closest('.sort-option');
+            if(sortOption) {
+                currentSort = sortOption.dataset.sort;
+                updateSortOptionsUI();
+                handleSearchFilterAndSort();
+                hideSortOptions();
+            }
+        });
+
         body.addEventListener('click', (e) => {
-            if (editMode) return; // Disable popup in edit mode
+            if (editMode) return;
             const transactionItem = e.target.closest('.transaction-item');
             if (transactionItem) {
                 const transaction = transactionsData.find(t => t.id === transactionItem.dataset.id);
                 if (transaction) showTransactionDetail(transaction);
             }
         });
-        document.getElementById('modal-backdrop').addEventListener('click', hideTransactionDetail);
+        
+        modalBackdrop.addEventListener('click', () => {
+             hideTransactionDetail();
+             hideSortOptions();
+        });
 
-        // Edit Mode Listeners
         profileInitials.addEventListener('click', handleProfileClick);
         document.getElementById('exit-edit-mode').addEventListener('click', () => toggleEditMode(false));
+        
+        setupSwipeToDismiss(txDetailPopup, hideTransactionDetail);
     }
     
     // --- RENDER & DATA UPDATE FUNCTIONS ---
-
     function rerenderAllLists() {
-        renderTransactions(transactionsData.slice(0, 4), mainTransactionsList);
-        handleSearchAndFilter(); // This will render the full list
+        const mainPageTxs = [...transactionsData].sort((a,b) => b.accountingDate - a.accountingDate).slice(0, 5);
+        renderTransactions(mainPageTxs, mainTransactionsList);
+        handleSearchFilterAndSort();
     }
     
-    function groupTransactionsByDate(transactions) {
-        const groups = {};
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-        const thisWeekStart = new Date(today); thisWeekStart.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+    function handleSearchFilterAndSort() {
+        const searchTerm = searchInput.value.toLowerCase();
+        clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
 
-        transactions.forEach(tx => {
-            const txDate = new Date(tx.accountingDate); txDate.setHours(0, 0, 0, 0);
-            let groupKey;
-            if (txDate.getTime() === today.getTime()) groupKey = 'Oggi';
-            else if (txDate.getTime() === yesterday.getTime()) groupKey = 'Ieri';
-            else if (txDate >= thisWeekStart) groupKey = 'Questa Settimana';
-            else groupKey = txDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
-            if (!groups[groupKey]) groups[groupKey] = [];
-            groups[groupKey].push(tx);
-        });
-        return groups;
+        const filtered = transactionsData.filter(tx => 
+            (tx.name.toLowerCase().includes(searchTerm) || tx.amount.toString().replace('.',',').includes(searchTerm)) &&
+            (currentFilter === 'all' || (currentFilter === 'incomes' && tx.amount > 0) || (currentFilter === 'expenses' && tx.amount < 0))
+        );
+        
+        const sorters = {
+            'date_desc': (a, b) => b.accountingDate - a.accountingDate,
+            'date_asc': (a, b) => a.accountingDate - b.accountingDate,
+            'amount_desc': (a, b) => b.amount - a.amount,
+            'amount_asc': (a, b) => a.amount - b.amount
+        };
+        filtered.sort(sorters[currentSort]);
+        
+        renderTransactions(filtered, allTransactionsList);
     }
-
+    
     function renderTransactions(transactions, container) {
         container.innerHTML = '';
-        const groupedTransactions = groupTransactionsByDate(transactions);
-
-        if (transactions.length === 0 && container.id === 'all-transactions-list') {
-             document.querySelector('.no-results-message').style.display = 'block';
+        if (transactions.length === 0) {
+            if (container.id === 'all-transactions-list') {
+                document.querySelector('.no-results-message').style.display = 'block';
+            }
         } else {
-             document.querySelector('.no-results-message').style.display = 'none';
+            if (container.id === 'all-transactions-list') {
+                document.querySelector('.no-results-message').style.display = 'none';
+            }
+            transactions.forEach(tx => container.appendChild(createTransactionElement(tx)));
         }
 
-        Object.keys(groupedTransactions).forEach(groupName => {
-            if (container.id === 'main-transactions-list') {
-                const groupHeader = document.createElement('h3');
-                groupHeader.className = 'transaction-group-header';
-                groupHeader.textContent = groupName;
-                container.appendChild(groupHeader);
-            }
-            
-            groupedTransactions[groupName].forEach(tx => {
-                const item = document.createElement('div');
-                item.className = 'transaction-item';
-                item.dataset.id = tx.id;
-                
-                const amountClass = tx.amount > 0 ? 'positive' : 'negative';
-                const formattedAmount = `${tx.amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}`;
+        if (editMode) {
+            setEditableState(true, container);
+        }
+    }
 
-                item.innerHTML = `
-                    <div class="category-icon">
-                        <i class="${categoryIcons[tx.category] || categoryIcons['default']}"></i>
-                    </div>
-                    <div class="transaction-info">
-                        <div class="transaction-name" data-editable="true" data-field="name">${tx.name}</div>
-                        <div class="transaction-type">
-                            <span data-editable="true" data-field="type">${tx.type}</span>
-                            ${tx.status ? `<span class="transaction-status" data-editable="true" data-field="status">${tx.status}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="transaction-amount ${amountClass}" data-editable="true" data-field="amount">
-                        ${balancesVisible ? formattedAmount : '•••••'}
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        });
-        if (editMode) setEditableState(true); // Re-apply editable state after render
+    function createTransactionElement(tx) {
+        const item = document.createElement('div');
+        item.className = 'transaction-item';
+        item.dataset.id = tx.id;
+        
+        const amountClass = tx.amount > 0 ? 'positive' : 'negative';
+        const formattedAmount = tx.amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        
+        const date = new Date(tx.accountingDate);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = date.toLocaleDateString('it-IT', { month: 'short' }).replace('.', '');
+
+        item.innerHTML = `
+            <div class="transaction-date-block">
+                <span class="date-day">${day}</span>
+                <span class="date-month">${month}</span>
+            </div>
+            <div class="transaction-info">
+                <div class="transaction-name" data-editable="true" data-field="name">${tx.name}</div>
+                <div class="transaction-type" data-editable="true" data-field="type">${tx.type}</div>
+            </div>
+            <div class="transaction-amount ${amountClass}" data-editable="true" data-field="amount">
+                ${balancesVisible ? formattedAmount : '•••••'}
+            </div>`;
+        return item;
     }
 
     // --- FEATURE FUNCTIONS ---
-    
+    function addPredefinedTransaction() {
+        const newTransaction = {
+            id: 'tx_' + Date.now(),
+            accountingDate: new Date(),
+            currencyDate: new Date(),
+            name: 'Emolumenti o/c: Terya...',
+            type: 'ACCREDITO',
+            amount: 2483.00,
+            status: null,
+            details: 'Accredito stipendio aggiunto manualmente',
+            category: 'salary'
+        };
+
+        transactionsData.unshift(newTransaction);
+
+        const balanceEl = document.getElementById('current-balance');
+        let currentBalance = parseFloat(balanceEl.dataset.balance);
+        currentBalance += newTransaction.amount;
+        balanceEl.dataset.balance = currentBalance.toFixed(2);
+        
+        if (balancesVisible) {
+            balanceEl.innerHTML = currentBalance.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+        }
+
+        rerenderAllLists();
+        showToast('Stipendio accreditato!');
+    }
+
     function handleProfileClick() {
         profileClickCount++;
         if (profileClickCount === 1) {
-            profileClickTimer = setTimeout(() => {
-                profileClickCount = 0;
-            }, 400); // Reset after 400ms
+            profileClickTimer = setTimeout(() => { profileClickCount = 0; }, 400);
         }
         if (profileClickCount === 3) {
             clearTimeout(profileClickTimer);
             profileClickCount = 0;
-            toggleEditMode(); // Toggle current state
+            toggleEditMode();
         }
     }
 
@@ -843,13 +839,14 @@ let transactionsData = [
         setEditableState(editMode);
     }
     
-    function setEditableState(isEditable) {
-        document.querySelectorAll('[data-editable="true"]').forEach(el => {
+    function setEditableState(isEditable, container = document) {
+        const searchScope = isEditable ? container : document;
+        searchScope.querySelectorAll('[data-editable="true"]').forEach(el => {
             el.contentEditable = isEditable;
-            if (isEditable) {
-                el.addEventListener('blur', saveOnBlur);
-            } else {
-                el.removeEventListener('blur', saveOnBlur);
+            el.spellcheck = false;
+            el.removeEventListener('blur', saveOnBlur); 
+            if (isEditable) { 
+                el.addEventListener('blur', saveOnBlur); 
             }
         });
     }
@@ -860,34 +857,21 @@ let transactionsData = [
         const transactionItem = element.closest('.transaction-item');
         let newValue = element.innerText;
 
-        if (transactionItem) { // It's a transaction field
+        if (transactionItem) {
             const txId = transactionItem.dataset.id;
             const transaction = transactionsData.find(t => t.id === txId);
             if (!transaction) return;
-
             if (field === 'amount') {
                 newValue = parseFloat(newValue.replace(/[^0-9,-]+/g, "").replace(',', '.')) || 0;
             }
             transaction[field] = newValue;
-            
-        } else { // It's a general field (balance, name, etc.)
+        } else {
             const balanceEl = document.getElementById('current-balance');
             if (field === 'balance') {
                 const numericValue = parseFloat(newValue.replace(/[^0-9,-]+/g, "").replace(',', '.')) || 0;
                 balanceEl.dataset.balance = numericValue;
             }
         }
-        // No full re-render on blur to avoid losing focus, changes are saved in the data object.
-    }
-
-    function handleSearchAndFilter() {
-        const searchTerm = searchInput.value.toLowerCase();
-        clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
-        const filtered = transactionsData.filter(tx => 
-            (tx.name.toLowerCase().includes(searchTerm) || tx.amount.toString().includes(searchTerm)) &&
-            (currentFilter === 'all' || (currentFilter === 'incomes' && tx.amount > 0) || (currentFilter === 'expenses' && tx.amount < 0))
-        );
-        renderTransactions(filtered, allTransactionsList);
     }
     
     function toggleBalanceVisibility() {
@@ -917,11 +901,9 @@ let transactionsData = [
         setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
+    // --- POPUP MANAGEMENT ---
     function showTransactionDetail(tx) {
-        const popup = document.getElementById('transaction-detail-popup');
-        const backdrop = document.getElementById('modal-backdrop');
-        const wrapper = popup.querySelector('.transaction-detail-wrapper');
-        
+        const wrapper = txDetailPopup.querySelector('.transaction-detail-wrapper');
         const formattedAmount = tx.amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
         wrapper.innerHTML = `
             <div class="detail-header">
@@ -936,23 +918,84 @@ let transactionsData = [
                 <div class="detail-info-row"><span>Tipo movimento</span><span>${tx.type}</span></div>
             </div>
         `;
+        showPopup(txDetailPopup);
+    }
+    function hideTransactionDetail() { hidePopup(txDetailPopup); }
 
+    function showSortOptions() { showPopup(sortOptionsPopup); }
+    function hideSortOptions() { hidePopup(sortOptionsPopup); }
+
+    function showPopup(popupElement) {
         body.classList.add('modal-open');
-        backdrop.classList.add('active');
-        popup.classList.add('active');
+        modalBackdrop.classList.add('active');
+        popupElement.classList.add('active');
     }
 
-    function hideTransactionDetail() {
-        const popup = document.getElementById('transaction-detail-popup');
-        const backdrop = document.getElementById('modal-backdrop');
+    function hidePopup(popupElement) {
         body.classList.remove('modal-open');
-        backdrop.classList.remove('active');
-        popup.classList.remove('active');
+        modalBackdrop.classList.remove('active');
+        popupElement.classList.remove('active');
+    }
+    
+    function updateSortOptionsUI() {
+        document.querySelectorAll('#sort-options-popup .sort-option').forEach(opt => {
+            opt.classList.toggle('selected', opt.dataset.sort === currentSort);
+        });
     }
 
+    // --- SCREEN MANAGEMENT & UTILITIES ---
     function showAllTransactionsScreen() { document.getElementById('all-transactions-content').classList.add('active'); }
     function hideAllTransactionsScreen() { document.getElementById('all-transactions-content').classList.remove('active'); }
-    function updateBalanceDate() { document.getElementById('balance-date').textContent = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'numeric', year: 'numeric' }); }
+    
+    function updateBalanceDate() { 
+        const now = new Date('2025-08-11');
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        document.getElementById('balance-date').textContent = `${day}/${month}/${year}`;
+    }
+
+    // --- SWIPE-TO-DISMISS GESTURE ---
+    function setupSwipeToDismiss(popupElement, closeCallback) {
+        let touchStartY = 0;
+        let currentY = 0;
+        let isDragging = false;
+        const contentWrapper = popupElement.querySelector('.transaction-detail-wrapper, .sort-options-wrapper');
+
+        popupElement.addEventListener('touchstart', (e) => {
+            if (contentWrapper && contentWrapper.scrollTop === 0) {
+                touchStartY = e.touches[0].clientY;
+                isDragging = true;
+                popupElement.classList.add('dragging');
+            }
+        }, { passive: true });
+
+        popupElement.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            currentY = e.touches[0].clientY;
+            const deltaY = currentY - touchStartY;
+            if (deltaY > 0) {
+                e.preventDefault();
+                popupElement.style.transform = `translateY(${deltaY}px)`;
+            }
+        }, { passive: false });
+
+        popupElement.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            popupElement.classList.remove('dragging');
+            
+            const deltaY = currentY - touchStartY;
+            const popupHeight = popupElement.offsetHeight;
+
+            if (deltaY > popupHeight / 4) {
+                closeCallback();
+            }
+            popupElement.style.transform = '';
+            touchStartY = 0;
+            currentY = 0;
+        });
+    }
 
     // --- START THE APP ---
     init();
