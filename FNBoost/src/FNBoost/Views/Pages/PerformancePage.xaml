@@ -59,6 +59,32 @@
             <Setter Property="CornerRadius" Value="2" />
             <Setter Property="RenderTransformOrigin" Value="0,0.5" />
         </Style>
+        <!-- Numero di una griglia statistiche (sessione e rete), spiegazione nel tooltip -->
+        <DataTemplate x:Key="StatTemplate">
+            <Border Background="{StaticResource Surface2Brush}" CornerRadius="8" Padding="12,8" Margin="0,0,8,8"
+                    ToolTip="{Binding Tip}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Label}" Style="{StaticResource Small}" TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" Margin="0,2,0,0"
+                               Foreground="{Binding Brush}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+        <!-- Riquadri della card "Rete e ping" (dentro una card: sfondo pieno senza bordo) -->
+        <Style x:Key="NetTile" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource Surface2Brush}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+        </Style>
+        <Style x:Key="NetValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
         <!-- Osservazioni dell'analisi (stesso stile dei controlli della Panoramica) -->
         <DataTemplate x:Key="InsightTemplate">
             <Border Background="{StaticResource Surface2Brush}" CornerRadius="10" Padding="14,10" Margin="0,0,0,8">
@@ -126,6 +152,47 @@
                     </WrapPanel>
                     <TextBlock x:Name="RecordHint" Style="{StaticResource Small}" Margin="0,4,0,0" />
                 </StackPanel>
+            </Border>
+
+            <!-- ===================== Report diagnostico ===================== -->
+            <Border Style="{StaticResource Card}" BorderBrush="#557C5CFF">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="30" Height="30" CornerRadius="15" VerticalAlignment="Top" HorizontalAlignment="Left"
+                            Background="{StaticResource AccentBrush}" Opacity="0.22" />
+                    <TextBlock Text="&#xE9F9;" Style="{StaticResource Icon}" FontSize="14" Width="30" TextAlignment="Center"
+                               VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,8,0,0" Foreground="{StaticResource Accent2Brush}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Report diagnostico" Style="{StaticResource CardTitle}" />
+                        <TextBlock x:Name="ReportExplain" Style="{StaticResource Muted}" Margin="0,4,0,0" />
+                        <WrapPanel Margin="0,12,0,0">
+                            <Button x:Name="ReportExportBtn" Style="{StaticResource AccentButton}" Click="ReportExport_Click" Padding="16,8" Margin="0,0,8,6"
+                                    ToolTip="Crea un file ZIP in Documenti\FN Boost\Report e lo mostra in Esplora file">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE896;" Style="{StaticResource Icon}" FontSize="13" />
+                                    <TextBlock x:Name="ReportExportText" Text="Esporta report completo (.zip)" Margin="8,0,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="ReportCopyBtn" Click="ReportCopy_Click" Padding="14,8" Margin="0,0,8,6"
+                                    ToolTip="Copia negli appunti un riassunto di testo (massimo 4000 caratteri) da incollare in una chat o in un messaggio">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8C8;" Style="{StaticResource Icon}" FontSize="13" />
+                                    <TextBlock x:Name="ReportCopyText" Text="Copia riepilogo per la chat" Margin="8,0,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <Button Click="ReportFolder_Click" Padding="14,8" Margin="0,0,8,6" ToolTip="Apri Documenti\FN Boost\Report">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE838;" Style="{StaticResource Icon}" FontSize="13" />
+                                    <TextBlock Text="Apri cartella report" Margin="8,0,0,0" />
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                        <TextBlock x:Name="ReportHint" Style="{StaticResource Small}" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Grid>
             </Border>
 
             <!-- ===================== Numeri dal vivo ===================== -->
@@ -287,6 +354,126 @@
                 </Border>
             </Grid>
 
+            <!-- ===================== Rete e ping ===================== -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <DockPanel>
+                        <Ellipse x:Name="NetDot" Width="10" Height="10" Fill="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Rete e ping" Style="{StaticResource CardTitle}" Margin="10,0,0,0" />
+                        <TextBlock x:Name="NetStatusText" Style="{StaticResource Small}" Margin="14,0,0,0" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                    <TextBlock x:Name="NetOffText" Style="{StaticResource Muted}" Margin="0,10,0,0" Visibility="Collapsed" />
+                    <StackPanel x:Name="NetPanel" Margin="0,12,0,0">
+                        <UniformGrid Columns="4" Margin="0,0,-8,0">
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Ping medio dell'ultimo minuto (ICMP dal PC). Se il server di gioco non risponde al ping si misura l'endpoint ufficiale Epic della regione. Può differire di qualche ms dal ping mostrato in gioco.">
+                                <StackPanel>
+                                    <TextBlock Text="PING DI GIOCO" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetPingText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetPingSub" Style="{StaticResource TileSub}" Text="in attesa" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Jitter: quanto cambia il ping da un pacchetto all'altro (media delle differenze tra ping consecutivi). Sotto 10 ms è buono; un jitter alto si sente come lag a scatti.">
+                                <StackPanel>
+                                    <TextBlock Text="JITTER" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetJitterText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock Text="variazione del ping" Style="{StaticResource TileSub}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Ping senza risposta nell'ultimo minuto. Anche l'1-2% si nota in gioco (teletrasporti, colpi non registrati).">
+                                <StackPanel>
+                                    <TextBlock Text="PERDITA PACCHETTI" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetLossText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetLossSub" Style="{StaticResource TileSub}" Text="ultimo minuto" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Ping verso il router di casa. Se è alto o instabile il problema è la rete locale (spesso il Wi-Fi), non Internet né il server.">
+                                <StackPanel>
+                                    <TextBlock Text="ROUTER" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetGwText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetGwSub" Style="{StaticResource TileSub}" Text="rete di casa" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Ping verso 1.1.1.1 (Cloudflare): un riferimento per capire se il problema è la linea Internet in generale.">
+                                <StackPanel>
+                                    <TextBlock Text="INTERNET (1.1.1.1)" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetInetText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetInetSub" Style="{StaticResource TileSub}" Text="riferimento" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Regione Epic usata come riferimento e quella con il ping più basso nell'ultima scansione (endpoint ufficiali ping-*.ds.on.epicgames.com).">
+                                <StackPanel>
+                                    <TextBlock Text="REGIONE EPIC" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetRegionText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetRegionSub" Style="{StaticResource TileSub}" Text="–" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Pacchetti UDP al secondo tra il gioco e il server (dagli eventi di rete di Windows, ETW Kernel-Network).">
+                                <StackPanel>
+                                    <TextBlock Text="PACCHETTI/S" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetPpsText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetPpsSub" Style="{StaticResource TileSub}" Text="ricevuti / inviati" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}" ToolTip="Banda usata dal gioco: download / upload.">
+                                <StackPanel>
+                                    <TextBlock Text="BANDA GIOCO" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetBwText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetBwSub" Style="{StaticResource TileSub}" Text="download / upload" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Traffico delle altre app di questo PC sulla stessa connessione (download + upload): aggiornamenti, streaming, download in background. Diventa giallo sopra 2 Mbit/s.">
+                                <StackPanel>
+                                    <TextBlock Text="ALTRE APP" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetOtherText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetOtherSub" Style="{StaticResource TileSub}" Text="stesso PC" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}" ToolTip="Interfaccia usata per Internet, segnale Wi-Fi e velocità del collegamento.">
+                                <StackPanel>
+                                    <TextBlock Text="CONNESSIONE" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetConnText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetConnSub" Style="{StaticResource TileSub}" Text="–" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Indirizzo e porta del server della partita, ricavati dal traffico UDP del gioco (senza toccare il gioco).">
+                                <StackPanel>
+                                    <TextBlock Text="SERVER DI GIOCO" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetServerText" Style="{StaticResource NetValue}" FontSize="15" Margin="0,5,0,1" Text="–"
+                                               FontFamily="{StaticResource MonoFont}" />
+                                    <TextBlock x:Name="NetServerSub" Style="{StaticResource TileSub}" Text="in attesa della partita" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource NetTile}"
+                                    ToolTip="Freeze di rete: il server non manda pacchetti per oltre 250 ms. In gioco si sente come lag o teletrasporti, anche con FPS perfetti (diverso dallo stutter, che è un frame lento del PC).">
+                                <StackPanel>
+                                    <TextBlock Text="FREEZE RETE" Style="{StaticResource TileLabel}" />
+                                    <TextBlock x:Name="NetFreezeText" Style="{StaticResource NetValue}" Text="–" />
+                                    <TextBlock x:Name="NetFreezeSub" Style="{StaticResource TileSub}" Text="ultimi 60 s" />
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                        <DockPanel Margin="0,6,0,0">
+                            <TextBlock DockPanel.Dock="Right" Style="{StaticResource Small}" VerticalAlignment="Center"
+                                       Text="un buco nella linea = ping senza risposta" />
+                            <TextBlock Text="Ping nel tempo" Style="{StaticResource CardTitle}" />
+                        </DockPanel>
+                        <perf:LineChart x:Name="NetChart" Height="160" Margin="0,10,0,0" XLabel="ultimi 120 secondi · ms"
+                                        Legend="Ping di gioco" Legend2="Router" Stroke="{StaticResource Accent2Brush}"
+                                        Stroke2="{StaticResource OkBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- ===================== Misurazione ===================== -->
             <TextBlock Text="Impostazioni" Style="{StaticResource H2}" />
             <Border Style="{StaticResource Card}">
@@ -307,6 +494,18 @@
                                       Content="Registra automaticamente le partite" />
                             <TextBlock Style="{StaticResource Small}" Margin="54,4,0,0"
                                        Text="Parte quando il gioco renderizza da qualche secondo e si ferma quando smette: ogni partita finisce nello storico." />
+                            <CheckBox x:Name="NetToggle" Style="{StaticResource ToggleSwitch}" Margin="0,14,0,0" Click="PerfSetting_Click"
+                                      Content="Misura ping e rete" />
+                            <TextBlock Style="{StaticResource Small}" Margin="54,4,0,0"
+                                       Text="Ping, jitter e perdita verso server di gioco, regione Epic, router e 1.1.1.1, più il traffico UDP del gioco. Un ping al secondo per bersaglio: carico trascurabile." />
+                            <CheckBox x:Name="GatewayToggle" Style="{StaticResource ToggleSwitch}" Margin="0,14,0,0" Click="PerfSetting_Click"
+                                      Content="Pinga anche il router" />
+                            <TextBlock Style="{StaticResource Small}" Margin="54,4,0,0"
+                                       Text="Serve a capire se il lag nasce in casa (Wi-Fi, router) o fuori." />
+                            <CheckBox x:Name="ProcToggle" Style="{StaticResource ToggleSwitch}" Margin="0,14,0,0" Click="PerfSetting_Click"
+                                      Content="Registra i processi in background" />
+                            <TextBlock Style="{StaticResource Small}" Margin="54,4,0,0"
+                                       Text="Nelle sessioni salva le app che hanno usato più CPU e RAM (dai contatori di Windows, senza aprire i processi)." />
                             <TextBlock x:Name="RecordHotkeyHint" Style="{StaticResource Small}" Margin="0,14,0,0" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
@@ -334,6 +533,15 @@
                                 <TextBlock Text="Durata minima sessione" Style="{StaticResource Label}"
                                            ToolTip="Le registrazioni più corte non vengono salvate nello storico." />
                                 <ComboBox x:Name="MinSessionCombo" Grid.Column="1" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                          SelectionChanged="PerfSetting_Changed" />
+                            </Grid>
+                            <Grid Style="{StaticResource Row}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170" /><ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Regione per il ping" Style="{StaticResource Label}"
+                                           ToolTip="Endpoint ufficiale Epic usato quando il server di gioco non risponde al ping. «Automatica» sceglie la regione più vicina." />
+                                <ComboBox x:Name="RegionCombo" Grid.Column="1" DisplayMemberPath="Label" SelectedValuePath="Value"
                                           SelectionChanged="PerfSetting_Changed" />
                             </Grid>
                             <Grid Style="{StaticResource Row}">
@@ -447,6 +655,8 @@
                             <CheckBox IsChecked="{Binding ShowFrametime}" Content="Frametime (ms)" Margin="0,0,0,8" />
                             <CheckBox IsChecked="{Binding ShowCpuGpu}" Content="Utilizzo CPU e GPU" Margin="0,0,0,8" />
                             <CheckBox IsChecked="{Binding ShowGraph}" Content="Mini grafico dei frametime" Margin="0,0,0,8" />
+                            <CheckBox IsChecked="{Binding ShowNet}" Content="Ping e rete" Margin="0,0,0,8"
+                                      ToolTip="Riga «Ping 24 ms · jitter 2 · perdita 0%», gialla o rossa quando i valori peggiorano (serve «Misura ping e rete»)" />
                             <Separator Margin="0,6,0,12" Background="{StaticResource BorderBrush}" />
                             <CheckBox IsChecked="{Binding Compact}" Content="Compatto (una sola riga)" Margin="0,0,0,8" />
                             <CheckBox IsChecked="{Binding OnlyWhenGameFocused}" Content="Mostra solo con il gioco in primo piano" Margin="0,0,0,4" />
@@ -521,6 +731,8 @@
                                         ToolTip="Scrivi il nuovo nome nel campo «Etichetta» in alto, poi premi Rinomina" />
                                 <Button x:Name="ExportBtn" Content="Esporta CSV" Click="Export_Click" Margin="0,0,8,6"
                                         ToolTip="Salva tutti i frametime della sessione (indice, tempo, frametime, FPS) per Excel o altri strumenti" />
+                                <Button x:Name="SessionReportBtn" Content="Report (.zip)" Click="ReportExport_Click" Margin="0,0,8,6"
+                                        ToolTip="Crea il report diagnostico completo di questa sessione" />
                                 <Button x:Name="DeleteBtn" Content="Elimina" Style="{StaticResource DangerButton}" Click="Delete_Click" Margin="0,0,8,6" />
                             </WrapPanel>
                             <TextBlock x:Name="SessionHint" Style="{StaticResource Small}" Margin="0,2,0,0" />
@@ -543,25 +755,12 @@
                     <TextBlock x:Name="AnalysisTitle" FontSize="19" FontWeight="SemiBold" Margin="0,4,0,0" TextWrapping="Wrap" />
                     <TextBlock x:Name="AnalysisMeta" Style="{StaticResource Small}" Margin="0,4,0,0" />
 
-                    <ItemsControl x:Name="StatsGrid" Margin="0,14,-8,0">
+                    <ItemsControl x:Name="StatsGrid" Margin="0,14,-8,0" ItemTemplate="{StaticResource StatTemplate}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <UniformGrid Columns="4" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource Surface2Brush}" CornerRadius="8" Padding="12,8" Margin="0,0,8,8"
-                                        ToolTip="{Binding Tip}">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Small}" TextWrapping="NoWrap"
-                                                   TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" Margin="0,2,0,0"
-                                                   Foreground="{Binding Brush}" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
                     <Grid Margin="0,8,0,0">
@@ -581,6 +780,81 @@
                                             Legend="CPU" Legend2="GPU" />
                         </StackPanel>
                     </Grid>
+
+                    <!-- Rete della sessione -->
+                    <StackPanel x:Name="SessionNetPanel" Margin="0,18,0,0" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="20" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Ping durante la sessione" Style="{StaticResource CardTitle}" />
+                                <perf:LineChart x:Name="SessionPingChart" Height="190" Margin="0,10,0,0" Legend="Ping di gioco" Legend2="Router"
+                                                Stroke="{StaticResource Accent2Brush}" Stroke2="{StaticResource OkBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Perdita pacchetti" Style="{StaticResource CardTitle}"
+                                           ToolTip="Percentuale di ping senza risposta, secondo per secondo. Zero per tutta la linea è il risultato ideale." />
+                                <perf:LineChart x:Name="SessionLossChart" Height="190" Margin="0,10,0,0" MinY="0" ValueFormat="0'%'"
+                                                Stroke="{StaticResource BadBrush}" Legend="Perdita" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock x:Name="SessionNetTitle" Text="Rete" Style="{StaticResource CardTitle}" Margin="0,16,0,0" />
+                        <ItemsControl x:Name="NetStatsGrid" Margin="0,10,-8,0" ItemTemplate="{StaticResource StatTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Processi in background della sessione -->
+                    <StackPanel x:Name="ProcessPanel" Margin="0,14,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Processi in background" Style="{StaticResource CardTitle}"
+                                   ToolTip="Le app che hanno usato più CPU durante la sessione (contatori di Windows, gioco escluso), lette senza aprire i processi." />
+                        <TextBlock Style="{StaticResource Small}" Margin="0,2,0,0"
+                                   Text="CPU in percentuale dell'intero processore, come nella scheda Processi di Gestione attività. FN Boost e il gioco sono esclusi." />
+                        <Border Background="{StaticResource Surface2Brush}" CornerRadius="8" Padding="12,8" Margin="0,10,0,0">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition Width="110" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Processo" Style="{StaticResource Small}" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="1" Text="CPU media" Style="{StaticResource Small}" FontWeight="SemiBold" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="2" Text="CPU massima" Style="{StaticResource Small}" FontWeight="SemiBold" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="3" Text="RAM media" Style="{StaticResource Small}" FontWeight="SemiBold" TextAlignment="Right" />
+                                </Grid>
+                                <ItemsControl x:Name="ProcessList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="110" />
+                                                    <ColumnDefinition Width="110" />
+                                                    <ColumnDefinition Width="110" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Grid.Column="1" Text="{Binding AvgCpu}" TextAlignment="Right" Foreground="{Binding CpuBrush}"
+                                                           FontFamily="{StaticResource MonoFont}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding MaxCpu}" TextAlignment="Right"
+                                                           FontFamily="{StaticResource MonoFont}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Ram}" TextAlignment="Right"
+                                                           FontFamily="{StaticResource MonoFont}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
 
                     <DockPanel Margin="0,18,0,0">
                         <TextBlock x:Name="HistogramStatus" DockPanel.Dock="Right" Style="{StaticResource Small}" VerticalAlignment="Center" />

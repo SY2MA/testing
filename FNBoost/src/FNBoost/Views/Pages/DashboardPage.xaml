@@ -140,6 +140,35 @@
                             Click="OpenPerformance_Click" />
                 </Grid>
             </Border>
+
+            <!-- Report diagnostico da condividere -->
+            <Border Style="{StaticResource Card}" Padding="16,12" Margin="0,8,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="36" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="26" Height="26" CornerRadius="13" VerticalAlignment="Top" Background="{StaticResource AccentBrush}" Opacity="0.22" />
+                    <TextBlock Text="&#xE9F9;" Style="{StaticResource Icon}" FontSize="13" Width="26" TextAlignment="Center"
+                               VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,6,0,0" Foreground="{StaticResource Accent2Brush}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Report diagnostico" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ReportExplain" Style="{StaticResource Muted}" Margin="0,2,0,0"
+                                   Foreground="{StaticResource TextBrush}" Opacity="0.9" />
+                        <TextBlock x:Name="ReportHint" Style="{StaticResource Small}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Text="Include l'ultima sessione registrata. Per sceglierne un'altra usa la pagina Prestazioni." />
+                    </StackPanel>
+                    <Button x:Name="ReportBtn" Grid.Column="2" Style="{StaticResource AccentButton}" VerticalAlignment="Center"
+                            Margin="12,0,0,0" Padding="14,8" Click="Report_Click"
+                            ToolTip="Crea un file ZIP in Documenti\FN Boost\Report e lo mostra in Esplora file">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE896;" Style="{StaticResource Icon}" FontSize="13" />
+                            <TextBlock x:Name="ReportBtnText" Text="Crea report diagnostico" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -44,12 +44,7 @@ namespace FNBoost.Perf
             (PingRegion.MiddleEast, "ping-me.ds.on.epicgames.com", "Medio Oriente")
         };
 
-        public static string RegionDisplayName(PingRegion region)
-        {
-            foreach (var r in Regions)
-                if (r.Region == region) return r.Name;
-            return "Auto";
-        }
+        public static string RegionDisplayName(PingRegion region) => NetStats.RegionDisplayName(region);
 
         private sealed class Target
         {

@@ -16,6 +16,20 @@ namespace FNBoost.Perf
     /// <summary>Statistiche di rete: ping, jitter, perdita, percentili, correlazione freeze/stutter.</summary>
     public static class NetStats
     {
+        /// <summary>Nome in italiano di una regione Epic (lo stesso usato dal Pinger e mostrato nella UI).</summary>
+        public static string RegionDisplayName(PingRegion region) => region switch
+        {
+            PingRegion.Europe => "Europa",
+            PingRegion.NaEast => "NA Est",
+            PingRegion.NaCentral => "NA Centro",
+            PingRegion.NaWest => "NA Ovest",
+            PingRegion.Brazil => "Brasile",
+            PingRegion.Asia => "Asia",
+            PingRegion.Oceania => "Oceania",
+            PingRegion.MiddleEast => "Medio Oriente",
+            _ => "Auto"
+        };
+
         /// <summary>
         /// Jitter = media della differenza assoluta tra RTT consecutivi (ms). I ping persi (null) vengono saltati:
         /// si confrontano i ping riusciti uno dopo l'altro. null se ci sono meno di 2 ping riusciti.
@@ -596,6 +610,45 @@ namespace FNBoost.Perf
             foreach (var k in stale)
                 if (Server == null || !k.Equals(Server.Value)) _detectors.Remove(k);
         }
+    }
+
+    /// <summary>
+    /// Soglie e testi della rete per la UI (overlay, pannello flottante, pagina Prestazioni).
+    /// Livello: 0 = buono, 1 = attenzione (giallo), 2 = problema (rosso).
+    /// </summary>
+    public static class NetDisplay
+    {
+        public const double PingWarnMs = 80, PingBadMs = 120;
+        public const double JitterWarnMs = 10, JitterBadMs = 25;
+        public const double LossWarnPct = 1, LossBadPct = 3;
+
+        private static int Level(double? v, double warn, double bad) =>
+            v is not { } x || !double.IsFinite(x) ? 0 : x >= bad ? 2 : x >= warn ? 1 : 0;
+
+        public static int PingLevel(double? ms) => Level(ms, PingWarnMs, PingBadMs);
+        public static int JitterLevel(double? ms) => Level(ms, JitterWarnMs, JitterBadMs);
+        public static int LossLevel(double? pct) => Level(pct, LossWarnPct, LossBadPct);
+
+        /// <summary>Il livello peggiore tra ping medio, jitter e perdita.</summary>
+        public static int Level(PingStats? p) =>
+            p == null ? 0 : Math.Max(PingLevel(p.AvgMs), Math.Max(JitterLevel(p.JitterMs), LossLevel(p.Sent > 0 ? p.LossPct : null)));
+
+        /// <summary>Ping da mostrare: media della finestra (più stabile dell'ultimo valore), altrimenti l'ultimo.</summary>
+        public static double? PingMs(PingStats? p) => p?.AvgMs ?? p?.LastMs;
+
+        /// <summary>"24 ms · jitter 2 · perdita 0%" (null se non c'è ancora un ping riuscito).</summary>
+        public static string? PingValues(PingStats? p, CultureInfo? culture = null)
+        {
+            if (PingMs(p) is not { } ms || !double.IsFinite(ms)) return null;
+            var c = culture ?? CultureInfo.CurrentCulture;
+            string jitter = p!.JitterMs is { } j && double.IsFinite(j) ? j.ToString("0", c) : "–";
+            string loss = p.LossPct.ToString(p.LossPct > 0 && p.LossPct < 10 ? "0.#" : "0", c);
+            return $"{ms.ToString("0", c)} ms · jitter {jitter} · perdita {loss}%";
+        }
+
+        /// <summary>"Ping 24 ms · jitter 2 · perdita 0%", oppure "Ping: n/d".</summary>
+        public static string PingLine(PingStats? p, CultureInfo? culture = null) =>
+            PingValues(p, culture) is { } v ? "Ping " + v : "Ping: n/d";
     }
 
     /// <summary>Normalizzazione ed esclusioni dei nomi di processo per il campionamento CPU/RAM.</summary>

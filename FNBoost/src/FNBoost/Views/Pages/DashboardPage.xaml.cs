@@ -24,6 +24,7 @@ namespace FNBoost.Views.Pages
             };
             App.Tweaks.Changed += UpdateScore;
             UpdateScore();
+            ReportExplain.Text = ReportActions.Explanation;
         }
 
         private void UpdateScore()
@@ -114,6 +115,28 @@ namespace FNBoost.Views.Pages
                 Log.Warn("Riepilogo ultima sessione: " + ex.Message);
                 LastSessionCard.Visibility = Visibility.Collapsed;
             }
+        }
+
+        /// <summary>Stesso flusso della pagina Prestazioni: ZIP con l'ultima sessione salvata, poi Esplora file sul file.</summary>
+        private async void Report_Click(object sender, RoutedEventArgs e)
+        {
+            if (ReportActions.IsBusy) return;
+            ReportBtn.IsEnabled = false;
+            ReportBtnText.Text = "Creazione del report…";
+            ReportHint.Text = "Raccolta dei dati e pulizia dei dati personali: qualche secondo…";
+            string? path = null;
+            try
+            {
+                path = await ReportActions.ExportAsync(null, Window.GetWindow(this));
+            }
+            finally
+            {
+                ReportBtn.IsEnabled = true;
+                ReportBtnText.Text = "Crea report diagnostico";
+            }
+            ReportHint.Text = path != null
+                ? $"Report salvato: {path}"
+                : "Include l'ultima sessione registrata. Per sceglierne un'altra usa la pagina Prestazioni.";
         }
 
         private void OpenPerformance_Click(object sender, RoutedEventArgs e)

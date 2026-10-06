@@ -131,6 +131,11 @@ namespace FNBoost.Perf
         /// <summary>Regione Epic con il ping più basso nell'ultima scansione (per capire se il server è lontano).</summary>
         public string? BestRegionName { get; set; }
         public double? BestRegionPingMs { get; set; }
+        /// <summary>
+        /// true se la traccia ETW del traffico del gioco è attiva (serve l'amministratore): altrimenti pacchetti,
+        /// banda e freeze qui sotto valgono 0 ma non sono misurati (i ping funzionano comunque).
+        /// </summary>
+        public bool TrafficAvailable { get; set; }
         public double PacketsInPerSec { get; set; }
         public double PacketsOutPerSec { get; set; }
         public double GameKbpsIn { get; set; }

@@ -284,6 +284,7 @@ namespace FNBoost.Perf
             if (s.ShowMinMax) rows.Add(("Min / Max", $"{N0(w.MinFps)} / {N0(w.MaxFps)}", null));
             if (s.ShowFrametime) rows.Add(("Frametime", ftMs, null));
             if (s.ShowCpuGpu) rows.Add(("CPU / GPU", cpuGpu, null));
+            if (s.ShowNet && NetValues(snap) is { } net) rows.Add(("Ping", net.Text, net.Color));
 
             if (rows.Count > 0)
             {
@@ -328,6 +329,19 @@ namespace FNBoost.Perf
         }
 
         private static readonly Brush WarnBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xF2, 0xB8, 0x4B)));
+        private static readonly Brush BadBrush = Frozen(new SolidColorBrush(Color.FromRgb(0xFF, 0x5D, 0x6C)));
+
+        /// <summary>
+        /// Riga di rete: "24 ms · jitter 2 · perdita 0%" e solo "24 ms" per il layout compatto.
+        /// Colore: giallo/rosso se ping, jitter o perdita superano le soglie (80/120 ms, 10/25 ms, 1/3%).
+        /// </summary>
+        private static (string Text, string Short, Brush? Color)? NetValues(LiveSnapshot snap)
+        {
+            var game = snap.Net?.Game;
+            if (NetDisplay.PingValues(game) is not { } text || NetDisplay.PingMs(game) is not { } ms) return null;
+            Brush? color = NetDisplay.Level(game) switch { 2 => BadBrush, 1 => WarnBrush, _ => null };
+            return (text, ms.ToString("0", CultureInfo.CurrentCulture) + " ms", color);
+        }
 
         private static Brush? LowBrush(double low, double reference)
         {
@@ -360,6 +374,11 @@ namespace FNBoost.Perf
             if (s.ShowFrametime) Pair("", ftMs);
             if (s.ShowCpuGpu) Pair("CPU/GPU", cpuGpu);
             if (parts.Count == 0) parts.Add(Ft(fps + " FPS", fs, _accent, true, ppd));
+            if (s.ShowNet && NetValues(snap) is { } net)
+            {
+                parts.Add(Ft("  ·  ", fs * 0.8, _label, false, ppd));
+                parts.Add(Ft(net.Short, fs, net.Color ?? _text, true, ppd));
+            }
 
             double baseline = 0, height = 0, x = pad;
             foreach (var p in parts) baseline = Math.Max(baseline, p.Baseline);

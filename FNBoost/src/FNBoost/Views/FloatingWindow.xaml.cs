@@ -202,12 +202,33 @@ namespace FNBoost.Views
                 PerfStatusText.ToolTip = string.IsNullOrEmpty(snap.StatusText) ? null : snap.StatusText;
             }
 
+            ShowNet(snap.Net);
+
             if (_recordNote != null)
             {
                 if (Environment.TickCount64 < _recordNoteUntilMs) PerfStatusText.Text = _recordNote;
                 else _recordNote = null;
             }
             UpdateRecord(snap.IsRecording, snap.RecordingSeconds);
+        }
+
+        /// <summary>Riga "Ping 24 ms · jitter 2 · perdita 0%" (gialla/rossa oltre le soglie), oppure "Ping: n/d".</summary>
+        private void ShowNet(NetworkSnapshot? net)
+        {
+            var game = net?.Game;
+            bool off = net == null && !App.Settings.Perf.NetCaptureEnabled;
+            PerfNetText.Text = off ? "Ping: misura di rete spenta" : NetDisplay.PingLine(game);
+            PerfNetText.Foreground = (Brush)FindResource(NetDisplay.Level(game) switch
+            {
+                2 => "BadBrush",
+                1 => "WarnBrush",
+                _ => "MutedBrush"
+            });
+            string? target = game != null && NetDisplay.PingMs(game).HasValue && !string.IsNullOrEmpty(game.Target) ? game.Target : null;
+            var tip = net == null
+                ? off ? "Attiva «Misura ping e rete» nella pagina Prestazioni" : "La misura di rete parte insieme al contatore FPS"
+                : string.Join("\n", new[] { target, net.StatusText }.Where(x => !string.IsNullOrEmpty(x)));
+            PerfNetText.ToolTip = tip.Length > 0 ? tip : null;
         }
 
         private void UpdateRecord(bool recording, double seconds)

@@ -7,6 +7,7 @@ App nativa per Windows 11 (C# / WPF, .NET 10) che:
 3. **Configura Fortnite** (GameUserSettings.ini) a gioco chiuso, con backup automatico.
 4. **Mostra un mirino personalizzato** a livelli in una finestra overlay trasparente che non tocca il gioco.
 5. **Misura gli FPS** (media, 1% low, 0,1% low, min/max, stutter) con un overlay in gioco, registra le sessioni e le analizza nel tempo.
+6. **Misura ping, jitter, perdita di pacchetti e traffico del gioco** e crea un **report diagnostico** da condividere, già ripulito dai dati personali.
 
 Ha due interfacce:
 
@@ -116,6 +117,45 @@ Sono contrassegnati come *Consigliato*: Modalità Gioco, Game Bar, piano energet
 
 ---
 
+## Rete, ping e report diagnostico
+
+**Cosa misura e come.** Anche qui FN Boost osserva solo il sistema, senza toccare il gioco né l'anti-cheat:
+
+- **Traffico del gioco**: dagli eventi UDP del provider ETW **Microsoft-Windows-Kernel-Network** (solo invio/ricezione UDP, IPv4 e IPv6). Da lì ricava l'indirizzo del server della partita, i pacchetti al secondo, la banda del gioco e le pause tra un pacchetto e l'altro. Serve l'amministratore, come per gli FPS.
+- **Ping ICMP** (come il comando `ping`) inviati dal processo di FN Boost, uno al secondo per bersaglio: il **server di gioco**; l'**endpoint ufficiale Epic della regione** (`ping-eu`, `ping-nae`, `ping-nac`, `ping-naw`, `ping-br`, `ping-asia`, `ping-oce`, `ping-me` `.ds.on.epicgames.com`, gli stessi indicati dal supporto Epic), scelto in automatico come il più vicino oppure a mano in *Prestazioni › Misurazione*; il **router** di casa; **1.1.1.1** come riferimento della linea Internet.
+- **Interfaccia di rete**: tipo di connessione (Ethernet/Wi-Fi), velocità del collegamento, segnale Wi-Fi e traffico totale del PC, per stimare quanto usano le **altre app**.
+- **Processi in background**: i contatori PDH `\Process(*)` di Windows (CPU e RAM per nome di processo), letti senza aprire i processi. Il gioco e FN Boost sono esclusi.
+
+Niente iniezioni, hook, handle verso il gioco, lettura della memoria o input simulato. La misura si spegne con *Misura ping e rete* (e il router con *Pinga anche il router*).
+
+**Dove si vede.** La pagina **Prestazioni** ha la card *Rete e ping* (ping di gioco, jitter, perdita, router, Internet, regione Epic, pacchetti/s, banda, altre app, connessione, server, freeze degli ultimi 60 s) con il grafico del ping degli ultimi 2 minuti. Ogni sessione registrata salva un campione di rete al secondo: l'analisi mostra ping e perdita nel tempo, il riepilogo di rete, i processi in background più pesanti e i consigli automatici (ping alto, server lontano rispetto alla regione migliore, Wi-Fi debole, router instabile, banda occupata da altre app, freeze di rete). L'overlay in gioco può mostrare la riga `Ping 24 ms · jitter 2 · perdita 0%` (gialla da 80 ms / 10 ms di jitter / 1% di perdita, rossa da 120 ms / 25 ms / 3%); il pannello flottante mostra la stessa riga sotto gli FPS.
+
+**Definizioni:**
+
+| Valore | Significato |
+|---|---|
+| **Ping** | tempo di andata e ritorno di un pacchetto (ms), media dell'ultimo minuto dal vivo |
+| **Jitter** | media della differenza tra ping consecutivi: quanto il ping "balla". Sotto 10 ms è buono |
+| **Perdita** | percentuale di ping senza risposta. Già l'1-2% si nota in gioco |
+| **Freeze di rete** | il server non manda pacchetti per oltre 250 ms: in gioco è lag (teletrasporti, colpi non registrati), anche con FPS perfetti |
+| **Stutter** | un frame lento del PC (vedi sopra): è un problema di prestazioni, non di rete. L'analisi li tiene separati e segnala quando coincidono |
+
+**Report diagnostico.** In *Prestazioni › Report diagnostico* (o *Panoramica › Crea report diagnostico*):
+
+- **Esporta report completo (.zip)**: crea `Documenti\FN Boost\Report\FNBoost-Report-<data>.zip` con `report.html` (da aprire nel browser, con grafici), `report.json` (dati completi), `summary.txt`, `frametimes.csv`, gli eventi utili del log di Fortnite, il registro di FN Boost e un `README.txt`. Usa la sessione selezionata nello storico, altrimenti l'ultima salvata. A fine esportazione si apre Esplora file con lo ZIP già selezionato, pronto da allegare.
+- **Copia riepilogo per la chat**: copia negli appunti un testo di massimo 4000 caratteri da incollare in una chat (anche con un assistente AI) o in un messaggio.
+- **Apri cartella report**: apre la cartella dei report.
+
+**Privacy.** Il report è pensato per essere condiviso, quindi prima del salvataggio vengono rimossi: nome utente di Windows e percorsi del profilo, nome del PC, ID dell'account Epic, e-mail, token nelle URL, IP locali/privati e il tuo IP pubblico. Dal log di Fortnite si prendono solo gli eventi tecnici (connessione, server, hitch, shader, crash, memoria): chat, party e lista amici vengono saltati, quindi niente nomi di giocatori. Restano in chiaro solo gli IP dei server di gioco e gli endpoint Epic, che servono alla diagnosi. Controlla comunque il contenuto prima di inviarlo.
+
+**Limiti, onestamente:**
+- Molti server di gioco **non rispondono all'ICMP**: in quel caso il "ping di gioco" è quello dell'endpoint Epic della regione, che è vicino ma non è lo stesso server. La UI e il report dicono sempre verso cosa è stato misurato.
+- Il ping ICMP può differire di **qualche ms** dal ping mostrato da Fortnite (che misura il proprio traffico UDP e il tempo di elaborazione del server).
+- Senza permessi di amministratore il traffico del gioco (pacchetti, banda, freeze, indirizzo del server) non è misurabile: i ping funzionano comunque.
+- Il report `frametimes.csv` di una sessione lunga può pesare decine di MB prima della compressione.
+
+---
+
 ## Note sul tuo sistema (dalle info che hai inviato)
 
 - **i5-13600K + Z790 AORUS ELITE AX, BIOS F16 (2026):** il BIOS è recente e include le correzioni microcode Intel per l'instabilità dei 13ª gen. Usa il profilo *Intel Default Settings*.
@@ -133,8 +173,10 @@ Sono contrassegnati come *Consigliato*: Modalità Gioco, Game Bar, piano energet
 - `tweak-backups.json`: valori originali di ogni tweak applicato
 - `ini-backups\`: copie di GameUserSettings.ini prima di ogni salvataggio
 - `settings.json`: mirino, preset, scorciatoie, overlay FPS, posizione del pannello
-- `sessions\`: sessioni di prestazioni registrate (`.json` con statistiche e campioni, `.ft` con tutti i frametime)
+- `sessions\`: sessioni di prestazioni registrate (`.json` con statistiche, campioni al secondo, rete e processi; `.ft` con tutti i frametime)
 - `logs\fnboost.log`: registro di tutte le operazioni
+
+I report diagnostici finiscono in `Documenti\FN Boost\Report\` (solo quando li crei tu).
 
 Per annullare tutto: **Sicurezza e backup › Ripristina tutto**. In alternativa usa il punto di ripristino di Windows creato automaticamente prima del primo tweak.
 

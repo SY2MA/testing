@@ -119,6 +119,9 @@
                             <TextBlock Text="Max" Style="{StaticResource Small}" FontSize="10.5" />
                         </StackPanel>
                     </UniformGrid>
+                    <TextBlock x:Name="PerfNetText" Text="Ping: n/d" Style="{StaticResource Small}" Margin="0,6,0,0"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip="Ping medio dell'ultimo minuto verso il server di gioco (o la regione Epic se il server non risponde al ping), jitter e perdita di pacchetti" />
                     <perf:FrametimeGraph x:Name="PerfGraph" Compact="True" Height="40" MinHeight="0" Margin="0,8,0,0"
                                          ToolTip="Frametime recenti: barre gialle = picchi, rosse = oltre 50 ms" />
                     <Button x:Name="RecordBtn" Margin="0,10,0,0" Padding="8,7" HorizontalContentAlignment="Center" Click="Record_Click">

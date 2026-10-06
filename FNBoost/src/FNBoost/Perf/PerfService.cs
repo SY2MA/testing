@@ -1171,6 +1171,7 @@ namespace FNBoost.Perf
                 Gateway = pinger?.Stats(PingRole.Gateway),
                 Internet = pinger?.Stats(PingRole.Internet),
                 PingTargetKind = useServer ? "server" : "regione",
+                TrafficAvailable = net != null && net.IsAvailable,
                 BestRegionName = pinger?.BestRegionName,
                 BestRegionPingMs = pinger?.BestRegionMs,
                 PacketsInPerSec = tick.PacketsIn ?? 0,

@@ -26,6 +26,7 @@ namespace FNBoost.Tests
             T.Run("correlazione freeze/stutter", Correlation);
             T.Run("segnale Wi-Fi da netsh (lingue diverse)", WifiParsing);
             T.Run("nomi processo, esclusioni e accumulo CPU/RAM", ProcessUsageTests);
+            T.Run("nomi delle regioni e testi/soglie per la UI", DisplayHelpers);
 
             Console.WriteLine("PerfAnalyzer (rete e processi)");
             T.Run("ping alto: server lontano rispetto alla regione migliore", AnalyzerHighPing);
@@ -275,6 +276,36 @@ namespace FNBoost.Tests
             T.Equal(1, c.StutterWithFreeze, "stutter vicino a un freeze");
             T.Equal(3, NetStats.TotalFreezes(secs), "freeze totali");
             T.Equal(0, NetStats.Correlate(null).FreezeSeconds, "null");
+        }
+
+        private static void DisplayHelpers()
+        {
+            T.Equal("Europa", NetStats.RegionDisplayName(PingRegion.Europe), "Europa");
+            T.Equal("Medio Oriente", NetStats.RegionDisplayName(PingRegion.MiddleEast), "Medio Oriente");
+            T.Equal("Auto", NetStats.RegionDisplayName(PingRegion.Auto), "Auto");
+            foreach (PingRegion r in Enum.GetValues(typeof(PingRegion)))
+                T.True(r == PingRegion.Auto || NetStats.RegionDisplayName(r) != "Auto", "ogni regione ha un nome: " + r);
+
+            T.Equal(0, NetDisplay.PingLevel(79.9), "ping 79,9 → ok");
+            T.Equal(1, NetDisplay.PingLevel(80), "ping 80 → attenzione");
+            T.Equal(2, NetDisplay.PingLevel(120), "ping 120 → problema");
+            T.Equal(0, NetDisplay.PingLevel(null), "ping assente → nessun colore");
+            T.Equal(1, NetDisplay.JitterLevel(10), "jitter 10 → attenzione");
+            T.Equal(2, NetDisplay.JitterLevel(25), "jitter 25 → problema");
+            T.Equal(0, NetDisplay.LossLevel(0.5), "perdita 0,5% → ok");
+            T.Equal(1, NetDisplay.LossLevel(1), "perdita 1% → attenzione");
+            T.Equal(2, NetDisplay.LossLevel(3), "perdita 3% → problema");
+
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var p = new PingStats { AvgMs = 24.4, JitterMs = 2.2, LossPct = 0, Sent = 60, Received = 60 };
+            T.Equal("Ping 24 ms · jitter 2 · perdita 0%", NetDisplay.PingLine(p, inv), "riga del ping");
+            T.Equal(0, NetDisplay.Level(p), "livello complessivo buono");
+            p.LossPct = 3.3;
+            T.Equal("Ping 24 ms · jitter 2 · perdita 3.3%", NetDisplay.PingLine(p, inv), "perdita con un decimale");
+            T.Equal(2, NetDisplay.Level(p), "la perdita peggiora il livello complessivo");
+            T.Equal("Ping: n/d", NetDisplay.PingLine(null, inv), "senza dati");
+            T.Equal("Ping: n/d", NetDisplay.PingLine(new PingStats { Sent = 5 }, inv), "nessun ping riuscito");
+            T.Equal("Ping 30 ms · jitter – · perdita 0%", NetDisplay.PingLine(new PingStats { LastMs = 30 }, inv), "solo l'ultimo ping");
         }
 
         private static void WifiParsing()
