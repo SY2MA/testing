@@ -4,7 +4,35 @@
              xmlns:ch="clr-namespace:FNBoost.Crosshair">
     <UserControl.Resources>
         <Style x:Key="Row" TargetType="Grid">
-            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+        </Style>
+        <!-- Titolo di una card -->
+        <Style x:Key="CardTitle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <!-- Corpo di un livello: si attenua quando il livello è spento -->
+        <Style x:Key="LayerBody" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,14,0,0" />
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.45" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Valore mostrato a destra degli slider -->
+        <Style x:Key="Value" TargetType="TextBlock" BasedOn="{StaticResource Label}">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+        </Style>
+        <!-- Pulsanti piccoli (frecce, gradi, "Principale") -->
+        <Style x:Key="Mini" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="MinWidth" Value="34" />
+            <Setter Property="Margin" Value="0,0,6,0" />
         </Style>
     </UserControl.Resources>
 
@@ -16,7 +44,7 @@
         <StackPanel Margin="0,0,16,14">
             <TextBlock Text="Mirino" Style="{StaticResource H1}" />
             <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0"
-                       Text="Mirino personalizzato disegnato in una finestra trasparente sopra al gioco. Nessun contatto con Fortnite: niente iniezioni, niente hook, niente lettura della memoria." />
+                       Text="Mirino personalizzato a livelli disegnato in una finestra trasparente sopra al gioco. Nessun contatto con Fortnite: niente iniezioni, niente hook, niente lettura della memoria." />
         </StackPanel>
 
         <Grid Grid.Row="1">
@@ -26,85 +54,100 @@
                 <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
 
-            <!-- Colonna sinistra: anteprima e attivazione -->
+            <!-- ===================== Colonna sinistra: anteprima, attivazione, preset, condivisione ===================== -->
             <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0,0,0,24">
+                    <!-- Anteprima -->
                     <Border Style="{StaticResource Card}" Padding="0" ClipToBounds="True">
                         <Grid>
-                            <ch:CrosshairPreview x:Name="Preview" Height="300" Zoom="{Binding Value, ElementName=ZoomSlider}"
-                                                 Scene="{Binding SelectedIndex, ElementName=SceneCombo}" />
+                            <ch:CrosshairPreview x:Name="Preview" Height="320" Zoom="{Binding Value, ElementName=ZoomSlider}"
+                                                 Scene="{Binding SelectedIndex, ElementName=SceneCombo}"
+                                                 ShowInset="{Binding IsChecked, ElementName=InsetCheck}" />
                             <Border Background="#99000000" CornerRadius="6" Padding="8,3" Margin="10"
-                                    HorizontalAlignment="Left" VerticalAlignment="Top">
+                                    HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False">
                                 <TextBlock Foreground="White" FontSize="11">
                                     <Run Text="Anteprima · zoom " /><Run Text="{Binding Value, ElementName=ZoomSlider, StringFormat={}{0:0}x, Mode=OneWay}" />
                                 </TextBlock>
                             </Border>
                         </Grid>
                     </Border>
-                    <Grid Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="160" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Zoom" Style="{StaticResource Label}" Margin="0,0,10,0" />
-                        <Slider x:Name="ZoomSlider" Grid.Column="1" Minimum="1" Maximum="8" Value="3"
-                                IsSnapToTickEnabled="True" TickFrequency="1" />
-                        <TextBlock Grid.Column="2" Text="Sfondo" Style="{StaticResource Label}" Margin="16,0,10,0" />
-                        <ComboBox x:Name="SceneCombo" Grid.Column="3" SelectedIndex="0">
-                            <ComboBoxItem Content="Tramonto" />
-                            <ComboBoxItem Content="Vegetazione" />
-                            <ComboBoxItem Content="Neve" />
-                            <ComboBoxItem Content="Notte" />
-                        </ComboBox>
-                    </Grid>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <Grid Style="{StaticResource Row}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="150" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Zoom" Style="{StaticResource Label}" Margin="0,0,10,0" />
+                                <Slider x:Name="ZoomSlider" Grid.Column="1" Minimum="1" Maximum="8" Value="3"
+                                        IsSnapToTickEnabled="True" TickFrequency="1" />
+                                <TextBlock Grid.Column="2" Text="Scena" Style="{StaticResource Label}" Margin="16,0,10,0" />
+                                <ComboBox x:Name="SceneCombo" Grid.Column="3" SelectedIndex="0">
+                                    <ComboBoxItem Content="Tramonto" />
+                                    <ComboBoxItem Content="Vegetazione" />
+                                    <ComboBoxItem Content="Neve" />
+                                    <ComboBoxItem Content="Notte" />
+                                </ComboBox>
+                            </Grid>
+                            <WrapPanel>
+                                <Button Content="Usa uno screenshot come sfondo…" Margin="0,0,8,6" Click="PickScreenshot_Click" />
+                                <Button x:Name="ResetScreenshotBtn" Content="Sfondo simulato" Margin="0,0,8,6" Click="ResetScreenshot_Click" IsEnabled="False" />
+                                <CheckBox x:Name="InsetCheck" IsChecked="True" Content="Riquadro 1:1" Margin="4,0,0,6" VerticalAlignment="Center" />
+                            </WrapPanel>
+                            <TextBlock Style="{StaticResource Small}" Margin="0,4,0,0"
+                                       Text="Fai uno screenshot in partita (Win+Shift+S o Stamp) e caricalo: il riquadro 1:1 mostra il mirino alla dimensione reale sul centro dell'immagine." />
+                        </StackPanel>
+                    </Border>
 
+                    <!-- Attivazione -->
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
                             <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Enabled}" FontSize="16">
                                 <TextBlock Text="Mirino attivo sullo schermo" FontWeight="SemiBold" FontSize="15" />
                             </CheckBox>
                             <TextBlock x:Name="HotkeyHint" Style="{StaticResource Small}" Margin="54,6,0,0" />
-                            <CheckBox IsChecked="{Binding OnlyWhenFortniteFocused}" Margin="0,14,0,0"
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Visibilità automatica -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Visibilità automatica" Style="{StaticResource CardTitle}" />
+                            <CheckBox IsChecked="{Binding OnlyWhenFortniteFocused}" Margin="0,12,0,0"
                                       Content="Mostra solo quando Fortnite è in primo piano" />
                             <TextBlock Style="{StaticResource Small}" Margin="26,4,0,0"
                                        Text="Si nasconde da solo quando passi al desktop, a Discord o al browser." />
+                            <CheckBox IsChecked="{Binding HideWhenCursorVisible}" Margin="0,12,0,0"
+                                      Content="Nascondi nei menu (quando il cursore del mouse è visibile)" />
+                            <TextBlock Style="{StaticResource Small}" Margin="26,4,0,0"
+                                       Text="Inventario, mappa, lobby e impostazioni mostrano il cursore: lì il mirino sparisce." />
+                            <CheckBox IsChecked="{Binding HideWhileAiming}" Margin="0,12,0,0"
+                                      Content="Nascondi mentre miri (tasto destro)" />
+                            <TextBlock Style="{StaticResource Small}" Margin="26,4,0,0"
+                                       Text="Utile con i mirini delle armi e i cannocchiali, che hanno già il loro reticolo." />
+                            <CheckBox IsChecked="{Binding AimToggleMode}" Margin="26,10,0,0" IsEnabled="{Binding HideWhileAiming}"
+                                      Content="Uso la mira alternata (clic per entrare, clic per uscire)" />
+                            <TextBlock Style="{StaticResource Small}" Margin="52,4,0,0"
+                                       Text="Conta i clic solo con Fortnite in primo piano. Se perde il passo, apri e chiudi un menu (o cambia finestra) per riallinearlo." />
+                            <TextBlock Style="{StaticResource Small}" Margin="0,12,0,0"
+                                       Text="Come funziona: legge solo quale finestra è in primo piano, se il cursore è visibile e se il tasto destro è premuto (API standard di Windows, sola lettura). Nessun accesso al gioco." />
                         </StackPanel>
                     </Border>
 
-                    <Border Style="{StaticResource Card}" Background="#14141E2E" BorderBrush="#3300D1FF">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xEA18;" Style="{StaticResource Icon}" Foreground="{StaticResource Accent2Brush}" />
-                                <TextBlock Text="Come funziona e rischio ban" FontWeight="SemiBold" Margin="8,0,0,0" />
-                            </StackPanel>
-                            <TextBlock Style="{StaticResource Muted}" Margin="0,8,0,0" Foreground="{StaticResource TextBrush}" Opacity="0.9" LineHeight="20">
-                                <Run>• È una normale finestra di Windows, trasparente e "click-through", sempre in primo piano: lo stesso principio del mirino integrato nell'OSD di molti monitor.</Run><LineBreak />
-                                <Run>• Non inietta DLL, non aggancia DirectX, non legge né scrive la memoria del gioco, non apre il processo di Fortnite, non invia input.</Run><LineBreak />
-                                <Run>• Funziona al 100% in "Schermo intero in finestra".</Run><LineBreak /><LineBreak />
-                                <Run FontWeight="SemiBold">Onestà sul rischio:</Run>
-                                <Run>Epic non vieta esplicitamente i mirini overlay esterni, ma il regolamento proibisce software di terze parti che diano un vantaggio sleale. Nessun programma può garantire "zero ban" al 100%. Nei tornei con premi in denaro è più prudente spegnerlo o usare il mirino del monitor.</Run>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-
-            <!-- Colonna destra: personalizzazione -->
-            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="0,0,16,24">
+                    <!-- Preset -->
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
-                            <TextBlock Text="Preset" FontWeight="SemiBold" />
-                            <Grid Margin="0,8,0,0">
+                            <TextBlock Text="Preset" Style="{StaticResource CardTitle}" />
+                            <Grid Margin="0,10,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <ComboBox x:Name="PresetCombo" DisplayMemberPath="Name" />
-                                <Button Grid.Column="1" Content="Applica" Margin="8,0,0,0" Click="ApplyPreset_Click" />
+                                <Button Grid.Column="1" Content="Applica" Margin="8,0,0,0" Click="ApplyPreset_Click" Style="{StaticResource AccentButton}" />
                                 <Button Grid.Column="2" Content="Elimina" Margin="8,0,0,0" Click="DeletePreset_Click" Style="{StaticResource DangerButton}" />
                             </Grid>
                             <Grid Margin="0,8,0,0">
@@ -115,151 +158,441 @@
                                 <TextBox x:Name="PresetName" ToolTip="Nome del nuovo preset" />
                                 <Button Grid.Column="1" Content="Salva come preset" Margin="8,0,0,0" Click="SavePreset_Click" />
                             </Grid>
+                            <WrapPanel Margin="0,10,0,0">
+                                <Button Content="Preset successivo ›" Margin="0,0,8,6" Click="NextPreset_Click" />
+                                <Button Content="Aggiungi i preset predefiniti" Margin="0,0,8,6" Click="AddBuiltIn_Click"
+                                        ToolTip="Aggiunge i preset inclusi in FN Boost che non hai ancora (non tocca i tuoi)" />
+                            </WrapPanel>
+                            <TextBlock x:Name="NextPresetHint" Style="{StaticResource Small}" Margin="0,4,0,0" />
+                            <CheckBox IsChecked="{Binding ShowPresetName}" Margin="0,10,0,0"
+                                      Content="Mostra il nome del preset sotto al mirino quando lo cambi" />
+                            <TextBlock x:Name="PresetStatus" Style="{StaticResource Small}" Margin="0,8,0,0"
+                                       Visibility="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource NotEmptyToVis}}" />
                         </StackPanel>
                     </Border>
 
+                    <!-- Codice di condivisione -->
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
-                            <TextBlock Text="Forma e colore" FontWeight="SemiBold" />
-                            <ComboBox x:Name="ShapeCombo" Margin="0,8,0,12" SelectedValuePath="Value" DisplayMemberPath="Label"
-                                      SelectedValue="{Binding Shape}" />
-                            <WrapPanel x:Name="Swatches" />
-                            <Grid Margin="0,4,0,0">
+                            <TextBlock Text="Codice di condivisione" Style="{StaticResource CardTitle}" />
+                            <TextBlock Style="{StaticResource Small}" Margin="0,4,0,0"
+                                       Text="Condividi il tuo mirino con un amico o importane uno. Il codice contiene solo l'aspetto: niente percorsi di file, monitor o posizione." />
+                            <Grid Margin="0,10,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Colore (hex)" Style="{StaticResource Label}" Margin="0,0,10,0" />
-                                <TextBox Grid.Column="1" Text="{Binding Color, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" />
+                                <Button Content="Esporta e copia" Click="ExportCode_Click" Style="{StaticResource AccentButton}" />
+                                <TextBox x:Name="ShareOut" Grid.Column="1" Margin="8,0,0,0" IsReadOnly="True"
+                                         FontFamily="{StaticResource MonoFont}" FontSize="11" ToolTip="Il tuo codice (sola lettura)" />
                             </Grid>
-
-                            <Grid Style="{StaticResource Row}" Margin="0,16,0,12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Opacità" Style="{StaticResource Label}" />
-                                <Slider x:Name="OpacitySlider" Grid.Column="1" Minimum="0.1" Maximum="1" Value="{Binding Opacity}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right"
-                                           Text="{Binding Opacity, StringFormat={}{0:P0}}" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Dimensioni (pixel reali dello schermo)" FontWeight="SemiBold" Margin="0,0,0,12" />
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Lunghezza" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="1" Maximum="40" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding Length}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding Length}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Spessore" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="1" Maximum="8" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding Thickness}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding Thickness}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Distanza dal centro" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="0" Maximum="30" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding Gap}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding Gap}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Punto centrale" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="1" Maximum="12" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding DotSize}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding DotSize}" />
-                            </Grid>
-                            <Grid Style="{StaticResource Row}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Raggio cerchio" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="2" Maximum="60" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding CircleRadius}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding CircleRadius}" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Outline}" Content="Bordo (contorno) per visibilità" />
-                            <Grid Style="{StaticResource Row}" Margin="0,14,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Spessore bordo" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="1" Maximum="3" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OutlineThickness}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding OutlineThickness}" />
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Colore bordo" Style="{StaticResource Label}" />
-                                <TextBox Grid.Column="1" Text="{Binding OutlineColor, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" />
-                                <Button Grid.Column="2" Style="{StaticResource Swatch}" Background="Black" Tag="#000000" Margin="8,0,0,0" Click="OutlineSwatch_Click" />
-                                <Button Grid.Column="3" Style="{StaticResource Swatch}" Background="White" Tag="#FFFFFF" Margin="6,0,0,0" Click="OutlineSwatch_Click" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Immagine personalizzata (PNG trasparente)" FontWeight="SemiBold" />
                             <Grid Margin="0,8,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox Text="{Binding ImagePath}" IsReadOnly="True" />
-                                <Button Grid.Column="1" Content="Scegli…" Margin="8,0,0,0" Click="PickImage_Click" />
+                                <TextBox x:Name="ShareIn" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                         ToolTip="Incolla qui un codice FNB1-…" />
+                                <Button Grid.Column="1" Content="Importa" Margin="8,0,0,0" Click="ImportCode_Click" />
                             </Grid>
-                            <Grid Margin="0,10,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Scala" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="0.25" Maximum="4" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="{Binding ImageScale}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding ImageScale, StringFormat={}{0:0.##}x}" />
-                            </Grid>
+                            <TextBlock x:Name="ShareStatus" Style="{StaticResource Small}" Margin="0,8,0,0"
+                                       Visibility="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource NotEmptyToVis}}" />
                         </StackPanel>
                     </Border>
 
+                    <!-- Rischio -->
+                    <Border Style="{StaticResource Card}" Background="#14141E2E" BorderBrush="#3300D1FF">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xEA18;" Style="{StaticResource Icon}" Foreground="{StaticResource Accent2Brush}" />
+                                <TextBlock Text="Come funziona e rischio ban" FontWeight="SemiBold" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Muted}" Margin="0,8,0,0" Foreground="{StaticResource TextBrush}" Opacity="0.9" LineHeight="20">
+                                <Run>• È una normale finestra di Windows, trasparente e "click-through", sempre in primo piano: lo stesso principio del mirino integrato nell'OSD di molti monitor.</Run><LineBreak />
+                                <Run>• Non inietta DLL, non aggancia DirectX, non legge né scrive la memoria del gioco, non apre il processo di Fortnite, non invia input.</Run><LineBreak />
+                                <Run>• La visibilità automatica legge solo lo stato di finestra, cursore e tasto destro con le API standard di Windows.</Run><LineBreak />
+                                <Run>• Funziona al 100% in "Schermo intero in finestra".</Run><LineBreak /><LineBreak />
+                                <Run FontWeight="SemiBold">Onestà sul rischio:</Run>
+                                <Run>Epic non vieta esplicitamente i mirini overlay esterni, ma il regolamento proibisce software di terze parti che diano un vantaggio sleale. Nessun programma può garantire "zero ban" al 100%. Nei tornei con premi in denaro è più prudente spegnerlo o usare il mirino del monitor.</Run>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ===================== Colonna destra: personalizzazione ===================== -->
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="0,0,16,24">
+                    <!-- Modello e colore -->
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
-                            <TextBlock Text="Posizione" FontWeight="SemiBold" />
-                            <ComboBox x:Name="MonitorCombo" Margin="0,8,0,12" SelectedValuePath="Device" DisplayMemberPath="Label"
-                                      SelectedValue="{Binding Monitor}" />
+                            <TextBlock Text="Modello e colore" Style="{StaticResource CardTitle}" />
+                            <ComboBox x:Name="ShapeCombo" Margin="0,10,0,4" SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      SelectionChanged="ShapeCombo_SelectionChanged" />
+                            <TextBlock Style="{StaticResource Small}" Margin="0,0,0,12"
+                                       Text="Il modello imposta in un colpo i livelli qui sotto: poi puoi ritoccare ogni dettaglio." />
+                            <WrapPanel x:Name="Swatches" />
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Colore principale" Style="{StaticResource Label}" />
+                                <TextBox Grid.Column="1" Text="{Binding Color, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" />
+                            </Grid>
+                            <Grid Style="{StaticResource Row}" Margin="0,14,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Opacità globale" Style="{StaticResource Label}" />
+                                <Slider Grid.Column="1" Minimum="0.1" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding Opacity}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding Opacity, StringFormat={}{0:P0}}" />
+                            </Grid>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding RgbCycle}" Content="Colore cangiante RGB" />
+                            <Grid Style="{StaticResource Row}" Margin="0,10,0,0" IsEnabled="{Binding RgbCycle}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Velocità" Style="{StaticResource Label}" />
+                                <Slider Grid.Column="1" Minimum="0.1" Maximum="5" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="{Binding RgbSpeed}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding RgbSpeed, StringFormat={}{0:0.0}x}" />
+                            </Grid>
+                            <TextBlock Style="{StaticResource Small}"
+                                       Text="Velocità 1x = un giro dell'arcobaleno ogni 10 secondi. Vale per tutto ciò che usa il colore principale." />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Linee interne -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding InnerShow}">
+                                <TextBlock Text="Linee interne" Style="{StaticResource CardTitle}" />
+                            </CheckBox>
+                            <StackPanel Style="{StaticResource LayerBody}" IsEnabled="{Binding InnerShow}">
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Lunghezza" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="80" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding Length}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding Length}" />
+                                </Grid>
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Spessore" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="12" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding Thickness}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding Thickness}" />
+                                </Grid>
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Distanza dal centro" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="60" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding Gap}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding Gap}" />
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Opacità" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding InnerOpacity}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding InnerOpacity, StringFormat={}{0:P0}}" />
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Linee esterne -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding OuterShow}">
+                                <TextBlock Text="Linee esterne" Style="{StaticResource CardTitle}" />
+                            </CheckBox>
+                            <StackPanel Style="{StaticResource LayerBody}" IsEnabled="{Binding OuterShow}">
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Lunghezza" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="80" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OuterLength}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding OuterLength}" />
+                                </Grid>
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Spessore" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="12" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OuterThickness}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding OuterThickness}" />
+                                </Grid>
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Distanza dal centro" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="120" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OuterGap}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding OuterGap}" />
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Opacità" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding OuterOpacity}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding OuterOpacity, StringFormat={}{0:P0}}" />
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Bracci -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Bracci" Style="{StaticResource CardTitle}" />
+                            <TextBlock Style="{StaticResource Small}" Margin="0,4,0,10"
+                                       Text="Valgono sia per le linee interne sia per quelle esterne (es. spegni quello in alto per una T)." />
+                            <WrapPanel>
+                                <CheckBox IsChecked="{Binding ArmTop}" Content="Alto" Margin="0,0,18,4" />
+                                <CheckBox IsChecked="{Binding ArmBottom}" Content="Basso" Margin="0,0,18,4" />
+                                <CheckBox IsChecked="{Binding ArmLeft}" Content="Sinistra" Margin="0,0,18,4" />
+                                <CheckBox IsChecked="{Binding ArmRight}" Content="Destra" Margin="0,0,18,4" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Punto centrale -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding DotShow}">
+                                <TextBlock Text="Punto centrale" Style="{StaticResource CardTitle}" />
+                            </CheckBox>
+                            <StackPanel Style="{StaticResource LayerBody}" IsEnabled="{Binding DotShow}">
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Dimensione" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="16" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding DotSize}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding DotSize}" />
+                                </Grid>
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Opacità" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding DotOpacity}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding DotOpacity, StringFormat={}{0:P0}}" />
+                                </Grid>
+                                <CheckBox IsChecked="{Binding DotRound}" Content="Punto rotondo (da 3 px in su)" Margin="0,0,0,10" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Colore punto" Style="{StaticResource Label}" />
+                                    <TextBox Grid.Column="1" Text="{Binding DotColor, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}"
+                                             ToolTip="Vuoto = colore principale" />
+                                    <Button Grid.Column="2" Style="{StaticResource Mini}" Margin="8,0,0,0" Content="Principale" Tag="Dot" Click="MainColor_Click" />
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Cerchio -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding CircleShow}">
+                                <TextBlock Text="Cerchio" Style="{StaticResource CardTitle}" />
+                            </CheckBox>
+                            <StackPanel Style="{StaticResource LayerBody}" IsEnabled="{Binding CircleShow}">
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Raggio" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="2" Maximum="120" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding CircleRadius}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding CircleRadius}" />
+                                </Grid>
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Spessore" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="12" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding CircleThickness}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding CircleThickness}" />
+                                </Grid>
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Opacità" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding CircleOpacity}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding CircleOpacity, StringFormat={}{0:P0}}" />
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Colore cerchio" Style="{StaticResource Label}" />
+                                    <TextBox Grid.Column="1" Text="{Binding CircleColor, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}"
+                                             ToolTip="Vuoto = colore principale" />
+                                    <Button Grid.Column="2" Style="{StaticResource Mini}" Margin="8,0,0,0" Content="Principale" Tag="Circle" Click="MainColor_Click" />
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Bordo -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Outline}">
+                                <TextBlock Text="Bordo (contorno) per visibilità" Style="{StaticResource CardTitle}" />
+                            </CheckBox>
+                            <StackPanel Style="{StaticResource LayerBody}" IsEnabled="{Binding Outline}">
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Spessore bordo" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="4" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OutlineThickness}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding OutlineThickness}" />
+                                </Grid>
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Opacità bordo" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding OutlineOpacity}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding OutlineOpacity, StringFormat={}{0:P0}}" />
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Colore bordo" Style="{StaticResource Label}" />
+                                    <TextBox Grid.Column="1" Text="{Binding OutlineColor, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}" />
+                                    <Button Grid.Column="2" Style="{StaticResource Swatch}" Background="Black" Tag="#000000" Margin="8,0,0,0" Click="OutlineSwatch_Click" ToolTip="Nero" />
+                                    <Button Grid.Column="3" Style="{StaticResource Swatch}" Background="White" Tag="#FFFFFF" Margin="6,0,0,0" Click="OutlineSwatch_Click" ToolTip="Bianco" />
+                                </Grid>
+                                <TextBlock Style="{StaticResource Small}" Margin="0,8,0,0"
+                                           Text="Il bordo sta sempre sotto ai colori: non copre mai le linee né il punto." />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Bagliore -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding Glow}">
+                                <TextBlock Text="Bagliore" Style="{StaticResource CardTitle}" />
+                            </CheckBox>
+                            <StackPanel Style="{StaticResource LayerBody}" IsEnabled="{Binding Glow}">
+                                <Grid Style="{StaticResource Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Raggio" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="1" Maximum="20" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding GlowRadius}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding GlowRadius}" />
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Colore bagliore" Style="{StaticResource Label}" />
+                                    <TextBox Grid.Column="1" Text="{Binding GlowColor, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}"
+                                             ToolTip="Vuoto = colore principale" />
+                                    <Button Grid.Column="2" Style="{StaticResource Mini}" Margin="8,0,0,0" Content="Principale" Tag="Glow" Click="MainColor_Click" />
+                                </Grid>
+                                <TextBlock Style="{StaticResource Small}" Margin="0,8,0,0"
+                                           Text="Un alone morbido attorno al mirino: aiuta su sfondi molto chiari o molto confusi." />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Rotazione e posizione -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Rotazione e posizione" Style="{StaticResource CardTitle}" Margin="0,0,0,12" />
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
+                                    <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Rotazione" Style="{StaticResource Label}" />
+                                <Slider Grid.Column="1" Minimum="0" Maximum="359" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding Rotation}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding Rotation, StringFormat={}{0}°}" />
+                            </Grid>
+                            <WrapPanel Margin="130,0,0,12">
+                                <Button Style="{StaticResource Mini}" Content="0°" Tag="0" Click="Rotation_Click" />
+                                <Button Style="{StaticResource Mini}" Content="45°" Tag="45" Click="Rotation_Click" />
+                                <Button Style="{StaticResource Mini}" Content="90°" Tag="90" Click="Rotation_Click" />
+                            </WrapPanel>
+                            <Grid Style="{StaticResource Row}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Spostamento X" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="-50" Maximum="50" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OffsetX}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding OffsetX}" />
+                                <Slider Grid.Column="1" Minimum="-200" Maximum="200" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OffsetX}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding OffsetX}" />
                             </Grid>
                             <Grid Style="{StaticResource Row}">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120" /><ColumnDefinition Width="*" /><ColumnDefinition Width="44" />
+                                    <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Spostamento Y" Style="{StaticResource Label}" />
-                                <Slider Grid.Column="1" Minimum="-50" Maximum="50" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OffsetY}" />
-                                <TextBlock Grid.Column="2" Style="{StaticResource Label}" HorizontalAlignment="Right" Text="{Binding OffsetY}" />
+                                <Slider Grid.Column="1" Minimum="-200" Maximum="200" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding OffsetY}" />
+                                <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding OffsetY}" />
                             </Grid>
-                            <Button Content="Centra (0, 0)" HorizontalAlignment="Left" Click="Center_Click" />
+                            <WrapPanel Margin="0,2,0,0">
+                                <Button Style="{StaticResource Mini}" Content="↑" Tag="U" Click="Nudge_Click" ToolTip="Sposta di 1 pixel in alto" />
+                                <Button Style="{StaticResource Mini}" Content="↓" Tag="D" Click="Nudge_Click" ToolTip="Sposta di 1 pixel in basso" />
+                                <Button Style="{StaticResource Mini}" Content="←" Tag="L" Click="Nudge_Click" ToolTip="Sposta di 1 pixel a sinistra" />
+                                <Button Style="{StaticResource Mini}" Content="→" Tag="R" Click="Nudge_Click" ToolTip="Sposta di 1 pixel a destra" />
+                                <Button Content="Centra (0, 0)" Margin="6,0,0,0" Click="Center_Click" />
+                            </WrapPanel>
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130" /><ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Monitor" Style="{StaticResource Label}" />
+                                <ComboBox x:Name="MonitorCombo" Grid.Column="1" SelectedValuePath="Device" DisplayMemberPath="Label"
+                                          SelectedValue="{Binding Monitor}" />
+                            </Grid>
+                            <TextBlock Style="{StaticResource Small}" Margin="0,8,0,0"
+                                       Text="Lo spostamento è in pixel reali dello schermo: usalo solo se il reticolo del gioco non è esattamente al centro." />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Immagine -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <CheckBox Style="{StaticResource ToggleSwitch}" IsChecked="{Binding UseImage}">
+                                <TextBlock Text="Immagine personalizzata (PNG trasparente)" Style="{StaticResource CardTitle}" />
+                            </CheckBox>
+                            <StackPanel Style="{StaticResource LayerBody}" IsEnabled="{Binding UseImage}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding ImagePath, Mode=OneWay}" IsReadOnly="True" />
+                                    <Button Grid.Column="1" Content="Scegli…" Margin="8,0,0,0" Click="PickImage_Click" />
+                                </Grid>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="50" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Scala" Style="{StaticResource Label}" />
+                                    <Slider Grid.Column="1" Minimum="0.25" Maximum="4" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="{Binding ImageScale}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Value}" Text="{Binding ImageScale, StringFormat={}{0:0.##}x}" />
+                                </Grid>
+                                <TextBlock Style="{StaticResource Small}" Margin="0,8,0,0"
+                                           Text="Con l'immagine attiva linee e cerchio vengono nascosti; il punto centrale resta se è acceso. La rotazione vale anche per l'immagine." />
+                            </StackPanel>
+                            <Button Content="Scegli un'immagine…" HorizontalAlignment="Left" Margin="0,10,0,0" Click="PickImage_Click"
+                                    Visibility="{Binding UseImage, Converter={StaticResource InvBoolToVis}}" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
