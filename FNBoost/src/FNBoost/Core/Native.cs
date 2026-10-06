@@ -123,6 +123,37 @@ namespace FNBoost.Core
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool EnumDisplaySettings(string? deviceName, int modeNum, ref DEVMODE devMode);
 
+        // ---- Stato di mouse e cursore (sola lettura, nessun hook) ----
+        public const int VK_RBUTTON = 0x02;
+
+        [DllImport("user32.dll")]
+        public static extern short GetAsyncKeyState(int vKey);
+
+        public const int CURSOR_SHOWING = 0x00000001;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT { public int X, Y; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CURSORINFO
+        {
+            public int cbSize;
+            public int flags;
+            public IntPtr hCursor;
+            public POINT ptScreenPos;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetCursorInfo(ref CURSORINFO pci);
+
+        /// <summary>true se il cursore del mouse è visibile (menu, inventario, mappa).</summary>
+        public static bool IsCursorVisible()
+        {
+            var ci = new CURSORINFO { cbSize = Marshal.SizeOf<CURSORINFO>() };
+            return GetCursorInfo(ref ci) && (ci.flags & CURSOR_SHOWING) != 0 && ci.hCursor != IntPtr.Zero;
+        }
+
         // ---- Mouse ----
         public const uint SPI_SETMOUSE = 0x0004;
         public const uint SPIF_UPDATEINIFILE = 0x01;

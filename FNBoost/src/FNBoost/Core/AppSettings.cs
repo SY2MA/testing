@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FNBoost.Crosshair;
+using FNBoost.Perf;
 
 namespace FNBoost.Core
 {
@@ -14,8 +15,10 @@ namespace FNBoost.Core
         public bool Shift { get; set; }
         /// <summary>Nome del tasto (System.Windows.Input.Key), es. "X".</summary>
         public string Key { get; set; } = "X";
+        /// <summary>false = scorciatoia disattivata.</summary>
+        public bool Enabled { get; set; } = true;
 
-        public override string ToString() =>
+        public override string ToString() => !Enabled ? "(disattivata)" :
             $"{(Ctrl ? "Ctrl+" : "")}{(Alt ? "Alt+" : "")}{(Shift ? "Shift+" : "")}{Key}";
     }
 
@@ -26,6 +29,15 @@ namespace FNBoost.Core
 
         public HotkeySetting HotkeyCrosshair { get; set; } = new() { Key = "X" };
         public HotkeySetting HotkeyPanel { get; set; } = new() { Key = "Z" };
+        /// <summary>Mostra/nasconde l'overlay contatore FPS.</summary>
+        public HotkeySetting HotkeyOverlay { get; set; } = new() { Key = "F" };
+        /// <summary>Passa al preset di mirino successivo.</summary>
+        public HotkeySetting HotkeyNextPreset { get; set; } = new() { Key = "C" };
+        /// <summary>Avvia/ferma la registrazione di una sessione di prestazioni.</summary>
+        public HotkeySetting HotkeyRecord { get; set; } = new() { Key = "R" };
+
+        /// <summary>Modulo Prestazioni (contatore FPS, overlay, sessioni).</summary>
+        public PerfSettings Perf { get; set; } = new();
 
         public double FloatingLeft { get; set; } = double.NaN;
         public double FloatingTop { get; set; } = double.NaN;

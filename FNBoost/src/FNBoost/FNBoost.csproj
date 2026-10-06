@@ -27,7 +27,17 @@
 
   <ItemGroup>
     <PackageReference Include="System.Management" Version="10.0.0" />
+    <!-- Lettura degli eventi ETW "Present" (stesso metodo di PresentMon / Xbox Game Bar) per il contatore FPS. -->
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.8" />
   </ItemGroup>
+
+  <!-- TraceEvent copia DLL native (KernelTraceControl, msdia140) servono solo per trace del kernel/simboli:
+       la sessione real-time usata qui non le richiede, quindi si escludono per mantenere un exe singolo. -->
+  <Target Name="FNBoostRemoveTraceEventNatives" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <None Remove="@(None)" Condition="$([System.String]::Copy('%(None.Identity)').Contains('microsoft.diagnostics.tracing.traceevent'))" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <Resource Include="Assets\fnboost.png" />

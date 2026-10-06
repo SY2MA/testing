@@ -8,8 +8,6 @@ using System.Text.RegularExpressions;
 
 namespace FNBoost.Core
 {
-    public enum CheckStatus { Ok, Info, Warn, Bad }
-
     public sealed class DiagnosticCheck
     {
         public string Title { get; init; } = "";
