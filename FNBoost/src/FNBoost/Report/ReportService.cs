@@ -192,7 +192,7 @@ namespace FNBoost.Report
             ctx.Allow("1.1.1.1");
             if (session?.Network?.ServerEndpoints != null) ctx.AllowRange(session.Network.ServerEndpoints);
             if (input.LiveNet?.ServerEndpoint != null) ctx.Allow(input.LiveNet.ServerEndpoint);
-            foreach (var p in new[] { session?.Network?.Game, input.LiveNet?.Game, input.LiveNet?.Region })
+            foreach (var p in new[] { session?.Network?.Game, session?.Network?.Region, input.LiveNet?.Game, input.LiveNet?.Region })
                 if (p != null && !string.IsNullOrEmpty(p.Host)) AllowIfPublic(ctx, p.Host);
             foreach (var ip in await ResolveEpicEndpointsAsync().ConfigureAwait(false)) ctx.Allow(ip);
             b.Context = ctx;

@@ -91,7 +91,9 @@ namespace FNBoost.Report
                     n.ServerEndpoints = (n.ServerEndpoints ?? new List<string>()).Select(S).ToList();
                     n.RegionName = n.RegionName == null ? null : S(n.RegionName);
                     n.ConnectionType = S(n.ConnectionType);
+                    n.BestRegionName = n.BestRegionName == null ? null : S(n.BestRegionName);
                     SanitizePing(n.Game, c);
+                    SanitizePing(n.Region, c);
                     SanitizePing(n.Gateway, c);
                     SanitizePing(n.Internet, c);
                 }
@@ -106,6 +108,7 @@ namespace FNBoost.Report
                 n.RegionName = n.RegionName == null ? null : S(n.RegionName);
                 n.ConnectionType = S(n.ConnectionType);
                 n.AdapterName = S(n.AdapterName);
+                n.BestRegionName = n.BestRegionName == null ? null : S(n.BestRegionName);
                 SanitizePing(n.Game, c);
                 SanitizePing(n.Region, c);
                 SanitizePing(n.Gateway, c);
@@ -895,6 +898,7 @@ namespace FNBoost.Report
                 h.Append("<table class=\"kv\"><tbody>");
                 Row(h, "Server di gioco", n.ServerEndpoints.Count > 0 ? string.Join(", ", n.ServerEndpoints) : "non rilevato");
                 Row(h, "Regione Epic", n.RegionName ?? "–");
+                Row(h, "Regione con il ping migliore", BestRegionText(n.BestRegionName, n.BestRegionPingMs));
                 Row(h, "Ping misurato verso", n.PingTargetKind == "regione" ? "endpoint Epic della regione (il server non risponde al ping)" : n.PingTargetKind == "server" ? "server di gioco" : n.PingTargetKind);
                 Row(h, "Connessione", $"{n.ConnectionType}{(n.LinkSpeedMbps is { } ls ? $" · {F0(ls)} Mbit/s" : "")}{(n.WifiSignalPct is { } w ? $" · segnale {w}%" : "")}");
                 Row(h, "Pacchetti al secondo", $"in {F0(n.AvgPacketsInPerSec)} · out {F0(n.AvgPacketsOutPerSec)}");
@@ -902,7 +906,7 @@ namespace FNBoost.Report
                 Row(h, "Altre app", $"media {F0(n.AvgOtherAppsKbps)} kbit/s · picco {F0(n.MaxOtherAppsKbps)} kbit/s");
                 Row(h, "Freeze di rete", $"{n.Freezes}{(n.LongestFreezeMs > 0 ? $" (il più lungo {F0(n.LongestFreezeMs)} ms)" : "")}");
                 h.Append("</tbody></table>");
-                PingTable(h, new[] { n.Game, n.Gateway, n.Internet });
+                PingTable(h, new[] { n.Game, n.Region, n.Gateway, n.Internet });
             }
             else if (live != null)
             {
@@ -911,6 +915,7 @@ namespace FNBoost.Report
                 Row(h, "Stato", live.StatusText);
                 Row(h, "Server di gioco", live.ServerEndpoint ?? "nessuna partita in corso");
                 Row(h, "Regione Epic", live.RegionName ?? "–");
+                Row(h, "Regione con il ping migliore", BestRegionText(live.BestRegionName, live.BestRegionPingMs));
                 Row(h, "Connessione", $"{live.ConnectionType}{(string.IsNullOrEmpty(live.AdapterName) ? "" : " · " + live.AdapterName)}{(live.LinkSpeedMbps is { } ls ? $" · {F0(ls)} Mbit/s" : "")}{(live.WifiSignalPct is { } w ? $" · segnale {w}%" : "")}");
                 Row(h, "Freeze recenti (60 s)", live.RecentFreezes.ToString(Inv));
                 h.Append("</tbody></table>");
@@ -918,6 +923,10 @@ namespace FNBoost.Report
             }
             h.Append("</section>\n");
         }
+
+        // Regione Epic con il ping più basso (misurata dal motore di rete), "–" se non disponibile.
+        private static string BestRegionText(string? name, double? ms) =>
+            string.IsNullOrEmpty(name) ? "–" : ms is { } v ? $"{name} ({F0(v)} ms)" : name!;
 
         private static void PingTable(StringBuilder h, IEnumerable<PingStats?> pings)
         {
