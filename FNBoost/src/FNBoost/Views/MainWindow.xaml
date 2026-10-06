@@ -64,26 +64,36 @@
                                       Click="CrosshairQuick_Click" Content="Overlay" />
                             <TextBlock x:Name="HotkeyText" Style="{StaticResource Small}" Margin="0,8,0,0" />
                             <Separator Margin="0,12" Background="{StaticResource BorderBrush}" />
+                            <TextBlock Text="PRESTAZIONI" Style="{StaticResource Small}" FontWeight="SemiBold" />
+                            <CheckBox x:Name="PerfOverlayQuick" Style="{StaticResource ToggleSwitch}" Margin="0,8,0,0"
+                                      Click="PerfOverlayQuick_Click" Content="Overlay FPS" />
+                            <TextBlock x:Name="PerfLiveText" Style="{StaticResource Small}" Margin="0,8,0,0"
+                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Text="FPS: –" />
+                            <Separator Margin="0,12" Background="{StaticResource BorderBrush}" />
                             <TextBlock Text="OTTIMIZZAZIONE" Style="{StaticResource Small}" FontWeight="SemiBold" />
                             <TextBlock x:Name="TweakSummary" Margin="0,6,0,0" FontSize="13" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
-                    <StackPanel>
-                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE9D9;" Content="Panoramica" IsChecked="True"
-                                     Click="Nav_Click" CommandParameter="dashboard" />
-                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE945;" Content="Tweak Windows"
-                                     Click="Nav_Click" CommandParameter="tweaks" />
-                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE7FC;" Content="Fortnite"
-                                     Click="Nav_Click" CommandParameter="fortnite" />
-                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE790;" Content="Mirino"
-                                     Click="Nav_Click" CommandParameter="crosshair" />
-                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE74D;" Content="Pulizia"
-                                     Click="Nav_Click" CommandParameter="cleanup" />
-                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xEA18;" Content="Sicurezza e backup"
-                                     Click="Nav_Click" CommandParameter="safety" />
-                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE946;" Content="Guida e fonti"
-                                     Click="Nav_Click" CommandParameter="info" />
-                    </StackPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                        <StackPanel>
+                            <RadioButton Style="{StaticResource NavButton}" Tag="&#xE9D9;" Content="Panoramica" IsChecked="True"
+                                         Click="Nav_Click" CommandParameter="dashboard" />
+                            <RadioButton Style="{StaticResource NavButton}" Tag="&#xE945;" Content="Tweak Windows"
+                                         Click="Nav_Click" CommandParameter="tweaks" />
+                            <RadioButton Style="{StaticResource NavButton}" Tag="&#xE7FC;" Content="Fortnite"
+                                         Click="Nav_Click" CommandParameter="fortnite" />
+                            <RadioButton Style="{StaticResource NavButton}" Tag="&#xE790;" Content="Mirino"
+                                         Click="Nav_Click" CommandParameter="crosshair" />
+                            <RadioButton Style="{StaticResource NavButton}" Tag="&#xE9D2;" Content="Prestazioni"
+                                         Click="Nav_Click" CommandParameter="performance" />
+                            <RadioButton Style="{StaticResource NavButton}" Tag="&#xE74D;" Content="Pulizia"
+                                         Click="Nav_Click" CommandParameter="cleanup" />
+                            <RadioButton Style="{StaticResource NavButton}" Tag="&#xEA18;" Content="Sicurezza e backup"
+                                         Click="Nav_Click" CommandParameter="safety" />
+                            <RadioButton Style="{StaticResource NavButton}" Tag="&#xE946;" Content="Guida e fonti"
+                                         Click="Nav_Click" CommandParameter="info" />
+                        </StackPanel>
+                    </ScrollViewer>
                 </DockPanel>
 
                 <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" CornerRadius="12,0,0,0"

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using FNBoost.Core;
+using FNBoost.Perf;
 using FNBoost.Views.Pages;
 
 namespace FNBoost.Views
@@ -23,6 +25,7 @@ namespace FNBoost.Views
                 ["tweaks"] = () => new TweaksPage(),
                 ["fortnite"] = () => new FortnitePage(),
                 ["crosshair"] = () => new CrosshairPage(),
+                ["performance"] = () => new PerformancePage(),
                 ["cleanup"] = () => new CleanupPage(),
                 ["safety"] = () => new SafetyPage(),
                 ["info"] = () => new InfoPage(),
@@ -36,6 +39,87 @@ namespace FNBoost.Views
             UpdateSummary();
             UpdateCrosshair();
             HotkeyText.Text = $"{App.Settings.HotkeyCrosshair}: mirino\n{App.Settings.HotkeyPanel}: pannello";
+            SetupPerf();
+        }
+
+        // ---------------- Prestazioni (overlay FPS + numeri dal vivo nella barra laterale) ----------------
+
+        private long _lastPerfTextMs;
+
+        private void SetupPerf()
+        {
+            var overlay = App.PerfOverlay;
+            if (overlay != null)
+            {
+                PerfOverlayQuick.ToolTip = $"Contatore FPS sopra al gioco ({App.Settings.HotkeyOverlay})";
+                overlay.StateChanged += UpdatePerfOverlay;
+                Closed += (_, _) => overlay.StateChanged -= UpdatePerfOverlay;
+                UpdatePerfOverlay();
+            }
+            else
+            {
+                PerfOverlayQuick.IsEnabled = false;
+            }
+
+            var perf = App.Perf;
+            if (perf == null)
+            {
+                PerfLiveText.Text = "Contatore FPS non disponibile";
+                return;
+            }
+            perf.LiveUpdated += OnPerfLive;
+            perf.StatusChanged += OnPerfStatus;
+            Closed += (_, _) =>
+            {
+                perf.LiveUpdated -= OnPerfLive;
+                perf.StatusChanged -= OnPerfStatus;
+            };
+            ShowPerfLive(perf.Live);
+        }
+
+        private void UpdatePerfOverlay()
+        {
+            if (App.PerfOverlay != null) PerfOverlayQuick.IsChecked = App.PerfOverlay.Enabled;
+        }
+
+        private void PerfOverlayQuick_Click(object sender, RoutedEventArgs e)
+        {
+            if (App.PerfOverlay != null) App.PerfOverlay.Enabled = PerfOverlayQuick.IsChecked == true;
+        }
+
+        private void OnPerfStatus()
+        {
+            if (App.Perf != null) ShowPerfLive(App.Perf.Live);
+        }
+
+        private void OnPerfLive(LiveSnapshot snap)
+        {
+            // ~2 aggiornamenti al secondo bastano per la barra laterale; da nascosta non si fa nulla.
+            if (!IsVisible) return;
+            var now = Environment.TickCount64;
+            if (now - _lastPerfTextMs < 450) return;
+            _lastPerfTextMs = now;
+            ShowPerfLive(snap);
+        }
+
+        private void ShowPerfLive(LiveSnapshot snap)
+        {
+            var c = CultureInfo.CurrentCulture;
+            if (snap.HasData)
+            {
+                PerfLiveText.Text = $"FPS {snap.CurrentFps.ToString("0", c)} · 1% low {snap.Window.Low1Fps.ToString("0", c)}";
+                PerfLiveText.ToolTip = $"{snap.StatusText}\nMedia {snap.Window.AvgFps.ToString("0", c)} · 0,1% low {snap.Window.Low01Fps.ToString("0", c)}";
+            }
+            else
+            {
+                PerfLiveText.Text = snap.Status switch
+                {
+                    CaptureStatus.Stopped => "FPS: misurazione ferma",
+                    CaptureStatus.Error => "FPS: non disponibile",
+                    _ => "FPS: in attesa del gioco…"
+                };
+                PerfLiveText.ToolTip = string.IsNullOrEmpty(snap.StatusText) ? null : snap.StatusText;
+            }
         }
 
         public void Navigate(string key)

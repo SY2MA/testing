@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using FNBoost.Core;
 using FNBoost.Crosshair;
+using FNBoost.Perf;
 using FNBoost.Views;
 using WinForms = System.Windows.Forms;
 
@@ -17,6 +20,10 @@ namespace FNBoost
         public static BackupStore? Backups { get; private set; }
         public static TweakService Tweaks { get; private set; } = null!;
         public static CrosshairService Crosshair { get; private set; } = null!;
+        /// <summary>Contatore FPS / sessioni. Null solo se la creazione è fallita (vedi registro): il resto dell'app funziona.</summary>
+        public static PerfService Perf { get; private set; } = null!;
+        /// <summary>Overlay FPS in gioco. Null solo se <see cref="Perf"/> non è disponibile.</summary>
+        public static PerfOverlayService PerfOverlay { get; private set; } = null!;
 
         private static Mutex? _mutex;
         private static HotkeyManager? _hotkeys;
@@ -63,6 +70,8 @@ namespace FNBoost
                 _saveTimer.Start();
             };
 
+            SetupPerf();
+
             SetupHotkeys();
             SetupTray();
 
@@ -72,6 +81,50 @@ namespace FNBoost
 
             _ = Tweaks.RefreshAsync();
         }
+
+        /// <summary>
+        /// Contatore FPS (ETW) e overlay. Se qualcosa va storto (es. ETW non disponibile) si registra l'errore
+        /// e l'app continua: mirino, tweak e pulizia non dipendono da questo modulo.
+        /// </summary>
+        private static void SetupPerf()
+        {
+            Settings.Perf ??= new PerfSettings();
+            Settings.Perf.Overlay ??= new PerfOverlaySettings();
+            try
+            {
+                Perf = new PerfService(Settings.Perf, ActiveTweakIds);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Avvio modulo Prestazioni", ex);
+                return;
+            }
+            try
+            {
+                Perf.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Avvio contatore FPS", ex);
+            }
+            try
+            {
+                PerfOverlay = new PerfOverlayService(Settings.Perf.Overlay, Perf);
+                // Salvataggio automatico (con ritardo) delle modifiche all'overlay, come per il mirino.
+                Settings.Perf.Overlay.PropertyChanged += (_, _) =>
+                {
+                    _saveTimer?.Stop();
+                    _saveTimer?.Start();
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Avvio overlay FPS", ex);
+            }
+        }
+
+        private static IReadOnlyList<string> ActiveTweakIds() =>
+            Tweaks.Tweaks.Where(t => t.IsOn).Select(t => t.Id).ToList();
 
         private void OnUnhandled(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
@@ -104,6 +157,7 @@ namespace FNBoost
                 menu.Items.Add("Apri FN Boost", null, (_, _) => ShowMain());
                 menu.Items.Add("Pannello flottante", null, (_, _) => ShowFloating());
                 menu.Items.Add("Mirino on/off", null, (_, _) => Crosshair.Toggle());
+                menu.Items.Add("Overlay FPS on/off", null, (_, _) => PerfOverlay?.Toggle());
                 menu.Items.Add(new WinForms.ToolStripSeparator());
                 menu.Items.Add("Esci", null, (_, _) => ExitApp());
 
@@ -178,6 +232,9 @@ namespace FNBoost
             try
             {
                 _saveTimer?.Stop();
+                // Prima l'overlay, poi il contatore: Dispose salva l'eventuale registrazione abbastanza lunga.
+                SafeDispose(PerfOverlay, "overlay FPS");
+                SafeDispose(Perf, "contatore FPS");
                 Settings.Save();
                 Crosshair.Dispose();
                 _hotkeys?.Dispose();
@@ -191,6 +248,18 @@ namespace FNBoost
             finally
             {
                 Current.Shutdown();
+            }
+        }
+
+        private static void SafeDispose(IDisposable? d, string what)
+        {
+            try
+            {
+                d?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Chiusura " + what, ex);
             }
         }
 
