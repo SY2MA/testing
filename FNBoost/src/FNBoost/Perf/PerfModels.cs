@@ -126,6 +126,11 @@ namespace FNBoost.Perf
         public PingStats? Region { get; set; }
         public PingStats? Gateway { get; set; }
         public PingStats? Internet { get; set; }
+        /// <summary>"server" se il ping di gioco è misurato verso il server, "regione" se verso l'endpoint Epic.</summary>
+        public string PingTargetKind { get; set; } = "";
+        /// <summary>Regione Epic con il ping più basso nell'ultima scansione (per capire se il server è lontano).</summary>
+        public string? BestRegionName { get; set; }
+        public double? BestRegionPingMs { get; set; }
         public double PacketsInPerSec { get; set; }
         public double PacketsOutPerSec { get; set; }
         public double GameKbpsIn { get; set; }
@@ -153,6 +158,11 @@ namespace FNBoost.Perf
         public PingStats? Game { get; set; }
         public PingStats? Gateway { get; set; }
         public PingStats? Internet { get; set; }
+        /// <summary>Ping verso l'endpoint Epic della regione usata (anche quando il server di gioco risponde).</summary>
+        public PingStats? Region { get; set; }
+        /// <summary>Regione Epic con il ping più basso (mediana di 3 ping) e il suo valore, se misurati.</summary>
+        public string? BestRegionName { get; set; }
+        public double? BestRegionPingMs { get; set; }
         public string ConnectionType { get; set; } = "";
         public double? LinkSpeedMbps { get; set; }
         public int? WifiSignalPct { get; set; }
