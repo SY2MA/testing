@@ -402,7 +402,7 @@ There are 2 interfaces on the system:
             ok.Network = Net(game: NetStats.Summarize(Series(300, 30, 31), "Server di gioco", "52.1.2.3"));
             var insOk = PerfAnalyzer.Analyze(ok, Array.Empty<PerfSession>());
             T.True(Get(insOk, "Ping buono")?.Severity == CheckStatus.Ok, "ping basso → Ok");
-            T.True(!Has(insOk, "Ping instabile (jitter)") && !Has(insOk, "Pacchetti persi"), "nessun falso allarme");
+            T.True(!Has(insOk, "Ping instabile (jitter)") && !Has(insOk, "Perdita di pacchetti"), "nessun falso allarme");
 
             // Ping misurato sulla regione (server muto all'ICMP) e regione impostata lontana.
             var reg = Make("hp4", Day(1), 144, 300);
@@ -461,7 +461,7 @@ There are 2 interfaces on the system:
             for (int i = 0; i < 15; i++) series[i * 20] = null; // 5%
             s.Network = Net(game: NetStats.Summarize(series, "Server di gioco", "52.1.2.3"),
                 gateway: NetStats.Summarize(Series(300, 1, 1.2), "Router", "router"));
-            var l = Get(PerfAnalyzer.Analyze(s, Array.Empty<PerfSession>()), "Pacchetti persi");
+            var l = Get(PerfAnalyzer.Analyze(s, Array.Empty<PerfSession>()), "Perdita di pacchetti");
             T.True(l != null && l.Severity == CheckStatus.Bad, "5% → Bad");
             T.Contains(l?.Message ?? "", "15 su 300", "conteggio");
             T.Contains(l?.Hint ?? "", "limita le risposte al ping", "onestà sull'ICMP");
@@ -470,7 +470,12 @@ There are 2 interfaces on the system:
             var s2 = Series(300, 30, 31).ToList();
             for (int i = 0; i < 6; i++) s2[i * 40] = null; // 2%
             w.Network = Net(game: NetStats.Summarize(s2));
-            T.True(Get(PerfAnalyzer.Analyze(w, Array.Empty<PerfSession>()), "Pacchetti persi")?.Severity == CheckStatus.Warn, "2% → Warn");
+            T.True(Get(PerfAnalyzer.Analyze(w, Array.Empty<PerfSession>()), "Perdita di pacchetti")?.Severity == CheckStatus.Warn, "2% → Warn");
+
+            // Report: osservazione della sessione e controllo di rete descrivono la stessa perdita → una sola voce.
+            var d = new FNBoost.Report.ReportData { Session = w, Insights = PerfAnalyzer.Analyze(w, Array.Empty<PerfSession>()).ToList() };
+            var recs = FNBoost.Report.ReportBuilder.BuildRecommendations(d);
+            T.Equal(1, recs.Count(r => r.Title.Contains("pacchetti", StringComparison.OrdinalIgnoreCase)), "perdita di pacchetti non ripetuta nel report");
         }
 
         private static void AnalyzerBackgroundBandwidth()
@@ -585,7 +590,7 @@ There are 2 interfaces on the system:
         {
             var s = Make("old", Day(1), 144, 300);
             var ins = PerfAnalyzer.Analyze(s, Array.Empty<PerfSession>());
-            var netTitles = new[] { "Ping alto", "Ping buono", "Ping instabile (jitter)", "Pacchetti persi", "Rete di casa instabile",
+            var netTitles = new[] { "Ping alto", "Ping buono", "Ping instabile (jitter)", "Perdita di pacchetti", "Rete di casa instabile",
                 "Segnale Wi-Fi debole", "Altre app usano la connessione", "Freeze di rete (lag)", "Nessun freeze di rete",
                 "Pochi aggiornamenti dal server", "Programmi in background pesanti" };
             T.True(!ins.Any(i => netTitles.Contains(i.Title)), "sessione senza rete: nessuna osservazione di rete");

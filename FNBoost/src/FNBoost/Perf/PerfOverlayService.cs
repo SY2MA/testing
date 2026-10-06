@@ -151,16 +151,8 @@ namespace FNBoost.Perf
         {
             if (pid == _lastPid) return _lastPidIsFortnite;
             _lastPid = pid;
-            try
-            {
-                // Solo il nome dall'elenco processi di sistema (nessun accesso al processo).
-                using var p = Process.GetProcessById((int)pid);
-                _lastPidIsFortnite = string.Equals(p.ProcessName, FortniteLocator.ClientProcessName, StringComparison.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                _lastPidIsFortnite = false;
-            }
+            // Solo l'istantanea di sistema dei processi: nessun handle aperto verso il gioco.
+            _lastPidIsFortnite = FortniteLocator.IsClientPid(pid);
             return _lastPidIsFortnite;
         }
 

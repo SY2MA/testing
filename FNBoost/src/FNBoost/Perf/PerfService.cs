@@ -438,6 +438,23 @@ namespace FNBoost.Perf
                 if (flags[i]) stutters[sec]++;
             }
 
+            // Campioni di sistema/rete allineati per istante (non per indice): il timer a 1 Hz deriva
+            // (250 ms + durata del tick) e può partire prima del primo frame; il traffico arriva ~2 s dopo.
+            // Fine del secondo 0 sull'orologio interno = timestamp ETW + ritardo minimo di ricezione.
+            double off = double.IsNaN(rec.FrameClockOffsetMs) ? 0 : rec.FrameClockOffsetMs;
+            double firstEndMs = baseTs + off + 1000;
+            int nSamples = Math.Min(rec.Sys.Count, rec.SysMs.Count);
+            var sysTimes = rec.SysMs.GetRange(0, nSamples);
+            var sysIdx = FrameStats.NearestSamples(sysTimes, firstEndMs, nSec); // senza limite: CPU/RAM non possono restare a 0
+            var tickIdx = FrameStats.NearestSamples(sysTimes, firstEndMs, nSec, 1500);
+            var trafficTimes = new List<double>(rec.Net.Count);
+            foreach (var n in rec.Net) trafficTimes.Add(n?.TrafficEndMs ?? double.NaN);
+            var trafficIdx = FrameStats.NearestSamples(trafficTimes, firstEndMs, nSec, 1500);
+            var freezeSec = FrameStats.SecondOfSamples(trafficTimes, firstEndMs, nSec);
+            var freezes = new int[nSec];
+            for (int i = 0; i < freezeSec.Length; i++)
+                if (freezeSec[i] >= 0 && rec.Net[i] is { } fn) freezes[freezeSec[i]] += fn.Freezes;
+
             for (int s = 0; s < nSec; s++)
             {
                 var b = buckets[s];
@@ -449,15 +466,18 @@ namespace FNBoost.Perf
                     sample.Low1Fps = FrameStats.LowFps(b, 0.01);
                     sample.MaxFrametimeMs = b.Max();
                 }
-                if (rec.Sys.Count > 0)
+                if (sysIdx[s] >= 0)
                 {
-                    var sys = rec.Sys[Math.Min(s, rec.Sys.Count - 1)];
+                    var sys = rec.Sys[sysIdx[s]];
                     sample.CpuPercent = Math.Round(sys.CpuPercent, 1);
                     sample.GpuPercent = sys.GpuPercent is { } g ? Math.Round(g, 1) : null;
                     sample.RamPercent = Math.Round(sys.RamPercent, 1);
                     sample.VramUsedGb = sys.VramUsedGb is { } v ? Math.Round(v, 2) : null;
                 }
-                if (s < rec.Net.Count && rec.Net[s] is { } net) ApplyNet(sample, net);
+                if (tickIdx[s] >= 0 && rec.Net[tickIdx[s]] is { } net) ApplyPing(sample, net);
+                if (trafficIdx[s] >= 0 && rec.Net[trafficIdx[s]] is { } tn) ApplyTraffic(sample, tn);
+                // I freeze sono eventi: ognuno conta in un solo secondo (quello in cui è finito il secondo di traffico).
+                sample.NetFreezes = freezes[s];
                 session.Seconds.Add(sample);
             }
             return session;
@@ -507,6 +527,8 @@ namespace FNBoost.Perf
                     {
                         rec.Ft.Add(ft);
                         rec.Ts.Add(ts);
+                        double off = now - ts;
+                        if (double.IsNaN(rec.FrameClockOffsetMs) || off < rec.FrameClockOffsetMs) rec.FrameClockOffsetMs = off;
                     }
                 }
 
@@ -519,7 +541,7 @@ namespace FNBoost.Perf
                     _lastTs = double.NaN;
                 }
 
-                if (double.IsNaN(_lastTs) || ts - _lastTs > FrameCapture.BreakMs + 1)
+                if (double.IsNaN(_lastTs) || ts - _lastTs > FrameCapture.PauseMs + 1)
                     _continuousSinceTs = ts - ft;
                 _window.Add(ts, ft);
                 _lastTs = ts;
@@ -579,6 +601,7 @@ namespace FNBoost.Perf
                 }
                 var sys = _sampler?.Sample(livePid != 0 ? livePid : null) ?? default;
                 int gamePid = NetTargetPid(livePid, recPid);
+                double sampleMs = _clock.Elapsed.TotalMilliseconds;
                 var net = _netActive ? NetSecond(gamePid) : null;
                 if (_procs != null) _procs.ExcludeName = gamePid != 0 ? NameOf(gamePid) : null;
                 var procs = _procs?.TakeIfNew(ref _procSeq);
@@ -588,7 +611,8 @@ namespace FNBoost.Perf
                     if (_rec != null)
                     {
                         _rec.Sys.Add(sys);
-                        _rec.Net.Add(net); // allineato a Sys: un elemento per secondo (null = rete non misurata)
+                        _rec.SysMs.Add(sampleMs);
+                        _rec.Net.Add(net); // allineato a Sys/SysMs (null = rete non misurata); il traffico ha il suo istante
                         if (procs != null) _rec.Procs.Add(procs);
                     }
                 }
@@ -1035,6 +1059,7 @@ namespace FNBoost.Perf
             // ---- traffico del gioco (secondi chiusi con ~2 s di ritardo) ----
             bool netOk = net != null && net.IsAvailable;
             NetSecondTraffic? traffic = null;
+            double trafficEndMs = double.NaN;
             if (net != null && netOk)
             {
                 var done = net.TakeCompleted();
@@ -1042,6 +1067,10 @@ namespace FNBoost.Perf
                 {
                     traffic = Combine(done);
                     _lastTraffic = traffic;
+                    // I secondi si chiudono ~2 s dopo: si ricorda quando è finito davvero (orologio interno),
+                    // per metterlo nel secondo giusto della sessione e non in quello del tick.
+                    double age = net.AgeMs(traffic.StartMs + 1000);
+                    if (double.IsFinite(age)) trafficEndMs = _clock.Elapsed.TotalMilliseconds - age;
                 }
                 else if (_lastTraffic != null)
                 {
@@ -1064,7 +1093,7 @@ namespace FNBoost.Perf
             NetEndpoint? server = net != null && netOk ? net.Server : null;
             pinger?.SetServer(server?.Address);
 
-            var tick = new NetTick { Server = server?.ToString(), Nic = nicState };
+            var tick = new NetTick { Server = server?.ToString(), Nic = nicState, TrafficEndMs = trafficEndMs };
 
             // ---- ping ----
             bool useServer = false;
@@ -1190,19 +1219,24 @@ namespace FNBoost.Perf
             };
         }
 
-        private static void ApplyNet(SecondSample sample, NetTick net)
+        /// <summary>Ping del tick (raccolti dal vivo nell'ultimo secondo).</summary>
+        private static void ApplyPing(SecondSample sample, NetTick net)
         {
             sample.PingMs = net.PingMs;
             sample.JitterMs = net.JitterMs;
             sample.LossPct = net.LossPct;
             sample.GatewayPingMs = net.GatewayPingMs;
+        }
+
+        /// <summary>Traffico del secondo chiuso in quel tick (riferito a ~2 s prima). I freeze sono assegnati a parte.</summary>
+        private static void ApplyTraffic(SecondSample sample, NetTick net)
+        {
             sample.PacketsInPerSec = net.PacketsIn;
             sample.PacketsOutPerSec = net.PacketsOut;
             sample.GameKbpsIn = net.KbpsIn;
             sample.GameKbpsOut = net.KbpsOut;
             sample.OtherAppsKbps = net.OtherKbps;
             sample.MaxRecvGapMs = net.MaxGapMs;
-            sample.NetFreezes = net.Freezes;
         }
 
         /// <summary>Riepilogo di rete della registrazione (null se la rete non è stata misurata).</summary>
@@ -1284,6 +1318,8 @@ namespace FNBoost.Perf
             public int Freezes;
             public double LongestFreezeMs;
             public bool GameIsServer;
+            /// <summary>Fine (orologio interno) del secondo di traffico chiuso in questo tick; NaN se ripetuto o assente.</summary>
+            public double TrafficEndMs = double.NaN;
             public List<double?>? GamePings, RegionPings, GatewayPings, InternetPings;
             public string? Server;
             public string? RegionName, RegionHost, BestRegionName;
@@ -1462,6 +1498,10 @@ namespace FNBoost.Perf
             public readonly List<float> Ft = new();
             public readonly List<double> Ts = new();
             public readonly List<SystemSample> Sys = new();
+            /// <summary>Istante (orologio interno) di ogni campione di Sys/Net: il timer non è esattamente a 1 Hz.</summary>
+            public readonly List<double> SysMs = new();
+            /// <summary>Stima di (orologio interno − timestamp ETW dei frame): ritardo minimo di ricezione. NaN senza frame.</summary>
+            public double FrameClockOffsetMs = double.NaN;
             public double StartReceiptMs;
             public double LastFrameReceiptMs;
             public List<string> Tweaks = new();

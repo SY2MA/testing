@@ -142,8 +142,7 @@ namespace FNBoost.Report
         {
             if (string.IsNullOrEmpty(text)) return "";
             ctx ??= new SanitizeContext();
-            var s = text;
-            s = ProfilePath.Replace(s, ProfileToken);
+            var s = ScrubProfiles(text, ctx);
             s = Email.Replace(s, EmailToken);
             s = Bearer.Replace(s, m => m.Groups[1].Value + " " + SecretToken);
             s = QueryToken.Replace(s, m => m.Groups[1].Value + "=" + SecretToken);
@@ -164,7 +163,7 @@ namespace FNBoost.Report
         {
             if (string.IsNullOrEmpty(text)) return "";
             ctx ??= new SanitizeContext();
-            var s = ProfilePath.Replace(text, ProfileToken);
+            var s = ScrubProfiles(text, ctx);
             s = Email.Replace(s, EmailToken);
             return ScrubNames(s, ctx);
         }
@@ -274,6 +273,38 @@ namespace FNBoost.Report
                 s = WordRegex(name).Replace(s, token);
             s = DefaultPcName.Replace(s, PcToken);
             return s;
+        }
+
+        /// <summary>
+        /// Percorsi del profilo. Prima i profili con i nomi noti (anche con spazi: "C:\Users\Mario Rossi" a fine
+        /// percorso), poi la regola generica, che a fine percorso si ferma al primo spazio e lascerebbe il cognome.
+        /// </summary>
+        private static string ScrubProfiles(string s, SanitizeContext ctx)
+        {
+            foreach (var name in Names(ctx))
+                s = KnownProfileRegex(name).Replace(s, ProfileToken);
+            return ProfilePath.Replace(s, ProfileToken);
+        }
+
+        private static readonly Dictionary<string, Regex> ProfileCache = new(StringComparer.OrdinalIgnoreCase);
+
+        private static Regex KnownProfileRegex(string name)
+        {
+            lock (ProfileCache)
+            {
+                if (!ProfileCache.TryGetValue(name, out var rx))
+                {
+                    rx = new Regex(@"\b[A-Za-z]:(?:\\{1,2}|/)(?:Users|Documents and Settings)(?:\\{1,2}|/)" +
+                                   Regex.Escape(name) +
+                                   // Solo se la cartella finisce qui: "C:\Users\Mario Rossi\..." (con un separatore
+                                   // più avanti) resta alla regola generica, che prende la cartella intera.
+                                   @"(?![\p{L}\p{N}])(?![^\\/:*?""<>|\r\n]{0,64}?(?:\\|/))",
+                        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                    if (ProfileCache.Count > 64) ProfileCache.Clear();
+                    ProfileCache[name] = rx;
+                }
+                return rx;
+            }
         }
 
         private static readonly Dictionary<string, Regex> WordCache = new(StringComparer.OrdinalIgnoreCase);

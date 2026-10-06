@@ -99,6 +99,32 @@ namespace FNBoost.Core
             }
         }
 
+        /// <summary>
+        /// true se il PID appartiene al client di Fortnite. Usa solo l'istantanea di sistema dei processi
+        /// (GetProcessesByName → NtQuerySystemInformation) e legge solo Id: nessun OpenProcess verso il gioco.
+        /// Non usare mai Process.GetProcessById sul gioco: apre un handle (verifica esistenza + nome immagine).
+        /// </summary>
+        public static bool IsClientPid(uint pid)
+        {
+            if (pid == 0) return false;
+            Process[]? procs = null;
+            try
+            {
+                procs = Process.GetProcessesByName(ClientProcessName);
+                foreach (var p in procs)
+                    if (p.Id == (int)pid) return true;
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (procs != null) foreach (var p in procs) p.Dispose();
+            }
+        }
+
         public static bool IsLauncherRunning()
         {
             try

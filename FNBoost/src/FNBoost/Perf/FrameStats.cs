@@ -211,5 +211,53 @@ namespace FNBoost.Perf
             double penalty = 30.0 * (1.0 - Math.Exp(-Math.Max(0, stuttersPerMin) / 10.0));
             return Math.Clamp(ratioScore - penalty, 0, 100);
         }
+
+        /// <summary>
+        /// Per ogni secondo s della sessione (che finisce all'istante firstEndMs + s·1000) l'indice del campione
+        /// con l'istante più vicino, oppure -1 se il più vicino dista più di maxDistMs. Gli istanti NaN sono ignorati
+        /// (anche non ordinati). Serve ad allineare per tempo i campioni a ~1 Hz, che derivano rispetto ai frame.
+        /// </summary>
+        public static int[] NearestSamples(IReadOnlyList<double> sampleMs, double firstEndMs, int nSec,
+            double maxDistMs = double.PositiveInfinity)
+        {
+            var result = new int[Math.Max(0, nSec)];
+            Array.Fill(result, -1);
+            var order = new List<int>();
+            for (int i = 0; i < sampleMs.Count; i++)
+                if (double.IsFinite(sampleMs[i])) order.Add(i);
+            if (order.Count == 0 || !double.IsFinite(firstEndMs)) return result;
+            order.Sort((a, b) => sampleMs[a].CompareTo(sampleMs[b]));
+
+            int j = 0;
+            for (int s = 0; s < result.Length; s++)
+            {
+                double target = firstEndMs + s * 1000.0;
+                // Avanza finché il campione successivo è almeno altrettanto vicino (bersagli crescenti → monotono).
+                while (j + 1 < order.Count &&
+                       Math.Abs(sampleMs[order[j + 1]] - target) <= Math.Abs(sampleMs[order[j]] - target))
+                    j++;
+                if (Math.Abs(sampleMs[order[j]] - target) <= maxDistMs) result[s] = order[j];
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Per ogni campione, il secondo della sessione la cui fine è più vicina al suo istante (-1 se fuori dalla
+        /// sessione o NaN). A differenza di <see cref="NearestSamples"/> ogni campione finisce in un solo secondo:
+        /// va usato per gli eventi da contare (es. freeze di rete), che non devono essere duplicati.
+        /// </summary>
+        public static int[] SecondOfSamples(IReadOnlyList<double> sampleMs, double firstEndMs, int nSec)
+        {
+            var result = new int[sampleMs.Count];
+            for (int i = 0; i < result.Length; i++)
+            {
+                double t = sampleMs[i];
+                result[i] = -1;
+                if (!double.IsFinite(t) || !double.IsFinite(firstEndMs)) continue;
+                double k = Math.Round((t - firstEndMs) / 1000.0, MidpointRounding.AwayFromZero);
+                if (k >= 0 && k < nSec) result[i] = (int)k;
+            }
+            return result;
+        }
     }
 }

@@ -43,6 +43,32 @@ namespace FNBoost.Crosshair
             return list.OrderByDescending(m => m.Primary).ThenBy(m => m.Device).ToList();
         }
 
+        /// <summary>
+        /// true se <paramref name="current"/> (l'ItemsSource attuale di una ComboBox) descrive già gli stessi
+        /// monitor di <paramref name="next"/>. Sostituire l'ItemsSource azzera la selezione e, con il binding
+        /// TwoWay su SelectedValue, anche il monitor scelto nelle impostazioni: va fatto solo se serve.
+        /// </summary>
+        public static bool SameLayout(System.Collections.IEnumerable? current, IReadOnlyList<MonitorInfo> next)
+        {
+            if (current is not IReadOnlyList<MonitorInfo> cur || cur.Count != next.Count) return false;
+            for (int i = 0; i < cur.Count; i++)
+            {
+                var a = cur[i];
+                var b = next[i];
+                if (a.Device != b.Device || a.Left != b.Left || a.Top != b.Top ||
+                    a.Width != b.Width || a.Height != b.Height || a.Primary != b.Primary)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>Il monitor configurato se esiste ancora, altrimenti il principale ("" se non ce ne sono).</summary>
+        public static string Resolve(IReadOnlyList<MonitorInfo> monitors, string? device)
+        {
+            if (!string.IsNullOrEmpty(device) && monitors.Any(m => m.Device == device)) return device;
+            return monitors.FirstOrDefault(m => m.Primary)?.Device ?? "";
+        }
+
         public static MonitorInfo? Find(string device)
         {
             var all = GetAll();

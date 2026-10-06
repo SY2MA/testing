@@ -525,7 +525,7 @@ namespace FNBoost.Perf
                     list.Add(new PerfInsight
                     {
                         Severity = game.LossPct > 3 ? CheckStatus.Bad : CheckStatus.Warn,
-                        Title = "Pacchetti persi",
+                        Title = "Perdita di pacchetti",
                         Message = $"{N1(game.LossPct)}% dei ping verso il {target} senza risposta ({game.Sent - game.Received} su {game.Sent}).",
                         Hint = hint
                     });

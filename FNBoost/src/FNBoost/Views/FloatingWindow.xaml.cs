@@ -64,6 +64,7 @@ namespace FNBoost.Views
             }
 
             _loadingPreset = true;
+            CrosshairPreset.NormalizeAll(s.CrosshairPresets); // preset v1 o con "Settings": null nel JSON
             PresetCombo.ItemsSource = s.CrosshairPresets;
             _loadingPreset = false;
 
@@ -92,6 +93,7 @@ namespace FNBoost.Views
                 {
                     _loadingPreset = true;
                     PresetCombo.ItemsSource = null;
+                    CrosshairPreset.NormalizeAll(App.Settings.CrosshairPresets);
                     PresetCombo.ItemsSource = App.Settings.CrosshairPresets;
                     _loadingPreset = false;
                     _timer.Start();
@@ -342,7 +344,8 @@ namespace FNBoost.Views
         private void Preset_Changed(object sender, SelectionChangedEventArgs e)
         {
             if (_loadingPreset) return;
-            if (PresetCombo.SelectedItem is CrosshairPreset p) App.Settings.Crosshair.CopyFrom(p.Settings);
+            // Come la scorciatoia "preset successivo": ricorda il preset (NextPreset riparte da qui) e avvisa la pagina Mirino.
+            if (PresetCombo.SelectedItem is CrosshairPreset p) App.Crosshair.ApplyPreset(p);
         }
 
         private void Opacity_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)

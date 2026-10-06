@@ -65,6 +65,19 @@ namespace FNBoost.Perf
             set => _targetPid = Math.Max(0, value);
         }
 
+        /// <summary>
+        /// Da quanti ms è passato l'istante <paramref name="traceMs"/> (tempo della traccia, come NetSecondTraffic.StartMs).
+        /// NaN se la traccia non è attiva. Serve a ricollocare i secondi chiusi in ritardo nel tempo della sessione.
+        /// </summary>
+        public double AgeMs(double traceMs)
+        {
+            var run = _run;
+            if (run == null || !double.IsFinite(traceMs)) return double.NaN;
+            double offset = Volatile.Read(ref run.OffsetMs);
+            if (double.IsNaN(offset)) return double.NaN;
+            return _clock.Elapsed.TotalMilliseconds - offset - traceMs;
+        }
+
         /// <summary>Errore in italiano (null se tutto bene).</summary>
         public string? Error => _error;
 
@@ -181,26 +194,28 @@ namespace FNBoost.Perf
                     return;
                 }
 
-                TraceEventSession session;
+                ETWTraceEventSource source;
                 lock (_gate)
                 {
                     if (run.Stopping) return;
                     StopOrphanSession();
-                    session = new TraceEventSession(SessionName, TraceEventSessionOptions.Create)
+                    var session = new TraceEventSession(SessionName, TraceEventSessionOptions.Create)
                     {
                         StopOnDispose = true,
                         BufferSizeMB = 16
                     };
                     _session = session;
+                    // Avvio completo sotto _gate e sorgente in locale: dopo un Dispose concorrente, rileggere
+                    // session.Source ricreerebbe la sessione ETW (StartTrace) senza più nessuno che la chiuda.
+                    source = session.Source;
+                    source.AllEvents += e => OnEvent(e, run);
+                    // Solo gli eventi UDP (42/43/58/59): il TCP di browser e download non arriva nemmeno alla sessione.
+                    var options = new TraceEventProviderOptions
+                    {
+                        EventIDsToEnable = new List<int> { UdpSendV4, UdpRecvV4, UdpSendV6, UdpRecvV6 }
+                    };
+                    session.EnableProvider(KernelNetworkProvider, TraceEventLevel.Verbose, NetKeywords, options);
                 }
-
-                session.Source.AllEvents += e => OnEvent(e, run);
-                // Solo gli eventi UDP (42/43/58/59): il TCP di browser e download non arriva nemmeno alla sessione.
-                var options = new TraceEventProviderOptions
-                {
-                    EventIDsToEnable = new List<int> { UdpSendV4, UdpRecvV4, UdpSendV6, UdpRecvV6 }
-                };
-                session.EnableProvider(KernelNetworkProvider, TraceEventLevel.Verbose, NetKeywords, options);
 
                 lock (_data)
                 {
@@ -210,7 +225,7 @@ namespace FNBoost.Perf
                 run.Started = true;
                 Log.Info("Sessione ETW di rete avviata (UDP di Kernel-Network)");
 
-                session.Source.Process(); // blocca finché la sessione non viene chiusa
+                source.Process(); // blocca finché la sessione non viene chiusa
 
                 if (!run.Stopping) Fail(run, "La traccia di rete si è interrotta inaspettatamente (forse chiusa da un altro programma).");
             }

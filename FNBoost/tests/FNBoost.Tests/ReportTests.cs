@@ -25,10 +25,12 @@ namespace FNBoost.Tests
             T.Run("IPv4 locali, pubblici e ammessi; porte conservate", SanitizeIpv4);
             T.Run("IPv6, orari, versioni e nomi C++ non scambiati per IP", SanitizeIpv6AndFalsePositives);
             T.Run("deterministico e idempotente; ContainsIdentity / ScrubIdentity", SanitizeDeterministic);
+            T.Run("profilo con spazi a fine percorso (nome e cognome)", SanitizeProfileWithSpaces);
 
             Console.WriteLine("FortniteLogAnalyzer");
             T.Run("conteggi, categorie, server, hitch, shader, crash, memoria", LogCounts);
             T.Run("chat/party/amici saltati, righe evidenziate ripulite e ordinate", LogPrivacyAndHighlights);
+            T.Run("chiusure normali della connessione non contano, i fallimenti sì", LogNetCloseVsFailure);
             T.Run("formati sconosciuti e input vuoto", LogRobustness);
             T.Run("lettura della coda del file, backup, cartella mancante", LogFiles);
 
@@ -138,6 +140,22 @@ namespace FNBoost.Tests
             T.Equal("", Sanitizer.Sanitize(null, c), "null → vuoto");
         }
 
+        private static void SanitizeProfileWithSpaces()
+        {
+            var c = new SanitizeContext("Mario Rossi", Pc, Array.Empty<string>());
+            const string msg = "Access to the path 'C:\\Users\\Mario Rossi' is denied.";
+            var a = Sanitizer.Sanitize(msg, c);
+            T.Equal("Access to the path '%USERPROFILE%' is denied.", a, "Sanitize: cartella intera");
+            T.True(!a.Contains("Rossi", StringComparison.Ordinal), "nessun cognome");
+            var b = Sanitizer.ScrubIdentity(msg, c);
+            T.Equal("Access to the path '%USERPROFILE%' is denied.", b, "ScrubIdentity: cartella intera");
+            T.Equal("USERPROFILE=%USERPROFILE%", Sanitizer.Sanitize("USERPROFILE=C:/Users/mario rossi", c), "a fine riga, barre in avanti");
+            T.Equal(@"%USERPROFILE%\AppData", Sanitizer.Sanitize(@"C:\Users\Mario Rossi\AppData", c), "seguito da altre cartelle");
+
+            // Nome breve noto (cartella "Mario Rossi" ma utente "mario"): la regola generica prende la cartella intera.
+            T.Equal(@"apro %USERPROFILE%\Documents ora", Sanitizer.Sanitize(@"apro C:\Users\Mario Rossi\Documents ora", Ctx()), "prefisso del nome");
+        }
+
         // ================= FortniteLogAnalyzer =================
 
         private static string L(int sec, string body, int frame = 1) =>
@@ -190,9 +208,9 @@ namespace FNBoost.Tests
             T.Equal(2, f.TopCategories[0].Warnings, "LogNet warnings");
             T.Equal(2, f.TopCategories.First(c => c.Category == "LogStreaming").Warnings, "LogStreaming");
             T.True(f.TopCategories.Count <= 15, "max 15 categorie");
-            T.Equal(4, f.NetworkIssues, "righe di rete con problemi");
+            T.Equal(3, f.NetworkIssues, "righe di rete con problemi (non la chiusura normale della connessione)");
             T.Equal(2, f.NetworkKeywords["timeout"], "timeout (TIMEOUT e timeout)");
-            T.Equal(1, f.NetworkKeywords["close"], "Close:");
+            T.True(!f.NetworkKeywords.ContainsKey("close"), "UNetConnection::Close: non è un problema di rete");
             T.Equal(1, f.NetworkKeywords["out of order"], "out of order");
             T.Equal("34.1.2.3:7777", string.Join(",", f.ServerAddresses), "solo il server (non bind/local, non matchmaking)");
             T.Equal(2, f.Hitches, "hitch");
@@ -203,6 +221,22 @@ namespace FNBoost.Tests
             T.Equal(1, f.MemoryWarnings, "memoria");
             T.True(f.GpuInfo.Count >= 2, "righe GPU/RHI");
             T.True(f.GpuInfo.Any(g => g.Contains("RTX 4070")), "scheda video nel log");
+        }
+
+        private static void LogNetCloseVsFailure()
+        {
+            var lines = new List<string>();
+            for (int i = 0; i < 8; i++)
+                lines.Add(L(i, $"LogNet: UNetConnection::Close: [UNetConnection] RemoteAddr: 34.1.2.3:7777, Name: IpConnection_{i}, Driver: GameNetDriver"));
+            var ok = FortniteLogAnalyzer.Analyze(lines, Ctx());
+            T.Equal(0, ok.NetworkIssues, "8 uscite normali dalle partite → nessun problema di rete");
+
+            lines.Add(L(20, "LogNet: Warning: Network Failure: GameNetDriver[NetworkFailure]: ConnectionLost"));
+            lines.Add(L(21, "LogNet: Warning: Network Failure: PendingNetDriver[PendingConnectionFailure]: errore"));
+            var bad = FortniteLogAnalyzer.Analyze(lines, Ctx());
+            T.Equal(2, bad.NetworkIssues, "fallimenti di rete contati");
+            T.Equal(1, bad.NetworkKeywords["network failure"], "NetworkFailure");
+            T.Equal(1, bad.NetworkKeywords["pending connection failure"], "PendingConnectionFailure");
         }
 
         private static void LogPrivacyAndHighlights()

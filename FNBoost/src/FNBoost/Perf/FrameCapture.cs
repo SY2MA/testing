@@ -26,8 +26,13 @@ namespace FNBoost.Perf
         private const int PresentStartId = 42;
         /// <summary>DXGI_PRESENT_TEST: la present non mostra nulla, va ignorata.</summary>
         private const uint DxgiPresentTest = 0x1;
-        /// <summary>Oltre questa pausa tra due frame non è un frametime ma un'interruzione (alt-tab, caricamento…).</summary>
+        /// <summary>Limite di visualizzazione dei grafici: i frametime oltre questo valore vengono "schiacciati" qui.</summary>
         public const double BreakMs = 500;
+        /// <summary>
+        /// Oltre questa pausa tra due frame non è un frametime ma un'interruzione (gioco ridotto a icona, processo fermo…).
+        /// I blocchi reali di 0,5-5 s (compilazione shader, streaming, DPC) restano frametime: sono gli scatti peggiori.
+        /// </summary>
+        public const double PauseMs = 5000;
 
         private readonly object _gate = new();
         private TraceEventSession? _session;
@@ -128,26 +133,29 @@ namespace FNBoost.Perf
                     return;
                 }
 
-                TraceEventSession session;
+                ETWTraceEventSource source;
                 lock (_gate)
                 {
                     if (run.Stopping) return;
                     StopOrphanSession();
                     // Create (predefinito): se esiste già una sessione con lo stesso nome viene fermata e ricreata.
-                    session = new TraceEventSession(SessionName, TraceEventSessionOptions.Create)
+                    var session = new TraceEventSession(SessionName, TraceEventSessionOptions.Create)
                     {
                         StopOnDispose = true,
                         BufferSizeMB = 32
                     };
                     _session = session;
+                    // Tutto l'avvio resta sotto _gate: Stop() può chiudere la sessione solo dopo, e la sorgente
+                    // è tenuta in locale. Rileggere session.Source dopo un Dispose ricreerebbe la sessione ETW
+                    // (StartTrace) senza più nessuno che la chiuda.
+                    source = session.Source;
+                    // AllEvents riceve ogni evento, anche quelli senza un parser registrato (come i nostri DXGI "grezzi").
+                    source.AllEvents += e => OnEvent(e, run);
+                    session.EnableProvider(DxgiProvider, TraceEventLevel.Informational, DxgiKeywords);
                 }
-
-                // AllEvents riceve ogni evento, anche quelli senza un parser registrato (come i nostri DXGI "grezzi").
-                session.Source.AllEvents += e => OnEvent(e, run);
-                session.EnableProvider(DxgiProvider, TraceEventLevel.Informational, DxgiKeywords);
                 Log.Info("Sessione ETW avviata (eventi Present di DXGI)");
 
-                session.Source.Process(); // blocca finché la sessione non viene chiusa
+                source.Process(); // blocca finché la sessione non viene chiusa
 
                 if (!run.Stopping) Fail("La sessione ETW si è interrotta inaspettatamente (forse chiusa da un altro programma).");
             }
@@ -212,9 +220,9 @@ namespace FNBoost.Perf
                 {
                     double ft = ts - last;
                     lastPresent[pid] = ts;
-                    if (ft > 0 && ft <= BreakMs)
+                    if (ft > 0 && ft <= PauseMs)
                         FrameReceived?.Invoke(pid, ts, (float)ft);
-                    // ft > BreakMs: pausa (alt-tab, caricamento) → non è un frametime, si riparte da qui.
+                    // ft > PauseMs: pausa (gioco ridotto a icona, processo fermo) → non è un frametime, si riparte da qui.
                 }
                 else
                 {

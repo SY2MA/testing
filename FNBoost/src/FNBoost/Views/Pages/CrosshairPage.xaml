@@ -130,7 +130,7 @@
                             <CheckBox IsChecked="{Binding AimToggleMode}" Margin="26,10,0,0" IsEnabled="{Binding HideWhileAiming}"
                                       Content="Uso la mira alternata (clic per entrare, clic per uscire)" />
                             <TextBlock Style="{StaticResource Small}" Margin="52,4,0,0"
-                                       Text="Conta i clic solo con Fortnite in primo piano. Se perde il passo, apri e chiudi un menu (o cambia finestra) per riallinearlo." />
+                                       Text="Conta i clic solo con Fortnite in primo piano e si azzera cambiando arma (1-6) o entrando in costruzione (Q, F1-F6). Se perde il passo, apri e chiudi un menu (o cambia finestra) per riallinearlo." />
                             <TextBlock Style="{StaticResource Small}" Margin="0,12,0,0"
                                        Text="Come funziona: legge solo quale finestra è in primo piano, se il cursore è visibile e se il tasto destro è premuto (API standard di Windows, sola lettura). Nessun accesso al gioco." />
                         </StackPanel>

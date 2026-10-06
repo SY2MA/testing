@@ -76,6 +76,7 @@ namespace FNBoost.Crosshair
         /// <summary>Applica un preset (solo aspetto) e lo ricorda come punto di partenza per NextPreset.</summary>
         public void ApplyPreset(CrosshairPreset preset)
         {
+            if (preset?.Settings == null) return; // preset rovinato nel JSON: niente da applicare
             _settings.CopyFrom(preset.Settings);
             _lastPresetName = preset.Name;
             Log.Info($"Preset mirino: {preset.Name}");
@@ -154,10 +155,36 @@ namespace FNBoost.Crosshair
             }
         }
 
+        /// <summary>
+        /// Tasti che in Fortnite fanno uscire dalla mira (cambio slot 1-6, modalità costruzione Q e F1-F6 nei
+        /// comandi predefiniti). In modalità alternata azzerano lo stato, così non resta "nascosto" dopo un cambio arma.
+        /// </summary>
+        private static readonly int[] AimCancelKeys =
+        {
+            0x31, 0x32, 0x33, 0x34, 0x35, 0x36, // 1-6
+            0x51,                               // Q
+            0x70, 0x71, 0x72, 0x73, 0x74, 0x75  // F1-F6
+        };
+        private readonly bool[] _cancelWasDown = new bool[AimCancelKeys.Length];
+
         private void ResetAim()
         {
             _aimToggled = false;
             _rbWasDown = false;
+            Array.Clear(_cancelWasDown);
+        }
+
+        /// <summary>true se uno dei tasti che annullano la mira è appena stato premuto (fronte di discesa, sola lettura).</summary>
+        private bool AimCancelPressed()
+        {
+            bool pressed = false;
+            for (int i = 0; i < AimCancelKeys.Length; i++)
+            {
+                bool down = (Native.GetAsyncKeyState(AimCancelKeys[i]) & 0x8000) != 0;
+                if (down && !_cancelWasDown[i]) pressed = true;
+                _cancelWasDown[i] = down;
+            }
+            return pressed;
         }
 
         private void ApplyVisibility()
@@ -190,7 +217,7 @@ namespace FNBoost.Crosshair
         /// Tasto destro letto con GetAsyncKeyState (solo il bit "premuto ora", sola lettura).
         /// Modalità "tieni premuto": mira = tasto giù. Modalità "alternata" (opzione di Fortnite):
         /// ogni pressione con Fortnite in primo piano inverte lo stato, che si azzera quando il gioco
-        /// perde il focus o compare il cursore (menu, inventario, mappa).
+        /// perde il focus, compare il cursore (menu, inventario, mappa) o si cambia arma / si entra in costruzione.
         /// </summary>
         private bool IsAiming(bool fortniteFg, bool cursorVisible)
         {
@@ -198,7 +225,8 @@ namespace FNBoost.Crosshair
             bool aiming;
             if (_settings.AimToggleMode)
             {
-                if (!fortniteFg || cursorVisible) _aimToggled = false;
+                bool cancel = AimCancelPressed();
+                if (!fortniteFg || cursorVisible || cancel) _aimToggled = false;
                 else if (down && !_rbWasDown) _aimToggled = !_aimToggled;
                 aiming = _aimToggled;
             }
@@ -211,8 +239,8 @@ namespace FNBoost.Crosshair
         }
 
         /// <summary>
-        /// Controlla solo QUALE finestra è in primo piano (GetForegroundWindow) e il nome del suo processo
-        /// dall'elenco processi di sistema: nessun handle aperto verso il gioco.
+        /// Controlla solo QUALE finestra è in primo piano (GetForegroundWindow) e confronta il suo PID con
+        /// l'istantanea di sistema dei processi di Fortnite: nessun handle aperto verso il gioco.
         /// </summary>
         private bool IsFortniteForeground()
         {
@@ -221,15 +249,7 @@ namespace FNBoost.Crosshair
             Native.GetWindowThreadProcessId(hwnd, out var pid);
             if (pid == _lastPid) return _lastPidIsFortnite;
             _lastPid = pid;
-            try
-            {
-                using var p = Process.GetProcessById((int)pid);
-                _lastPidIsFortnite = string.Equals(p.ProcessName, FortniteLocator.ClientProcessName, StringComparison.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                _lastPidIsFortnite = false;
-            }
+            _lastPidIsFortnite = FortniteLocator.IsClientPid(pid);
             return _lastPidIsFortnite;
         }
 

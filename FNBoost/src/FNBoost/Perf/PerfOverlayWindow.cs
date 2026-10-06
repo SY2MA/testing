@@ -217,12 +217,9 @@ namespace FNBoost.Perf
             {
                 return ColorConverter.ConvertFromString(hex.Trim()) is Color c ? c : fallback;
             }
-            catch (FormatException)
+            catch (Exception)
             {
-                return fallback;
-            }
-            catch (NotSupportedException)
-            {
+                // FormatException, NotSupportedException e InvalidOperationException (es. "sc#1" incompleto).
                 return fallback;
             }
         }

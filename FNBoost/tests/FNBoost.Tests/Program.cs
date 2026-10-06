@@ -23,6 +23,7 @@ namespace FNBoost.Tests
             T.Run("input vuoto, 1 frame, NaN e negativi", DegenerateInput);
             T.Run("FPS al secondo", PerSecond);
             T.Run("prestazioni su 1,5 milioni di frame", LargeInput);
+            T.Run("allineamento per istante dei campioni a ~1 Hz (deriva, ritardo, buchi)", SampleAlignment);
 
             Console.WriteLine("PerfSessionStore");
             T.Run("salva, carica, aggiorna, elimina, pota", StoreRoundtrip);
@@ -49,6 +50,39 @@ namespace FNBoost.Tests
         }
 
         // ================= FrameStats =================
+
+        private static void SampleAlignment()
+        {
+            // Timer "a 1 Hz" che in realtà scatta ogni 1080 ms, partito 3 s prima del primo frame.
+            var t = Enumerable.Range(0, 4000).Select(i => 1000.0 + i * 1080.0).ToList();
+            double firstEnd = 4000 + 1000; // primo frame a 4000 ms
+            int nSec = 3600;
+            var idx = FrameStats.NearestSamples(t, firstEnd, nSec);
+            T.Equal(3600, idx.Length, "un indice per secondo");
+            for (int s = 0; s < nSec; s += 97)
+            {
+                double target = firstEnd + s * 1000.0;
+                T.True(Math.Abs(t[idx[s]] - target) <= 540, $"secondo {s}: campione entro mezzo periodo");
+            }
+            T.True(idx[0] > 0, "i campioni prima del primo frame non vengono usati per il secondo 0");
+            T.True(idx[nSec - 1] < 3600, "dopo un'ora con deriva l'indice non coincide più con il secondo");
+
+            // Buchi e NaN: con limite → -1; senza limite → il più vicino.
+            var gap = new List<double> { 1000, 2000, double.NaN, 9000 };
+            var lim = FrameStats.NearestSamples(gap, 1000, 9, 1500);
+            T.Equal(0, lim[0], "s0");
+            T.Equal(1, lim[1], "s1");
+            T.Equal(1, lim[2], "s2 entro 1,5 s");
+            T.Equal(-1, lim[4], "s4 nel buco → -1");
+            T.Equal(3, lim[8], "s8");
+            T.Equal(3, FrameStats.NearestSamples(gap, 1000, 9)[5], "senza limite: il più vicino (9000)");
+            T.Equal(0, FrameStats.NearestSamples(Array.Empty<double>(), 0, 0).Length, "vuoto");
+            T.True(FrameStats.NearestSamples(Array.Empty<double>(), 0, 3).All(i => i == -1), "nessun campione → -1");
+
+            // Eventi (freeze): ogni campione in un solo secondo, quelli fuori sessione esclusi.
+            var ev = FrameStats.SecondOfSamples(new[] { 900.0, 1400.0, 1600.0, 4100.0, double.NaN, 99999.0 }, 1000, 5);
+            T.Equal("0,0,1,3,-1,-1", string.Join(",", ev), "secondo di ogni evento");
+        }
 
         private static void Constant240()
         {

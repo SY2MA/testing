@@ -48,6 +48,9 @@ namespace FNBoost
             }
 
             DispatcherUnhandledException += OnUnhandled;
+            // Disconnessione/arresto di Windows: WPF chiama Shutdown() da solo (OnExit) senza passare da ExitApp.
+            // La pulizia va fatta subito, mentre Windows attende la risposta a WM_QUERYENDSESSION.
+            SessionEnding += (_, _) => Cleanup();
             AppPaths.Ensure();
             Log.Info($"Avvio FN Boost {Version}");
 
@@ -369,6 +372,24 @@ namespace FNBoost
         public static void ExitApp()
         {
             if (IsExiting) return;
+            try
+            {
+                Cleanup();
+            }
+            finally
+            {
+                Current.Shutdown();
+            }
+        }
+
+        /// <summary>
+        /// Pulizia di chiusura (una sola volta): salva la registrazione in corso, chiude le sessioni ETW,
+        /// salva le impostazioni, libera scorciatoie e icona. Usata da ExitApp, dalla fine della sessione
+        /// di Windows (SessionEnding) e, come ultima rete, da OnExit.
+        /// </summary>
+        private static void Cleanup()
+        {
+            if (IsExiting) return;
             IsExiting = true;
             try
             {
@@ -376,9 +397,9 @@ namespace FNBoost
                 // Prima l'overlay, poi il contatore: Dispose salva l'eventuale registrazione abbastanza lunga.
                 SafeDispose(PerfOverlay, "overlay FPS");
                 SafeDispose(Perf, "contatore FPS");
-                Settings.Save();
-                Crosshair.Dispose();
-                _hotkeys?.Dispose();
+                Settings?.Save();
+                SafeDispose(Crosshair, "mirino");
+                SafeDispose(_hotkeys, "scorciatoie");
                 if (_tray != null)
                 {
                     _tray.Visible = false;
@@ -386,9 +407,9 @@ namespace FNBoost
                 }
                 Log.Info("Chiusura FN Boost");
             }
-            finally
+            catch (Exception ex)
             {
-                Current.Shutdown();
+                Log.Error("Chiusura FN Boost", ex);
             }
         }
 
@@ -406,6 +427,8 @@ namespace FNBoost
 
         protected override void OnExit(ExitEventArgs e)
         {
+            // Seconda istanza (Settings mai caricate): niente da pulire.
+            if (Settings != null) Cleanup();
             _mutex?.Dispose();
             base.OnExit(e);
         }

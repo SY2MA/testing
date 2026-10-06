@@ -105,7 +105,9 @@ namespace FNBoost.Report
             ("packet loss", "packet loss", true),
             ("saturated", "Saturated", true),
             ("out of order", "Out of order", true),
-            ("close", "Close:", false)
+            // Non "UNetConnection::Close:": Unreal lo scrive a ogni uscita normale da una partita.
+            ("network failure", "NetworkFailure", true),
+            ("pending connection failure", "PendingConnectionFailure", true)
         };
 
         private static readonly string[] CrashNeedles =

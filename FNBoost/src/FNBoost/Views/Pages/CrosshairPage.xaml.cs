@@ -152,10 +152,14 @@ namespace FNBoost.Views.Pages
 
         private void RefreshMonitors()
         {
+            // Letto PRIMA di toccare la ComboBox: un nuovo ItemsSource azzera la selezione e il binding
+            // TwoWay riscriverebbe "" nelle impostazioni (perdendo il monitor scelto).
+            var keep = S.Monitor;
             var monitors = Monitors.GetAll();
-            MonitorCombo.ItemsSource = monitors;
-            if (string.IsNullOrEmpty(S.Monitor) || monitors.All(m => m.Device != S.Monitor))
-                S.Monitor = monitors.FirstOrDefault(m => m.Primary)?.Device ?? "";
+            if (!Monitors.SameLayout(MonitorCombo.ItemsSource, monitors))
+                MonitorCombo.ItemsSource = monitors;
+            var want = Monitors.Resolve(monitors, keep);
+            if (S.Monitor != want) S.Monitor = want;
         }
 
         private void Rotation_Click(object sender, RoutedEventArgs e)
