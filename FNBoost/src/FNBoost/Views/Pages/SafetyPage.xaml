@@ -1,6 +1,7 @@
 <UserControl x:Class="FNBoost.Views.Pages.SafetyPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:FNBoost.Views">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,24,28,24">
             <TextBlock Text="Sicurezza e backup" Style="{StaticResource H1}" />
@@ -52,7 +53,66 @@
                     <CheckBox x:Name="TrayBox" Content="Chiudendo la finestra, resta attivo nell'area di notifica (mirino e scorciatoie restano attivi)"
                               Click="Settings_Click" />
                     <CheckBox x:Name="StartFloatingBox" Margin="0,10,0,0" Content="Avvia direttamente in modalità flottante" Click="Settings_Click" />
-                    <TextBlock x:Name="HotkeysText" Style="{StaticResource Small}" Margin="0,12,0,0" />
+                    <TextBlock x:Name="HotkeysText" Style="{StaticResource Small}" Margin="0,12,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Scorciatoie da tastiera" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource Small}" Margin="0,4,0,12" TextWrapping="Wrap"
+                               Text="Funzionano ovunque, anche in gioco (RegisterHotKey di Windows: nessun hook della tastiera). Clicca una casella e premi la nuova combinazione: serve almeno Ctrl, Alt o Shift. Esc annulla, Backspace/Canc disattiva la scorciatoia. Poi premi Applica." />
+                    <Grid x:Name="HotkeyGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="200" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" VerticalAlignment="Center" Margin="0,0,12,8">
+                            <TextBlock Text="Mirino on/off" />
+                            <TextBlock Style="{StaticResource Small}" Text="Mostra o nasconde il mirino sopra al gioco" />
+                        </StackPanel>
+                        <v:HotkeyBox x:Name="HkCrosshair" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" HotkeyChanged="Hotkey_Changed" />
+
+                        <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,0,12,8">
+                            <TextBlock Text="Pannello flottante" />
+                            <TextBlock Style="{StaticResource Small}" Text="Apre o nasconde il pannello compatto" />
+                        </StackPanel>
+                        <v:HotkeyBox x:Name="HkPanel" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" HotkeyChanged="Hotkey_Changed" />
+
+                        <StackPanel Grid.Row="2" VerticalAlignment="Center" Margin="0,0,12,8">
+                            <TextBlock Text="Overlay FPS" />
+                            <TextBlock Style="{StaticResource Small}" Text="Mostra o nasconde il contatore FPS in gioco" />
+                        </StackPanel>
+                        <v:HotkeyBox x:Name="HkOverlay" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" HotkeyChanged="Hotkey_Changed" />
+
+                        <StackPanel Grid.Row="3" VerticalAlignment="Center" Margin="0,0,12,8">
+                            <TextBlock Text="Preset mirino successivo" />
+                            <TextBlock Style="{StaticResource Small}" Text="Passa al preset seguente dell'elenco (il nome compare sotto al mirino)" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <v:HotkeyBox x:Name="HkNextPreset" Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" HotkeyChanged="Hotkey_Changed" />
+
+                        <StackPanel Grid.Row="4" VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="Registra sessione" />
+                            <TextBlock Style="{StaticResource Small}" Text="Avvia o ferma la registrazione delle prestazioni" />
+                        </StackPanel>
+                        <v:HotkeyBox x:Name="HkRecord" Grid.Row="4" Grid.Column="1" HotkeyChanged="Hotkey_Changed" />
+                    </Grid>
+                    <CheckBox x:Name="PresetBalloonBox" Margin="0,14,0,0" Click="PresetBalloon_Click"
+                              Content="Notifica anche nell'area di notifica quando cambi preset con la scorciatoia" />
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button x:Name="HotkeyApplyBtn" Style="{StaticResource AccentButton}" Content="Applica" Click="HotkeyApply_Click" />
+                        <Button Content="Ripristina predefinite" Margin="8,0,0,0" Click="HotkeyDefaults_Click" />
+                    </StackPanel>
+                    <TextBlock x:Name="HotkeyResultText" Style="{StaticResource Small}" Margin="0,10,0,0" TextWrapping="Wrap"
+                               Visibility="Collapsed" />
                 </StackPanel>
             </Border>
 

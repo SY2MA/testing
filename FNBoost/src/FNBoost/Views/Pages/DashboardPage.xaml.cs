@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using FNBoost.Core;
+using FNBoost.Perf;
 
 namespace FNBoost.Views.Pages
 {
@@ -17,6 +20,7 @@ namespace FNBoost.Views.Pages
             Loaded += async (_, _) =>
             {
                 if (ChecksList.ItemsSource == null) await AnalyzeAsync();
+                await LoadLastSessionAsync();
             };
             App.Tweaks.Changed += UpdateScore;
             UpdateScore();
@@ -69,6 +73,52 @@ namespace FNBoost.Views.Pages
                 SetButtons(true);
                 _busy = false;
             }
+        }
+
+        /// <summary>Riepilogo dell'ultima sessione registrata (se ce ne sono), con il confronto con la precedente dello stesso gioco.</summary>
+        private async Task LoadLastSessionAsync()
+        {
+            var perf = App.Perf;
+            if (perf == null)
+            {
+                LastSessionCard.Visibility = Visibility.Collapsed;
+                return;
+            }
+            try
+            {
+                // La prima lettura dell'archivio legge i file dal disco: fuori dal thread della UI.
+                IReadOnlyList<PerfSession> list = await Task.Run(() => perf.Store.List());
+                var last = list.FirstOrDefault(x => x.Stats != null && x.Stats.HasData);
+                if (last == null)
+                {
+                    LastSessionCard.Visibility = Visibility.Collapsed;
+                    return;
+                }
+                var c = CultureInfo.CurrentCulture;
+                var st = last.Stats;
+                var game = string.Equals(last.ProcessName, FortniteLocator.ClientProcessName, StringComparison.OrdinalIgnoreCase)
+                    ? "Fortnite"
+                    : string.IsNullOrEmpty(last.ProcessName) ? "gioco" : last.ProcessName;
+                LastSessionTitle.Text = $"Ultima sessione registrata · {game} · {last.Title}";
+                LastSessionText.Text = $"Media {st.AvgFps.ToString("0", c)} FPS · 1% low {st.Low1Fps.ToString("0", c)} FPS · " +
+                                       $"{st.StuttersPerMin.ToString("0.0", c)} stutter/min · durata {last.DurationText}";
+                var prev = list.FirstOrDefault(x => !ReferenceEquals(x, last) && x.Stats != null && x.Stats.HasData &&
+                                                    string.Equals(x.ProcessName, last.ProcessName, StringComparison.OrdinalIgnoreCase));
+                var cmp = prev != null ? PerfAnalyzer.Compare(last, prev) : "";
+                LastSessionCompare.Text = cmp;
+                LastSessionCompare.Visibility = string.IsNullOrEmpty(cmp) ? Visibility.Collapsed : Visibility.Visible;
+                LastSessionCard.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Riepilogo ultima sessione: " + ex.Message);
+                LastSessionCard.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void OpenPerformance_Click(object sender, RoutedEventArgs e)
+        {
+            if (Window.GetWindow(this) is MainWindow main) main.Navigate("performance");
         }
 
         private void SetButtons(bool enabled)

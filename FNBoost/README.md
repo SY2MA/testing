@@ -5,12 +5,25 @@ App nativa per Windows 11 (C# / WPF, .NET 10) che:
 1. **Analizza il PC** e segnala ciò che limita FPS, costanza dei frametime e stutter in Fortnite.
 2. **Applica solo tweak sicuri e reversibili**: ogni valore originale viene salvato prima della modifica e si ripristina con un clic.
 3. **Configura Fortnite** (GameUserSettings.ini) a gioco chiuso, con backup automatico.
-4. **Mostra un mirino personalizzato** in una finestra overlay trasparente che non tocca il gioco.
+4. **Mostra un mirino personalizzato** a livelli in una finestra overlay trasparente che non tocca il gioco.
+5. **Misura gli FPS** (media, 1% low, 0,1% low, min/max, stutter) con un overlay in gioco, registra le sessioni e le analizza nel tempo.
 
 Ha due interfacce:
 
-- **Desktop completo**: finestra con barra laterale (Panoramica, Tweak, Fortnite, Mirino, Pulizia, Sicurezza, Guida).
-- **Pannello flottante trasparente**: compatto, trascinabile, sempre in primo piano, con trasparenza regolabile. Mostra uso CPU/RAM e stato di Fortnite e ha i comandi rapidi per mirino e tweak. Si apre con `Ctrl+Alt+Z` o con il pulsante "Modalità flottante".
+- **Desktop completo**: finestra con barra laterale (Panoramica, Tweak, Fortnite, Mirino, Prestazioni, Pulizia, Sicurezza, Guida).
+- **Pannello flottante trasparente**: compatto, trascinabile, sempre in primo piano, con trasparenza regolabile. Mostra uso CPU/RAM, stato di Fortnite, FPS dal vivo (media, 1% low, 0,1% low, min, max e mini grafico dei frametime) e ha i comandi rapidi per mirino, overlay FPS, registrazione e tweak. Si apre con `Ctrl+Alt+Z` o con il pulsante "Modalità flottante".
+
+### Scorciatoie globali (predefinite)
+
+| Scorciatoia | Azione |
+|---|---|
+| `Ctrl+Alt+X` | Mirino on/off |
+| `Ctrl+Alt+Z` | Pannello flottante |
+| `Ctrl+Alt+F` | Overlay FPS on/off |
+| `Ctrl+Alt+C` | Preset del mirino successivo (il nome compare per un attimo sotto al mirino) |
+| `Ctrl+Alt+R` | Avvia/ferma la registrazione di una sessione |
+
+Si cambiano in **Sicurezza e backup › Scorciatoie da tastiera**: clicca la casella e premi la nuova combinazione (serve almeno Ctrl, Alt o Shift; Backspace/Canc la disattiva). Le combinazioni doppie o già prese da un'altra app vengono segnalate. Usano `RegisterHotKey` di Windows: nessun hook della tastiera.
 
 ---
 
@@ -55,14 +68,51 @@ Sono contrassegnati come *Consigliato*: Modalità Gioco, Game Bar, piano energet
 
 ## Mirino (crosshair)
 
-- Forme: croce, croce + punto, punto, cerchio, cerchio + punto, T, X, oppure un'immagine PNG tua.
-- Colore, opacità, lunghezza, spessore, distanza dal centro, bordo, offset X/Y e scelta del monitor.
-- Preset integrati, più quelli che salvi tu. Anteprima con zoom su sfondi diversi.
-- `Ctrl+Alt+X` lo accende e lo spegne. Opzione "mostra solo quando Fortnite è in primo piano".
+- **A livelli**: linee interne, linee esterne, bracci singoli (es. T senza braccio in alto), punto centrale (quadrato o tondo), cerchio, bordo e bagliore. Ogni livello ha dimensione, spessore, opacità e colore propri (vuoto = colore principale).
+- **Modelli rapidi** (croce, croce + punto, punto, cerchio, cerchio + punto, T, X, immagine PNG tua) da cui partire, poi si ritocca tutto. Rotazione libera, opacità globale, offset X/Y e scelta del monitor.
+- **Colore RGB** cangiante con velocità regolabile (animato solo a schermo, mai salvato).
+- **Visibilità intelligente**: solo con Fortnite in primo piano; nascosto quando il cursore è visibile (inventario, mappa, lobby, menu); nascosto mentre miri col tasto destro, anche in modalità "mira alternata". Legge solo quale finestra è in primo piano, se il cursore è visibile e se il tasto destro è premuto (API di Windows in sola lettura).
+- **Preset**: 11 integrati più quelli che salvi tu. `Ctrl+Alt+C` passa al successivo e ne mostra il nome sotto al mirino.
+- **Codici di condivisione** (`FNB1-…`): esporta il tuo mirino in un codice da incollare in chat e importa quelli degli amici. Il codice contiene solo l'aspetto: **mai** il percorso dell'immagine (rivelerebbe cartelle e nome utente), monitor, posizione o regole di visibilità. I codici danneggiati, troppo lunghi o con colori non validi vengono rifiutati o ripuliti.
+- **Anteprima** con zoom su sfondi diversi, oppure su un tuo screenshot di gioco con riquadro 1:1 alla dimensione reale.
+- Le impostazioni salvate dalla prima versione vengono convertite in automatico nel nuovo modello a livelli, con lo stesso aspetto di prima.
+- `Ctrl+Alt+X` lo accende e lo spegne.
 
 **Come funziona:** è una normale finestra Windows trasparente, sempre in primo piano e "click-through" (`WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_NOACTIVATE`), disegnata in pixel fisici al centro del monitor. **Non** inietta DLL, **non** aggancia DirectX, **non** legge né scrive la memoria del gioco, **non** apre handle verso il processo di Fortnite e **non** invia input. È lo stesso principio del mirino integrato nell'OSD dei monitor.
 
 **Rischio ban:** Epic non vieta esplicitamente i mirini overlay esterni, ma il regolamento proibisce software di terze parti che diano un vantaggio sleale. Nessun programma può garantire "zero ban" al 100%. Nei tornei con premi in denaro conviene spegnerlo o usare il mirino del monitor. Usa Fortnite in **Schermo intero in finestra** per essere sicuro che l'overlay sia visibile.
+
+---
+
+## Contatore FPS e analisi delle prestazioni
+
+**Come misura.** FN Boost legge gli eventi *Present* di DXGI da una sessione **ETW** di sistema (Event Tracing for Windows): è lo stesso metodo di **PresentMon**, CapFrameX e del contatore FPS della **Xbox Game Bar**. Il tempo tra due Present consecutivi dello stesso processo è il frametime. Non c'è alcun contatto con il gioco: niente DLL iniettate, niente hook di DirectX, niente handle verso il processo, niente lettura della memoria. CPU e RAM arrivano dai contatori di Windows (PDH), GPU e VRAM dai contatori "GPU Engine"/"GPU Adapter Memory" quando disponibili. Di base misura solo Fortnite; si può scegliere "qualsiasi gioco in primo piano".
+
+**Cosa significano i numeri** (stesse definizioni di PresentMon/CapFrameX):
+
+| Valore | Definizione |
+|---|---|
+| **Media** | frame ÷ tempo totale. È la media "vera", non la media degli FPS istantanei |
+| **1% low** | FPS calcolati dalla media dell'1% dei frametime più lunghi. Misura i rallentamenti che senti davvero |
+| **0,1% low** | come sopra con lo 0,1% dei frame più lenti: i singoli scatti più gravi |
+| **P1** | FPS al 99° percentile dei frametime (1000 ÷ P99). Più stabile dell'1% low su sessioni brevi |
+| **Min / Max** | 1000 ÷ frametime più lungo / più corto |
+| **Stutter** | frame lungo almeno 2,5 volte la mediana dei 60 frame precedenti **e** almeno 12 ms (sensibilità regolabile). Mostrato anche come stutter al minuto |
+| **Consistenza** | punteggio 0-100: quanto l'1% low resta vicino alla media (≥ 95% della media = pieno punteggio), meno una penalità per gli stutter frequenti |
+
+**Overlay in gioco.** `Ctrl+Alt+F` mostra un piccolo contatore sopra al gioco: FPS grandi, media, 1% low (giallo se scende sotto metà della media), 0,1% low, min/max, frametime, CPU/GPU e un mini grafico dei frametime. Angolo, monitor, distanza dal bordo, dimensione del testo, colori, sfondo, righe visibili e layout compatto su una riga sono configurabili. Di base si vede solo con il gioco in primo piano (e mentre configuri FN Boost). È una finestra trasparente click-through come il mirino.
+
+**Sessioni e storico.** Con la registrazione automatica ogni partita (da quando Fortnite inizia a renderizzare a quando smette) diventa una sessione; in alternativa `Ctrl+Alt+R` o il pulsante *Avvia registrazione*. Le sessioni più corte del minimo impostato non vengono salvate. Ogni sessione conserva tutti i frametime, un campione al secondo (FPS, 1% low, CPU, GPU, RAM, VRAM), i tweak FN Boost attivi, modalità di rendering e limite FPS letti da GameUserSettings.ini e la frequenza del monitor. La pagina **Prestazioni** mostra l'elenco con etichette modificabili (es. "dopo tweak", "DX12"), l'andamento delle ultime sessioni, e per ogni sessione 16 statistiche, FPS nel tempo, CPU contro GPU e l'istogramma dei frametime. La Panoramica riassume l'ultima sessione.
+
+**Analisi automatica.** Per ogni sessione FN Boost spiega cosa vede: gioco fluido o irregolare, FPS fermi al limite impostato o agganciati al refresh (VSync), probabile limite GPU (GPU al 95-100%) o CPU (GPU scarica e FPS bassi), molti stutter (con distinzione tra quelli dei primi minuti, tipici della compilazione shader in DX12, e quelli sparsi, tipici di attività in background), VRAM o RAM quasi piene. Confronta poi la sessione con la precedente dello stesso gioco (media, 1% low, stutter, tweak cambiati) e segnala cali o miglioramenti nel tempo.
+
+**Esportazione CSV.** Ogni sessione si esporta in CSV (`index,time_ms,frametime_ms,fps`, un frame per riga) da aprire in Excel o CapFrameX.
+
+**Limiti, onestamente:**
+- Misura i frame **presentati dal gioco** (l'equivalente di *MsBetweenPresents* di PresentMon), non quelli effettivamente mostrati dal monitor: con VSync, G-Sync/FreeSync o Frame Generation le due cose possono differire. Non misura la latenza.
+- L'overlay è una finestra sopra al gioco: in alcuni casi Windows deve comporre il frame del gioco con l'overlay invece di mostrarlo direttamente (perdendo il "flip indipendente"), con un possibile piccolo aumento di latenza. Accendilo quando ti serve e spegnilo quando giochi sul serio. Il contatore senza overlay non ha questo effetto.
+- Come il mirino, l'overlay non compare sopra lo schermo intero esclusivo: usa *Schermo intero in finestra*.
+- La sessione ETW richiede i permessi di amministratore (FN Boost li chiede già all'avvio). L'uso GPU/VRAM dipende dai contatori del driver e può mancare su alcune schede.
 
 ---
 
@@ -82,7 +132,8 @@ Sono contrassegnati come *Consigliato*: Modalità Gioco, Game Bar, piano energet
 `%LOCALAPPDATA%\FNBoost\`
 - `tweak-backups.json`: valori originali di ogni tweak applicato
 - `ini-backups\`: copie di GameUserSettings.ini prima di ogni salvataggio
-- `settings.json`: mirino, preset, scorciatoie, posizione del pannello
+- `settings.json`: mirino, preset, scorciatoie, overlay FPS, posizione del pannello
+- `sessions\`: sessioni di prestazioni registrate (`.json` con statistiche e campioni, `.ft` con tutti i frametime)
 - `logs\fnboost.log`: registro di tutte le operazioni
 
 Per annullare tutto: **Sicurezza e backup › Ripristina tutto**. In alternativa usa il punto di ripristino di Windows creato automaticamente prima del primo tweak.

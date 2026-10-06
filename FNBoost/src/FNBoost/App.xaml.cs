@@ -72,12 +72,16 @@ namespace FNBoost
 
             SetupPerf();
 
-            SetupHotkeys();
             SetupTray();
+            var hotkeyFailures = ReloadHotkeys();
 
             _main = new MainWindow();
             if (Settings.StartFloating) ShowFloating();
             else _main.Show();
+
+            if (hotkeyFailures.Count > 0)
+                NotifyTray("Alcune scorciatoie non sono attive (es. " + hotkeyFailures[0] +
+                           "). Puoi cambiarle in Sicurezza e backup › Scorciatoie da tastiera.");
 
             _ = Tweaks.RefreshAsync();
         }
@@ -135,18 +139,154 @@ namespace FNBoost
             e.Handled = true;
         }
 
-        private static void SetupHotkeys()
+        // ---------------- Scorciatoie globali ----------------
+
+        /// <summary>Le scorciatoie sono state (ri)registrate: le finestre aggiornano i testi d'aiuto.</summary>
+        public static event Action? HotkeysChanged;
+
+        /// <summary>
+        /// (Ri)registra tutte le scorciatoie globali attive (HotkeySetting.Enabled) leggendo App.Settings.
+        /// Restituisce la descrizione, in italiano, di quelle non attivate: doppioni interni all'app,
+        /// tasti non validi o combinazioni già prese da un'altra applicazione. Va chiamato sul thread della UI.
+        /// </summary>
+        public static IReadOnlyList<string> ReloadHotkeys() => ReloadHotkeysCore(logFailures: true);
+
+        private static int _hotkeySuspend;
+
+        /// <summary>
+        /// Sospende (true) o riattiva (false) tutte le scorciatoie globali. Lo usa la casella di modifica
+        /// delle scorciatoie: finché sono registrate, Windows consegnerebbe la combinazione all'app.
+        /// Le chiamate vanno bilanciate.
+        /// </summary>
+        public static void SuspendHotkeys(bool suspend)
         {
             try
             {
-                _hotkeys = new HotkeyManager();
-                _hotkeys.Register(Settings.HotkeyCrosshair, () => Crosshair.Toggle());
-                _hotkeys.Register(Settings.HotkeyPanel, ToggleFloating);
+                if (suspend)
+                {
+                    if (_hotkeySuspend++ == 0) _hotkeys?.UnregisterAll();
+                }
+                else if (_hotkeySuspend > 0 && --_hotkeySuspend == 0 && !IsExiting)
+                {
+                    ReloadHotkeysCore(logFailures: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Sospensione scorciatoie", ex);
+            }
+        }
+
+        private static IReadOnlyList<string> ReloadHotkeysCore(bool logFailures)
+        {
+            var failures = new List<string>();
+            if (Settings == null) return failures;
+            Settings.HotkeyCrosshair ??= AppSettings.DefaultHotkey("X");
+            Settings.HotkeyPanel ??= AppSettings.DefaultHotkey("Z");
+            Settings.HotkeyOverlay ??= AppSettings.DefaultHotkey("F");
+            Settings.HotkeyNextPreset ??= AppSettings.DefaultHotkey("C");
+            Settings.HotkeyRecord ??= AppSettings.DefaultHotkey("R");
+
+            try
+            {
+                _hotkeys ??= new HotkeyManager();
+                _hotkeys.UnregisterAll();
+
+                var entries = new (string Name, HotkeySetting Hk, Action Action)[]
+                {
+                    ("Mirino on/off", Settings.HotkeyCrosshair, () => Crosshair.Toggle()),
+                    ("Pannello flottante", Settings.HotkeyPanel, ToggleFloating),
+                    ("Overlay FPS", Settings.HotkeyOverlay, HotkeyToggleOverlay),
+                    ("Preset mirino successivo", Settings.HotkeyNextPreset, HotkeyNextPreset),
+                    ("Registra sessione", Settings.HotkeyRecord, HotkeyToggleRecording)
+                };
+
+                // Prima i doppioni interni all'app: Windows rifiuterebbe la seconda con un errore poco chiaro.
+                var used = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (var (name, hk, action) in entries)
+                {
+                    if (!hk.Enabled) continue;
+                    var sig = HotkeyManager.Signature(hk);
+                    if (sig == null)
+                    {
+                        failures.Add($"{name}: tasto \"{hk.Key}\" non valido");
+                        continue;
+                    }
+                    if (used.TryGetValue(sig, out var other))
+                    {
+                        failures.Add($"{name}: {hk} è già usata per \"{other}\"");
+                        continue;
+                    }
+                    used[sig] = name;
+                    if (!_hotkeys.Register(hk, action))
+                        failures.Add($"{name}: {hk} – {_hotkeys.LastError}");
+                }
             }
             catch (Exception ex)
             {
                 Log.Error("Registrazione scorciatoie", ex);
+                failures.Add("Impossibile attivare le scorciatoie globali: " + ex.Message);
             }
+
+            if (logFailures)
+                foreach (var f in failures) Log.Warn("Scorciatoia non attiva · " + f);
+            try
+            {
+                HotkeysChanged?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Aggiornamento testi scorciatoie", ex);
+            }
+            return failures;
+        }
+
+        private static void HotkeyToggleOverlay()
+        {
+            if (PerfOverlay == null)
+            {
+                NotifyTray("Overlay FPS non disponibile: controlla il registro attività.");
+                return;
+            }
+            PerfOverlay.Toggle();
+        }
+
+        private static void HotkeyNextPreset()
+        {
+            var name = Crosshair.NextPreset();
+            if (name == null)
+            {
+                NotifyTray("Nessun preset del mirino salvato.");
+                return;
+            }
+            // Il mirino mostra già il nome sotto al centro: la notifica serve solo se richiesta o se il mirino è spento.
+            if (Settings.PresetChangeBalloon || !Crosshair.Enabled)
+                NotifyTray(Crosshair.Enabled ? $"Preset mirino: {name}" : $"Preset mirino: {name} (il mirino è spento)");
+        }
+
+        private static void HotkeyToggleRecording()
+        {
+            var perf = Perf;
+            if (perf == null)
+            {
+                NotifyTray("Contatore FPS non disponibile: controlla il registro attività.");
+                return;
+            }
+            if (perf.IsRecording)
+            {
+                var session = perf.StopRecording();
+                NotifyTray(session != null
+                    ? $"Registrazione salvata: {session.DurationText} · media {session.Stats.AvgFps:0} FPS · 1% low {session.Stats.Low1Fps:0} FPS."
+                    : $"Registrazione fermata: troppo breve per essere salvata (minimo {Settings.Perf.MinSessionSeconds} s).");
+                return;
+            }
+            perf.StartRecording();
+            if (!perf.IsRecording)
+                NotifyTray("Impossibile avviare la registrazione: controlla il registro attività.");
+            else if (perf.Status == CaptureStatus.Stopped || perf.Status == CaptureStatus.Error)
+                NotifyTray("Registrazione avviata, ma il contatore FPS non sta misurando: controlla la pagina Prestazioni.");
+            else
+                NotifyTray("Registrazione avviata.");
         }
 
         private static void SetupTray()
@@ -158,6 +298,7 @@ namespace FNBoost
                 menu.Items.Add("Pannello flottante", null, (_, _) => ShowFloating());
                 menu.Items.Add("Mirino on/off", null, (_, _) => Crosshair.Toggle());
                 menu.Items.Add("Overlay FPS on/off", null, (_, _) => PerfOverlay?.Toggle());
+                menu.Items.Add("Avvia/ferma registrazione", null, (_, _) => HotkeyToggleRecording());
                 menu.Items.Add(new WinForms.ToolStripSeparator());
                 menu.Items.Add("Esci", null, (_, _) => ExitApp());
 

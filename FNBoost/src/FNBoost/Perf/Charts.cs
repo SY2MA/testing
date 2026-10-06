@@ -418,6 +418,12 @@ namespace FNBoost.Perf
         public double TargetMs { get => (double)GetValue(TargetMsProperty); set => SetValue(TargetMsProperty, value); }
         public string? TargetLabel { get => (string?)GetValue(TargetLabelProperty); set => SetValue(TargetLabelProperty, value); }
 
+        public static readonly DependencyProperty CompactProperty = DependencyProperty.Register(nameof(Compact),
+            typeof(bool), typeof(FrametimeGraph), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        /// <summary>Versione mini (pannello flottante): niente etichette dell'asse né riquadro del frametime corrente.</summary>
+        public bool Compact { get => (bool)GetValue(CompactProperty); set => SetValue(CompactProperty, value); }
+
         private const double SpikeFactor = 2.5;
         private const double BadMs = 50;
         private float[] _sorted = Array.Empty<float>();
@@ -435,7 +441,8 @@ namespace FNBoost.Perf
         protected override void OnRender(DrawingContext dc)
         {
             var size = RenderSize;
-            if (size.Width < 40 || size.Height < 40) return;
+            bool compact = Compact;
+            if (size.Width < 40 || size.Height < (compact ? 16 : 40)) return;
             dc.DrawRectangle(Brushes.Transparent, null, new Rect(size));
             var ft = Frametimes;
             int n = ft?.Length ?? 0;
@@ -461,14 +468,19 @@ namespace FNBoost.Perf
             var muted = ChartKit.Muted;
             double labelW = 0;
             var labels = new List<(double v, FormattedText t)>();
-            for (double t = 0; t <= top + step * 0.001; t += step)
+            if (!compact)
             {
-                var f = ChartKit.Txt(this, ChartKit.Format(t, step < 1 ? "0.0" : "0") + " ms", 10.5, muted);
-                labels.Add((t, f));
-                labelW = Math.Max(labelW, f.Width);
+                for (double t = 0; t <= top + step * 0.001; t += step)
+                {
+                    var f = ChartKit.Txt(this, ChartKit.Format(t, step < 1 ? "0.0" : "0") + " ms", 10.5, muted);
+                    labels.Add((t, f));
+                    labelW = Math.Max(labelW, f.Width);
+                }
             }
-            double left = Math.Ceiling(labelW) + 8;
-            var plot = new Rect(left, 8, Math.Max(10, size.Width - left - 6), Math.Max(10, size.Height - 14));
+            double left = compact ? 0 : Math.Ceiling(labelW) + 8;
+            var plot = compact
+                ? new Rect(0, 2, size.Width, Math.Max(4, size.Height - 2))
+                : new Rect(left, 8, Math.Max(10, size.Width - left - 6), Math.Max(10, size.Height - 14));
             double Y(double v) => plot.Bottom - Math.Min(v, top) / top * plot.Height;
 
             foreach (var (v, t) in labels)
@@ -476,6 +488,11 @@ namespace FNBoost.Perf
                 double y = Math.Round(Y(v)) + 0.5;
                 dc.DrawLine(ChartKit.GridPen, new Point(plot.Left, y), new Point(plot.Right, y));
                 dc.DrawText(t, new Point(left - 6 - t.Width, y - t.Height / 2));
+            }
+            if (compact)
+            {
+                double yb = Math.Round(plot.Bottom) - 0.5;
+                dc.DrawLine(ChartKit.GridPen, new Point(plot.Left, yb), new Point(plot.Right, yb));
             }
 
             // Barre raggruppate per colore: tre geometrie in tutto.
@@ -519,12 +536,14 @@ namespace FNBoost.Perf
                 double y = Math.Round(Y(target)) + 0.5;
                 dc.DrawLine(ChartKit.MakePen(ChartKit.WithOpacity(ChartKit.Text, 0.55), 1, dashed: true),
                     new Point(plot.Left, y), new Point(plot.Right, y));
-                if (!string.IsNullOrEmpty(TargetLabel))
+                if (!compact && !string.IsNullOrEmpty(TargetLabel))
                 {
                     var t = ChartKit.Txt(this, TargetLabel!, 10.5, ChartKit.Text);
                     dc.DrawText(t, new Point(plot.Left + 4, y - t.Height - 1 < plot.Top ? y + 2 : y - t.Height - 1));
                 }
             }
+
+            if (compact) return;
 
             // Ultimo frametime in alto a destra.
             var cur = ChartKit.Txt(this, ChartKit.Format(ft[n - 1], "0.0") + " ms", 12, ChartKit.Text, bold: true);

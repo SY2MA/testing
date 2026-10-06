@@ -19,7 +19,41 @@ namespace FNBoost.Core
         public bool Enabled { get; set; } = true;
 
         public override string ToString() => !Enabled ? "(disattivata)" :
-            $"{(Ctrl ? "Ctrl+" : "")}{(Alt ? "Alt+" : "")}{(Shift ? "Shift+" : "")}{Key}";
+            $"{(Ctrl ? "Ctrl+" : "")}{(Alt ? "Alt+" : "")}{(Shift ? "Shift+" : "")}{KeyDisplayName(Key)}";
+
+        public HotkeySetting Clone() => new() { Ctrl = Ctrl, Alt = Alt, Shift = Shift, Key = Key, Enabled = Enabled };
+
+        /// <summary>Nome leggibile di un tasto (System.Windows.Input.Key): "D1" → "1", "NumPad5" → "Num 5", "OemPlus" → "+"…</summary>
+        public static string KeyDisplayName(string? key)
+        {
+            key = (key ?? "").Trim();
+            if (key.Length == 2 && key[0] == 'D' && char.IsDigit(key[1])) return key.Substring(1);
+            if (key.StartsWith("NumPad", StringComparison.Ordinal) && key.Length == 7) return "Num " + key.Substring(6);
+            return key switch
+            {
+                "" => "?",
+                "OemPlus" => "+",
+                "OemMinus" => "-",
+                "OemComma" => ",",
+                "OemPeriod" => ".",
+                "Add" => "Num +",
+                "Subtract" => "Num -",
+                "Multiply" => "Num *",
+                "Divide" => "Num /",
+                "Decimal" => "Num ,",
+                "Space" => "Spazio",
+                "Return" or "Enter" => "Invio",
+                "Insert" => "Ins",
+                "Delete" => "Canc",
+                "Prior" or "PageUp" => "PagSu",
+                "Next" or "PageDown" => "PagGiù",
+                "Left" => "Freccia sx",
+                "Right" => "Freccia dx",
+                "Up" => "Freccia su",
+                "Down" => "Freccia giù",
+                _ => key
+            };
+        }
     }
 
     public sealed class AppSettings
@@ -35,6 +69,11 @@ namespace FNBoost.Core
         public HotkeySetting HotkeyNextPreset { get; set; } = new() { Key = "C" };
         /// <summary>Avvia/ferma la registrazione di una sessione di prestazioni.</summary>
         public HotkeySetting HotkeyRecord { get; set; } = new() { Key = "R" };
+        /// <summary>Notifica nell'area di notifica quando si cambia preset con la scorciatoia (il mirino mostra già il nome).</summary>
+        public bool PresetChangeBalloon { get; set; }
+
+        /// <summary>Combinazione predefinita (Ctrl+Alt+tasto) per ciascuna scorciatoia, per "Ripristina predefinite".</summary>
+        public static HotkeySetting DefaultHotkey(string key) => new() { Ctrl = true, Alt = true, Shift = false, Key = key, Enabled = true };
 
         /// <summary>Modulo Prestazioni (contatore FPS, overlay, sessioni).</summary>
         public PerfSettings Perf { get; set; } = new();

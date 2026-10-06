@@ -52,7 +52,6 @@ namespace FNBoost.Views.Pages
             _syncingShape = true;
             ShapeCombo.ItemsSource = Shapes;
             _syncingShape = false;
-            HotkeyHint.Text = $"Scorciatoia globale: {App.Settings.HotkeyCrosshair}";
 
             foreach (var hex in Palette)
             {
@@ -77,6 +76,7 @@ namespace FNBoost.Views.Pages
             CrosshairPreset.NormalizeAll(App.Settings.CrosshairPresets);
             RefreshMonitors();
             RefreshPresets();
+            HotkeyHint.Text = $"Scorciatoia globale: {App.Settings.HotkeyCrosshair}";
             NextPresetHint.Text = $"Scorciatoia preset successivo: {App.Settings.HotkeyNextPreset}";
             if (!_subscribed)
             {

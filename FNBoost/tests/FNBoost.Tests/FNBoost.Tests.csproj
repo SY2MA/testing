@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Test della parte "pura" del modulo Prestazioni (statistiche, archivio, analisi).
+  <!-- Test della parte "pura" del modulo Prestazioni (statistiche, archivio, analisi) e del mirino
+       (codici di condivisione, conversione delle impostazioni v1).
        Compila solo sorgenti senza WPF/Windows, quindi gira anche su Linux/macOS:
        cd FNBoost/tests/FNBoost.Tests && dotnet run -c Release -->
   <PropertyGroup>
@@ -20,6 +21,8 @@
     <Compile Include="../../src/FNBoost/Perf/PerfSessionStore.cs" Link="Linked/PerfSessionStore.cs" />
     <Compile Include="../../src/FNBoost/Core/ObservableObject.cs" Link="Linked/ObservableObject.cs" />
     <Compile Include="../../src/FNBoost/Core/CheckStatus.cs" Link="Linked/CheckStatus.cs" />
+    <Compile Include="../../src/FNBoost/Crosshair/CrosshairSettings.cs" Link="Linked/CrosshairSettings.cs" />
+    <Compile Include="../../src/FNBoost/Crosshair/CrosshairShareCode.cs" Link="Linked/CrosshairShareCode.cs" />
   </ItemGroup>
 
 </Project>

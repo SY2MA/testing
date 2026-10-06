@@ -75,7 +75,7 @@
                         </StackPanel>
                     </Border>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
-                        <StackPanel>
+                        <StackPanel x:Name="NavPanel">
                             <RadioButton Style="{StaticResource NavButton}" Tag="&#xE9D9;" Content="Panoramica" IsChecked="True"
                                          Click="Nav_Click" CommandParameter="dashboard" />
                             <RadioButton Style="{StaticResource NavButton}" Tag="&#xE945;" Content="Tweak Windows"

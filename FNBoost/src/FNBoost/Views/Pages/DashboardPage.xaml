@@ -117,6 +117,29 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <!-- Ultima sessione registrata (modulo Prestazioni) -->
+            <Border x:Name="LastSessionCard" Style="{StaticResource Card}" Padding="16,12" Margin="0,8,0,8" Visibility="Collapsed">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="36" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="26" Height="26" CornerRadius="13" VerticalAlignment="Top" Background="{StaticResource Accent2Brush}" Opacity="0.18" />
+                    <TextBlock Text="&#xE9D2;" Style="{StaticResource Icon}" FontSize="13" Width="26" TextAlignment="Center"
+                               VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,6,0,0" Foreground="{StaticResource Accent2Brush}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock x:Name="LastSessionTitle" Text="Ultima sessione registrata" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock x:Name="LastSessionText" Style="{StaticResource Muted}" Margin="0,2,0,0"
+                                   Foreground="{StaticResource TextBrush}" Opacity="0.9" TextWrapping="Wrap" />
+                        <TextBlock x:Name="LastSessionCompare" Style="{StaticResource Small}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Visibility="Collapsed" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="Apri Prestazioni" VerticalAlignment="Center" Margin="12,0,0,0"
+                            Click="OpenPerformance_Click" />
+                </Grid>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

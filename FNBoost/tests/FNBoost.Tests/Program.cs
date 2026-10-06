@@ -14,7 +14,7 @@ namespace FNBoost.Tests
 
         private static int Main()
         {
-            Console.WriteLine("FN Boost — test del modulo Prestazioni");
+            Console.WriteLine("FN Boost — test dei moduli Prestazioni e Mirino");
 
             Console.WriteLine("FrameStats");
             T.Run("240 fps costanti", Constant240);
@@ -38,6 +38,8 @@ namespace FNBoost.Tests
             T.Run("confronto con la sessione precedente e tweak cambiati", AnalyzerComparison);
             T.Run("Compare: testo di confronto", CompareText);
             T.Run("andamento: calo, miglioramento, migliore", TrendTests);
+
+            CrosshairTests.RunAll();
 
             Console.WriteLine();
             Console.WriteLine($"{T.Passed} test superati, {T.FailureList.Count} asserzioni fallite.");

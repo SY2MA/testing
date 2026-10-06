@@ -1,6 +1,7 @@
 <Window x:Class="FNBoost.Views.FloatingWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:perf="clr-namespace:FNBoost.Perf"
         Title="FN Boost – pannello" Width="320" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="NoResize"
         ShowInTaskbar="False" Topmost="True"
@@ -35,8 +36,8 @@
                             ToolTip="Sempre in primo piano" />
                     <Button Style="{StaticResource SmallIconButton}" Content="&#xE740;" Click="Desktop_Click"
                             ToolTip="Apri l'interfaccia completa" />
-                    <Button Style="{StaticResource SmallIconButton}" Content="&#xE921;" Click="Hide_Click"
-                            ToolTip="Nascondi (Ctrl+Alt+Z per riaprire)" />
+                    <Button x:Name="HideBtn" Style="{StaticResource SmallIconButton}" Content="&#xE921;" Click="Hide_Click"
+                            ToolTip="Nascondi" />
                 </StackPanel>
             </Grid>
 
@@ -72,6 +73,62 @@
                 <Ellipse x:Name="FnDot" Width="8" Height="8" Fill="{StaticResource MutedBrush}" VerticalAlignment="Center" />
                 <TextBlock x:Name="FnText" Text="Fortnite: chiuso" Style="{StaticResource Small}" Margin="8,0,0,0" />
             </StackPanel>
+
+            <!-- Prestazioni (contatore FPS) -->
+            <Border x:Name="PerfCard" Margin="10,12,10,0" Padding="12" CornerRadius="12" Background="#14FFFFFF">
+                <StackPanel>
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Overlay FPS" Style="{StaticResource Small}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <CheckBox x:Name="PerfOverlayToggle" Style="{StaticResource ToggleSwitch}" Click="PerfOverlayToggle_Click" />
+                        </StackPanel>
+                        <TextBlock Text="Prestazioni" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="PerfFpsText" Text="–" FontSize="30" FontWeight="Bold"
+                                       Foreground="{StaticResource Accent2Brush}" VerticalAlignment="Bottom" />
+                            <TextBlock Text="FPS" Style="{StaticResource Small}" VerticalAlignment="Bottom" Margin="6,0,0,7" />
+                        </StackPanel>
+                        <TextBlock x:Name="PerfStatusText" Grid.Column="1" Style="{StaticResource Small}" TextAlignment="Right"
+                                   VerticalAlignment="Bottom" Margin="10,0,0,7" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                    <UniformGrid Columns="5" Margin="0,4,0,0">
+                        <StackPanel>
+                            <TextBlock x:Name="PerfAvgText" Text="–" FontWeight="SemiBold" />
+                            <TextBlock Text="Media" Style="{StaticResource Small}" FontSize="10.5" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock x:Name="PerfLow1Text" Text="–" FontWeight="SemiBold" />
+                            <TextBlock Text="1% low" Style="{StaticResource Small}" FontSize="10.5" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock x:Name="PerfLow01Text" Text="–" FontWeight="SemiBold" />
+                            <TextBlock Text="0,1% low" Style="{StaticResource Small}" FontSize="10.5" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock x:Name="PerfMinText" Text="–" FontWeight="SemiBold" />
+                            <TextBlock Text="Min" Style="{StaticResource Small}" FontSize="10.5" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock x:Name="PerfMaxText" Text="–" FontWeight="SemiBold" />
+                            <TextBlock Text="Max" Style="{StaticResource Small}" FontSize="10.5" />
+                        </StackPanel>
+                    </UniformGrid>
+                    <perf:FrametimeGraph x:Name="PerfGraph" Compact="True" Height="40" MinHeight="0" Margin="0,8,0,0"
+                                         ToolTip="Frametime recenti: barre gialle = picchi, rosse = oltre 50 ms" />
+                    <Button x:Name="RecordBtn" Margin="0,10,0,0" Padding="8,7" HorizontalContentAlignment="Center" Click="Record_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse x:Name="RecordDot" Width="9" Height="9" Fill="{StaticResource BadBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="RecordText" Text="Avvia registrazione" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
 
             <!-- Mirino -->
             <Border Margin="10,12,10,0" Padding="12" CornerRadius="12" Background="#14FFFFFF">
@@ -131,7 +188,7 @@
                 <TextBlock Text="Trasparenza pannello" Style="{StaticResource Small}" VerticalAlignment="Center" Margin="0,0,10,0" />
                 <Slider x:Name="OpacitySlider" Grid.Column="1" Minimum="0.35" Maximum="1" ValueChanged="Opacity_Changed" />
             </Grid>
-            <TextBlock x:Name="HotkeyText" Style="{StaticResource Small}" Margin="14,8,14,0" FontSize="11" />
+            <TextBlock x:Name="HotkeyText" Style="{StaticResource Small}" Margin="14,8,14,0" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
     </Border>
 </Window>

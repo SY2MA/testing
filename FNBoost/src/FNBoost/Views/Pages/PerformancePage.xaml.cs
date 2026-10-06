@@ -129,8 +129,6 @@ namespace FNBoost.Views.Pages
             OverlayCard.DataContext = App.Settings.Perf.Overlay;
             AddSwatches(TextSwatches, hex => App.Settings.Perf.Overlay.TextColor = hex);
             AddSwatches(AccentSwatches, hex => App.Settings.Perf.Overlay.AccentColor = hex);
-            OverlayHotkeyHint.Text = $"Scorciatoia globale: {App.Settings.HotkeyOverlay}";
-            RecordHotkeyHint.Text = $"Scorciatoia per avviare/fermare una registrazione: {App.Settings.HotkeyRecord}";
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -163,6 +161,9 @@ namespace FNBoost.Views.Pages
         {
             var p = P;
             if (p == null) return;
+            // Riletti a ogni apertura: le scorciatoie si possono cambiare in Sicurezza e backup.
+            OverlayHotkeyHint.Text = $"Scorciatoia globale: {App.Settings.HotkeyOverlay}";
+            RecordHotkeyHint.Text = $"Scorciatoia per avviare/fermare una registrazione: {App.Settings.HotkeyRecord}";
             if (!_subscribed)
             {
                 // La pagina resta in cache: ci si aggancia agli eventi solo mentre è visibile.

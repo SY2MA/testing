@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "FNBoost/**"
+      - "FNBoost/tests/**"
       - ".github/workflows/fnboost-build.yml"
   workflow_dispatch:
 
@@ -19,6 +20,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+
+      - name: Test (statistiche FPS, sessioni, analisi, codici mirino)
+        run: dotnet run --project FNBoost/tests/FNBoost.Tests/FNBoost.Tests.csproj -c Release
 
       - name: Publish (exe singolo, self-contained, x64)
         run: >

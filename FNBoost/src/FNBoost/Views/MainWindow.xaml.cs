@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -38,7 +39,9 @@ namespace FNBoost.Views
             StateChanged += (_, _) => OnWindowStateChanged();
             UpdateSummary();
             UpdateCrosshair();
-            HotkeyText.Text = $"{App.Settings.HotkeyCrosshair}: mirino\n{App.Settings.HotkeyPanel}: pannello";
+            UpdateHotkeyTexts();
+            App.HotkeysChanged += UpdateHotkeyTexts;
+            Closed += (_, _) => App.HotkeysChanged -= UpdateHotkeyTexts;
             SetupPerf();
         }
 
@@ -51,7 +54,6 @@ namespace FNBoost.Views
             var overlay = App.PerfOverlay;
             if (overlay != null)
             {
-                PerfOverlayQuick.ToolTip = $"Contatore FPS sopra al gioco ({App.Settings.HotkeyOverlay})";
                 overlay.StateChanged += UpdatePerfOverlay;
                 Closed += (_, _) => overlay.StateChanged -= UpdatePerfOverlay;
                 UpdatePerfOverlay();
@@ -122,14 +124,25 @@ namespace FNBoost.Views
             }
         }
 
+        private void UpdateHotkeyTexts()
+        {
+            var s = App.Settings;
+            HotkeyText.Text = $"{s.HotkeyCrosshair}: mirino\n{s.HotkeyPanel}: pannello";
+            PerfOverlayQuick.ToolTip = $"Contatore FPS sopra al gioco ({s.HotkeyOverlay})\nRegistra sessione: {s.HotkeyRecord}";
+        }
+
+        /// <summary>Mostra una pagina ("dashboard", "performance"…) e seleziona la voce corrispondente nel menu.</summary>
         public void Navigate(string key)
         {
+            if (!_factories.ContainsKey(key)) return;
             if (!_pages.TryGetValue(key, out var page))
             {
                 page = _factories[key]();
                 _pages[key] = page;
             }
             PageHost.Content = page;
+            foreach (var rb in NavPanel.Children.OfType<RadioButton>())
+                if (rb.CommandParameter is string k && k == key && rb.IsChecked != true) rb.IsChecked = true;
         }
 
         private void Nav_Click(object sender, RoutedEventArgs e)
