@@ -41,6 +41,7 @@ namespace FNBoost.Tests
 
             CrosshairTests.RunAll();
             NetTests.RunAll();
+            ReportTests.RunAll();
 
             Console.WriteLine();
             Console.WriteLine($"{T.Passed} test superati, {T.FailureList.Count} asserzioni fallite.");

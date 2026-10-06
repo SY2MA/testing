@@ -24,6 +24,10 @@
     <Compile Include="../../src/FNBoost/Core/CheckStatus.cs" Link="Linked/CheckStatus.cs" />
     <Compile Include="../../src/FNBoost/Crosshair/CrosshairSettings.cs" Link="Linked/CrosshairSettings.cs" />
     <Compile Include="../../src/FNBoost/Crosshair/CrosshairShareCode.cs" Link="Linked/CrosshairShareCode.cs" />
+    <Compile Include="../../src/FNBoost/Report/Sanitizer.cs" Link="Linked/Sanitizer.cs" />
+    <Compile Include="../../src/FNBoost/Report/FortniteLogAnalyzer.cs" Link="Linked/FortniteLogAnalyzer.cs" />
+    <Compile Include="../../src/FNBoost/Report/ReportModels.cs" Link="Linked/ReportModels.cs" />
+    <Compile Include="../../src/FNBoost/Report/ReportBuilder.cs" Link="Linked/ReportBuilder.cs" />
   </ItemGroup>
 
 </Project>
