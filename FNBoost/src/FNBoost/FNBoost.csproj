@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>FNBoost</RootNamespace>
+    <AssemblyName>FNBoost</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\fnboost.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>FN Boost</Product>
+    <Description>Ottimizzatore sicuro per Windows 11 + crosshair overlay per Fortnite</Description>
+    <Copyright>FN Boost</Copyright>
+    <!-- Permette di compilare anche da Linux/macOS (CI); l'app gira solo su Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- WPF gestisce il DPI dal manifest: l'avviso WinForms qui non si applica. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\fnboost.png" />
+    <Resource Include="Assets\fnboost.ico" />
+  </ItemGroup>
+
+</Project>

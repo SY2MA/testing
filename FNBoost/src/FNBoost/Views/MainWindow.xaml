@@ -1,0 +1,109 @@
+<Window x:Class="FNBoost.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="FN Boost" Width="1240" Height="800" MinWidth="980" MinHeight="620"
+        WindowStartupLocation="CenterScreen" WindowStyle="SingleBorderWindow" ResizeMode="CanResize"
+        Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}"
+        FontFamily="{StaticResource UiFont}" FontSize="14"
+        Icon="/Assets/fnboost.ico" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="48" ResizeBorderThickness="6" GlassFrameThickness="0"
+                      CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Border x:Name="RootBorder" Background="{StaticResource BgBrush}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Barra del titolo -->
+            <Grid Grid.Row="0" Background="{StaticResource BgBrush}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
+                    <Image Source="/Assets/fnboost.png" Width="22" Height="22" />
+                    <TextBlock Text="FN Boost" FontWeight="SemiBold" FontSize="15" Margin="10,0,0,0" VerticalAlignment="Center" />
+                    <TextBlock Text="Optimizer &amp; Crosshair" Foreground="{StaticResource MutedBrush}" FontSize="12"
+                               Margin="10,1,0,0" VerticalAlignment="Center" />
+                    <Border Style="{StaticResource Badge}" Margin="12,0,0,0" Background="#1F3FD07A">
+                        <TextBlock Text="Amministratore" Style="{StaticResource BadgeText}" Foreground="{StaticResource OkBrush}" />
+                    </Border>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="FloatingBtn" Style="{StaticResource ChromeButton}" Width="auto" Padding="12,0"
+                            WindowChrome.IsHitTestVisibleInChrome="True" Click="Floating_Click"
+                            ToolTip="Passa al pannello flottante trasparente (Ctrl+Alt+Z)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8A7;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
+                            <TextBlock Text="Modalità flottante" FontFamily="{StaticResource UiFont}" FontSize="12" Margin="8,0,4,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ChromeButton}" Content="&#xE921;" Click="Minimize_Click"
+                            WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Riduci a icona" />
+                    <Button x:Name="MaxBtn" Style="{StaticResource ChromeButton}" Content="&#xE922;" Click="Maximize_Click"
+                            WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Ingrandisci" />
+                    <Button Style="{StaticResource CloseChromeButton}" Content="&#xE8BB;" Click="Close_Click"
+                            WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Chiudi" />
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="232" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Navigazione -->
+                <DockPanel Grid.Column="0" Margin="0,6,0,12">
+                    <Border DockPanel.Dock="Bottom" Style="{StaticResource Card}" Margin="12,0,12,0" Padding="14">
+                        <StackPanel>
+                            <TextBlock Text="MIRINO" Style="{StaticResource Small}" FontWeight="SemiBold" />
+                            <CheckBox x:Name="CrosshairQuick" Style="{StaticResource ToggleSwitch}" Margin="0,8,0,0"
+                                      Click="CrosshairQuick_Click" Content="Overlay" />
+                            <TextBlock x:Name="HotkeyText" Style="{StaticResource Small}" Margin="0,8,0,0" />
+                            <Separator Margin="0,12" Background="{StaticResource BorderBrush}" />
+                            <TextBlock Text="OTTIMIZZAZIONE" Style="{StaticResource Small}" FontWeight="SemiBold" />
+                            <TextBlock x:Name="TweakSummary" Margin="0,6,0,0" FontSize="13" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <StackPanel>
+                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE9D9;" Content="Panoramica" IsChecked="True"
+                                     Click="Nav_Click" CommandParameter="dashboard" />
+                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE945;" Content="Tweak Windows"
+                                     Click="Nav_Click" CommandParameter="tweaks" />
+                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE7FC;" Content="Fortnite"
+                                     Click="Nav_Click" CommandParameter="fortnite" />
+                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE790;" Content="Mirino"
+                                     Click="Nav_Click" CommandParameter="crosshair" />
+                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE74D;" Content="Pulizia"
+                                     Click="Nav_Click" CommandParameter="cleanup" />
+                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xEA18;" Content="Sicurezza e backup"
+                                     Click="Nav_Click" CommandParameter="safety" />
+                        <RadioButton Style="{StaticResource NavButton}" Tag="&#xE946;" Content="Guida e fonti"
+                                     Click="Nav_Click" CommandParameter="info" />
+                    </StackPanel>
+                </DockPanel>
+
+                <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" CornerRadius="12,0,0,0"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,1,0,0">
+                    <ContentControl x:Name="PageHost" Focusable="False" />
+                </Border>
+            </Grid>
+
+            <!-- Barra di stato -->
+            <Border Grid.Row="2" Background="{StaticResource BgBrush}" Padding="16,6">
+                <DockPanel>
+                    <Border x:Name="RebootBanner" DockPanel.Dock="Right" Style="{StaticResource Badge}" Background="#33F2B84B"
+                            Visibility="Collapsed">
+                        <TextBlock Text="Riavvia il PC per completare alcune modifiche" Style="{StaticResource BadgeText}"
+                                   Foreground="{StaticResource WarnBrush}" />
+                    </Border>
+                    <TextBlock x:Name="StatusText" Style="{StaticResource Small}" TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap" VerticalAlignment="Center" Text="Pronto." />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,18 @@
+<Application x:Class="FNBoost.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:FNBoost.Views"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <v:InverseBoolToVisConverter x:Key="InvBoolToVis" />
+            <v:NotEmptyToVisConverter x:Key="NotEmptyToVis" />
+            <v:StatusToBrushConverter x:Key="StatusToBrush" />
+            <v:StateToBrushConverter x:Key="StateToBrush" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

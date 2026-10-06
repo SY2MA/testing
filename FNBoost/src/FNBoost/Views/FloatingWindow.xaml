@@ -1,0 +1,137 @@
+<Window x:Class="FNBoost.Views.FloatingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="FN Boost – pannello" Width="320" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="NoResize"
+        ShowInTaskbar="False" Topmost="True"
+        Foreground="{StaticResource TextBrush}" FontFamily="{StaticResource UiFont}" FontSize="13"
+        Icon="/Assets/fnboost.ico" UseLayoutRounding="True">
+    <Border x:Name="Panel" CornerRadius="16" Margin="8" Padding="0,0,0,12" BorderThickness="1">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#E6141826" Offset="0" />
+                <GradientStop Color="#D90E1220" Offset="1" />
+            </LinearGradientBrush>
+        </Border.Background>
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#997C5CFF" Offset="0" />
+                <GradientStop Color="#6600D1FF" Offset="1" />
+            </LinearGradientBrush>
+        </Border.BorderBrush>
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.45" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel>
+            <!-- Intestazione trascinabile -->
+            <Grid x:Name="Header" Background="Transparent" Height="42" MouseLeftButtonDown="Header_MouseLeftButtonDown" Cursor="SizeAll">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                    <Image Source="/Assets/fnboost.png" Width="18" Height="18" />
+                    <TextBlock Text="FN Boost" FontWeight="SemiBold" Margin="8,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,8,0" Cursor="Arrow">
+                    <Button x:Name="PinBtn" Style="{StaticResource SmallIconButton}" Content="&#xE718;" Click="Pin_Click"
+                            ToolTip="Sempre in primo piano" />
+                    <Button Style="{StaticResource SmallIconButton}" Content="&#xE740;" Click="Desktop_Click"
+                            ToolTip="Apri l'interfaccia completa" />
+                    <Button Style="{StaticResource SmallIconButton}" Content="&#xE921;" Click="Hide_Click"
+                            ToolTip="Nascondi (Ctrl+Alt+Z per riaprire)" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Statistiche -->
+            <Grid Margin="14,2,14,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock x:Name="CpuValue" DockPanel.Dock="Right" Text="0%" FontSize="12" />
+                        <TextBlock Text="CPU" Style="{StaticResource Small}" />
+                    </DockPanel>
+                    <Grid Height="4" Margin="0,5,0,0">
+                        <Border CornerRadius="2" Background="#33FFFFFF" />
+                        <Border x:Name="CpuBar" CornerRadius="2" Background="{StaticResource AccentGradient}" HorizontalAlignment="Left" Width="0" />
+                    </Grid>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <DockPanel>
+                        <TextBlock x:Name="RamValue" DockPanel.Dock="Right" Text="0%" FontSize="12" />
+                        <TextBlock Text="RAM" Style="{StaticResource Small}" />
+                    </DockPanel>
+                    <Grid Height="4" Margin="0,5,0,0">
+                        <Border CornerRadius="2" Background="#33FFFFFF" />
+                        <Border x:Name="RamBar" CornerRadius="2" Background="{StaticResource AccentGradient}" HorizontalAlignment="Left" Width="0" />
+                    </Grid>
+                </StackPanel>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Margin="14,10,14,0">
+                <Ellipse x:Name="FnDot" Width="8" Height="8" Fill="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                <TextBlock x:Name="FnText" Text="Fortnite: chiuso" Style="{StaticResource Small}" Margin="8,0,0,0" />
+            </StackPanel>
+
+            <!-- Mirino -->
+            <Border Margin="10,12,10,0" Padding="12" CornerRadius="12" Background="#14FFFFFF">
+                <StackPanel>
+                    <DockPanel>
+                        <CheckBox x:Name="CrosshairToggle" DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" Click="CrosshairToggle_Click" />
+                        <TextBlock Text="Mirino" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ComboBox x:Name="PresetCombo" Margin="0,10,0,8" DisplayMemberPath="Name" SelectionChanged="Preset_Changed" />
+                    <WrapPanel x:Name="Swatches" />
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Dimensione" Style="{StaticResource Small}" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1" Minimum="1" Maximum="30" IsSnapToTickEnabled="True" TickFrequency="1"
+                                Value="{Binding Length}" />
+                    </Grid>
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Distanza" Style="{StaticResource Small}" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1" Minimum="0" Maximum="20" IsSnapToTickEnabled="True" TickFrequency="1"
+                                Value="{Binding Gap}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Ottimizzazione -->
+            <Border Margin="10,10,10,0" Padding="12" CornerRadius="12" Background="#14FFFFFF">
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock x:Name="TweakCount" DockPanel.Dock="Right" Style="{StaticResource Small}" VerticalAlignment="Center" />
+                        <TextBlock Text="Ottimizzazione" FontWeight="SemiBold" />
+                    </DockPanel>
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="ApplyBtn" Style="{StaticResource AccentButton}" Content="Applica consigliati" Padding="8,7" Click="Apply_Click" />
+                        <Button x:Name="RevertBtn" Grid.Column="2" Content="Ripristina" Padding="8,7" Click="Revert_Click" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Trasparenza -->
+            <Grid Margin="14,12,14,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Trasparenza pannello" Style="{StaticResource Small}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <Slider x:Name="OpacitySlider" Grid.Column="1" Minimum="0.35" Maximum="1" ValueChanged="Opacity_Changed" />
+            </Grid>
+            <TextBlock x:Name="HotkeyText" Style="{StaticResource Small}" Margin="14,8,14,0" FontSize="11" />
+        </StackPanel>
+    </Border>
+</Window>

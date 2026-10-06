@@ -1,0 +1,162 @@
+<UserControl x:Class="FNBoost.Views.Pages.FortnitePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <TextBlock Text="Fortnite" Style="{StaticResource H1}" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,16"
+                       Text="Impostazioni grafiche salvate in GameUserSettings.ini (lo stesso file che scrive il menu del gioco). Si modificano solo a gioco chiuso e ogni salvataggio crea un backup." />
+
+            <!-- Stato -->
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse x:Name="RunDot" Width="10" Height="10" Fill="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="RunText" Text="…" Margin="8,0,0,0" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <TextBlock x:Name="InstallText" Style="{StaticResource Small}" Margin="0,8,0,0" />
+                        <TextBlock x:Name="ConfigText" Style="{StaticResource Small}" Margin="0,2,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Ricarica" Click="Reload_Click" />
+                        <Button Content="Apri cartella config" Margin="8,0,0,0" Click="OpenConfig_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Impostazioni -->
+            <Border x:Name="SettingsCard" Style="{StaticResource Card}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Carica preset competitivo" Click="Competitive_Click"
+                                ToolTip="Imposta i valori consigliati per FPS alti e costanti (non salva finché non premi Salva)." />
+                        <TextBlock Text="Impostazioni video" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </DockPanel>
+
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="28" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Colonna sinistra -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Modalità di rendering" Style="{StaticResource Label}" />
+                            <ComboBox x:Name="RenderCombo" Margin="0,6,0,2">
+                                <ComboBoxItem Content="Performance – FPS massimi e più costanti (competitivo)" />
+                                <ComboBoxItem Content="DirectX 12 – grafica migliore, più pesante" />
+                            </ComboBox>
+                            <TextBlock x:Name="RenderNote" Style="{StaticResource Small}" Margin="0,0,0,14" />
+
+                            <TextBlock Text="Limite FPS" Style="{StaticResource Label}" />
+                            <ComboBox x:Name="FpsCombo" Margin="0,6,0,2" IsEditable="True" />
+                            <TextBlock x:Name="FpsHint" Style="{StaticResource Small}" Margin="0,0,0,14" />
+
+                            <TextBlock Text="NVIDIA Reflex (bassa latenza)" Style="{StaticResource Label}" />
+                            <ComboBox x:Name="ReflexCombo" Margin="0,6,0,2">
+                                <ComboBoxItem Content="Disattivato" />
+                                <ComboBoxItem Content="Attivo" />
+                                <ComboBoxItem Content="Attivo + Boost" />
+                            </ComboBox>
+                            <TextBlock Style="{StaticResource Small}" Margin="0,0,0,14"
+                                       Text="Solo schede NVIDIA. 'Attivo' riduce la latenza; 'Boost' tiene alte le frequenze GPU (più consumi)." />
+
+                            <TextBlock Text="Modalità finestra" Style="{StaticResource Label}" />
+                            <ComboBox x:Name="WindowCombo" Margin="0,6,0,2">
+                                <ComboBoxItem Content="Schermo intero" />
+                                <ComboBoxItem Content="Schermo intero in finestra (consigliato con il mirino)" />
+                                <ComboBoxItem Content="Finestra" />
+                            </ComboBox>
+                            <TextBlock Style="{StaticResource Small}" Margin="0,0,0,14"
+                                       Text="Il mirino overlay è garantito in 'Schermo intero in finestra'. In DirectX 12 la differenza di latenza tra le due modalità è minima su Windows 11." />
+
+                            <TextBlock Text="Preset qualità (scalabilità)" Style="{StaticResource Label}" />
+                            <ComboBox x:Name="PresetCombo" Margin="0,6,0,2">
+                                <ComboBoxItem Content="Non modificare" />
+                                <ComboBoxItem Content="Competitivo – tutto basso, distanza visiva alta" />
+                                <ComboBoxItem Content="Bilanciato" />
+                            </ComboBox>
+                            <TextBlock x:Name="SgText" Style="{StaticResource Small}" FontFamily="{StaticResource MonoFont}" Margin="0,2,0,0" />
+                        </StackPanel>
+
+                        <!-- Colonna destra -->
+                        <StackPanel Grid.Column="2">
+                            <CheckBox x:Name="VSyncBox" Style="{StaticResource ToggleSwitch}" Content="V-Sync (consigliato: OFF)" Margin="0,0,0,14" />
+                            <CheckBox x:Name="MotionBlurBox" Style="{StaticResource ToggleSwitch}" Content="Motion blur (consigliato: OFF)" Margin="0,0,0,14" />
+                            <CheckBox x:Name="ShowFpsBox" Style="{StaticResource ToggleSwitch}" Content="Mostra FPS in gioco" Margin="0,0,0,14" />
+                            <CheckBox x:Name="RayTracingBox" Style="{StaticResource ToggleSwitch}" Content="Ray tracing (solo DX12, molto pesante)" Margin="0,0,0,14" />
+                            <CheckBox x:Name="NaniteBox" Style="{StaticResource ToggleSwitch}" Content="Nanite (solo DX12)" Margin="0,0,0,14" />
+                            <CheckBox x:Name="GrassBox" Style="{StaticResource ToggleSwitch}" Content="Erba (modalità Performance)" Margin="0,0,0,14" />
+
+                            <TextBlock Text="Qualità mesh (modalità Performance)" Style="{StaticResource Label}" />
+                            <ComboBox x:Name="MeshCombo" Margin="0,6,0,14">
+                                <ComboBoxItem Content="Bassa (consigliato)" />
+                                <ComboBoxItem Content="Media" />
+                                <ComboBoxItem Content="Alta" />
+                            </ComboBox>
+
+                            <TextBlock x:Name="ResText" Style="{StaticResource Small}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                        <Button x:Name="SaveBtn" Style="{StaticResource AccentButton}" Click="Save_Click" Padding="18,9">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE74E;" Style="{StaticResource Icon}" FontSize="14" />
+                                <TextBlock Text="Salva in Fortnite (con backup)" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <TextBlock x:Name="SaveHint" Style="{StaticResource Small}" Margin="14,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Backup -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Backup della configurazione" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource Small}" Margin="0,4,0,10"
+                               Text="Creati automaticamente a ogni salvataggio. Puoi tornare a una configurazione precedente in qualsiasi momento." />
+                    <ListBox x:Name="BackupList" Height="130" DisplayMemberPath="Name" />
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <Button Content="Ripristina selezionato" Click="RestoreBackup_Click" />
+                        <Button Content="Backup adesso" Margin="8,0,0,0" Click="BackupNow_Click" />
+                        <Button Content="Apri cartella backup" Margin="8,0,0,0" Click="OpenBackups_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Guida anti-stutter -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Guida anti-stutter (verificata)" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,10,0,0" Foreground="{StaticResource TextBrush}" LineHeight="22">
+                        <Run FontWeight="SemiBold">1. Lascia finire la compilazione degli shader.</Run>
+                        <Run>Dopo ogni aggiornamento di Fortnite o dei driver il gioco prepara gli shader: le prime partite possono scattare. Non cancellare la cache ogni volta, altrimenti si ricomincia da capo.</Run>
+                        <LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">2. Cache shader del driver grande.</Run>
+                        <Run>Pannello di controllo NVIDIA › Gestisci impostazioni 3D › Dimensioni cache shader: 10 GB o Illimitata. AMD: Cache shader = Ottimizzato AMD.</Run>
+                        <LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">3. Limita gli FPS a un valore che il PC tiene sempre.</Run>
+                        <Run>Un tetto stabile (es. 240 su monitor 240 Hz, o 3 FPS sotto la frequenza con G-SYNC/FreeSync) dà frametime regolari: lo stutter percepito è la variazione, non la media.</Run>
+                        <LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">4. Modalità Performance per la massima costanza.</Run>
+                        <Run>Pesa molto meno su CPU e GPU di DirectX 12. Su Fortnite il collo di bottiglia è spesso la CPU: qui RAM veloce (XMP) e Modalità Gioco contano più dei settaggi grafici.</Run>
+                        <LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">5. Se lo stutter non sparisce dopo un aggiornamento driver:</Run>
+                        <Run>pulisci la cache shader (pagina Pulizia) una sola volta, poi gioca 2–3 partite per ricostruirla. È la procedura indicata anche dal supporto Epic.</Run>
+                        <LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">6. Chiudi registrazioni e overlay pesanti</Run>
+                        <Run>(Game Bar, registrazione istantanea NVIDIA/AMD se non ti serve, browser con video). Verifica Fortnite su SSD.</Run>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

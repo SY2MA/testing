@@ -1,0 +1,86 @@
+<UserControl x:Class="FNBoost.Views.Pages.InfoPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="Para" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Opacity" Value="0.92" />
+            <Setter Property="LineHeight" Value="21" />
+        </Style>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,24">
+            <TextBlock Text="Guida e fonti" Style="{StaticResource H1}" />
+            <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,16"
+                       Text="Cosa fa FN Boost, cosa evita volutamente e cosa conviene sistemare a mano nel BIOS e nei driver." />
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Cosa FN Boost NON fa (e perché)" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource Para}" Margin="0,10,0,0">
+                        <Run FontWeight="SemiBold">✖ Disattivare Secure Boot, TPM, IOMMU o la sicurezza basata su virtualizzazione</Run><LineBreak />
+                        <Run>Epic richiede Secure Boot, TPM 2.0 e IOMMU per i tornei di Fortnite, e sono difese importanti contro malware.</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">✖ Disattivare le mitigazioni Spectre/Meltdown, Windows Defender o Windows Update</Run><LineBreak />
+                        <Run>Rischio di sicurezza reale per guadagni minimi; la Modalità Gioco già blocca i riavvii durante le partite.</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">✖ Tweak di rete (Nagle, TcpAckFrequency, TCPNoDelay)</Run><LineBreak />
+                        <Run>Agiscono su TCP, mentre Fortnite gioca su UDP: nessun effetto su ping o registrazione dei colpi.</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">✖ bcdedit su HPET / dynamic tick / platform tick, "timer resolution"</Run><LineBreak />
+                        <Run>Risultati incoerenti tra PC, a volte peggiorano i frametime. Windows 11 gestisce il timer per processo.</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">✖ Disattivare MPO con OverlayTestMode</Run><LineBreak />
+                        <Run>Su Windows 11 24H2/25H2 quella chiave non ha più effetto.</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">✖ Disattivare le "ottimizzazioni schermo intero"</Run><LineBreak />
+                        <Run>Su Windows 11 fa perdere il modello di presentazione "flip" e può aumentare la latenza.</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">✖ "RAM cleaner", debloat aggressivi, servizi disattivati a caso</Run><LineBreak />
+                        <Run>Placebo o fonte di stutter e malfunzionamenti (Store, Xbox, stampanti, aggiornamenti driver).</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">✖ GameUserSettings.ini in sola lettura / pulizia shader a ogni avvio</Run><LineBreak />
+                        <Run>Il primo impedisce al gioco di salvare; il secondo causa ricompilazioni continue (= più stutter).</Run>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Da fare a mano (il guadagno più grande sul tuo PC)" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource Para}" Margin="0,10,0,0">
+                        <Run FontWeight="SemiBold">BIOS Gigabyte Z790 AORUS ELITE AX</Run><LineBreak />
+                        <Run>• Tweaker › Extreme Memory Profile (X.M.P.): attivo (se la RAM è più veloce di 4800 MT/s).</Run><LineBreak />
+                        <Run>• Settings › IO Ports › Above 4G Decoding + Re-Size BAR Support: attivi (se la GPU lo supporta).</Run><LineBreak />
+                        <Run>• Profilo "Intel Default Settings" e BIOS aggiornato (il tuo F16 del 2026 include le correzioni microcode per i 13ª gen).</Run><LineBreak />
+                        <Run>• Lascia attivi Secure Boot, TPM (Intel PTT) e VT-d/IOMMU.</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">Driver scheda video</Run><LineBreak />
+                        <Run>• NVIDIA: dimensione cache shader 10 GB o Illimitata; con Reflex attivo in gioco la "Modalità bassa latenza" del pannello non serve.</Run><LineBreak />
+                        <Run>• Disattiva la registrazione istantanea/replay di NVIDIA App o AMD Adrenalin se non la usi.</Run><LineBreak />
+                        <Run>• Collega il monitor alla scheda video (non alla scheda madre) e attiva G-SYNC/FreeSync.</Run><LineBreak /><LineBreak />
+                        <Run FontWeight="SemiBold">Windows e app</Run><LineBreak />
+                        <Run>• Monitor alla frequenza massima (Impostazioni › Schermo › Schermo avanzato).</Run><LineBreak />
+                        <Run>• Disattiva l'overlay in-game di Discord e chiudi il browser con video durante le partite competitive.</Run>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Fonti consultate" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource Para}" Margin="0,10,0,0" TextWrapping="Wrap">
+                        <Hyperlink NavigateUri="https://www.fortnite.com/news/new-fortnite-anti-cheat-pc-requirements-and-latest-legal-action" RequestNavigate="Link_RequestNavigate">Epic – Nuovi requisiti anti-cheat PC (Secure Boot, TPM, IOMMU)</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://www.epicgames.com/help/en-US/c-Category_Fortnite/c-Fortnite_Competitive/why-do-i-need-to-enable-tpm-and-secure-boot-on-a-windows-pc-a000093838" RequestNavigate="Link_RequestNavigate">Epic – Perché servono TPM e Secure Boot</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://www.epicgames.com/help/fortnite-battle-royale-c-202300000001636/technical-support-c-202300000001719/fortnite-stutters-heavily-and-has-below-expected-performance-on-directx-12-a202300000018050" RequestNavigate="Link_RequestNavigate">Epic – Stutter in DirectX 12 e pulizia cache shader</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://www.epicgames.com/help/fortnite-battle-royale-c-202300000001636/a202300000017914" RequestNavigate="Link_RequestNavigate">Epic – Modalità di rendering (DirectX 12 / Performance)</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://www.epicgames.com/help/fortnite-battle-royale-c-202300000001636/gameplay-c-202300000001721/has-the-directx-11-option-been-permanently-removed-from-rendering-mode-in-fortnite-a202300000083887" RequestNavigate="Link_RequestNavigate">Epic – Rimozione di DirectX 11</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://www.epicgames.com/help/fortnite-battle-royale-c-202300000001636/technical-support-c-202300000001719/how-do-i-adjust-my-fps-in-fortnite-if-it-is-locked-or-capped-a202300000010554" RequestNavigate="Link_RequestNavigate">Epic – Limite FPS e V-Sync</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://support.microsoft.com/en-us/topic/3f006843-2c7e-4ed0-9a5e-f9389e535952" RequestNavigate="Link_RequestNavigate">Microsoft – Ottimizzazioni per i giochi in finestra</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://www.pcworld.com/article/2339130/should-you-enable-hardware-accelerated-gpu-scheduling-in-windows-11.html" RequestNavigate="Link_RequestNavigate">PCWorld – Pianificazione GPU con accelerazione hardware</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://learn.microsoft.com/en-us/answers/questions/3881462/how-can-i-disable-windows-mpo-in-2025-(24h2-window" RequestNavigate="Link_RequestNavigate">Microsoft Q&amp;A – MPO su Windows 11 24H2</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://www.sportskeeda.com/fortnite/can-get-banned-custom-crosshairs-fortnite" RequestNavigate="Link_RequestNavigate">Sportskeeda – Mirini personalizzati e ban in Fortnite</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://www.dexerto.com/fortnite/best-fortnite-pc-settings-for-fps-graphics-2977102" RequestNavigate="Link_RequestNavigate">Dexerto – Migliori impostazioni Fortnite PC</Hyperlink><LineBreak />
+                        <Hyperlink NavigateUri="https://github.com/wispurn/Fortnite-Optimized-Settings" RequestNavigate="Link_RequestNavigate">Esempio reale di GameUserSettings.ini (chiavi e sezioni)</Hyperlink>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Style="{StaticResource Small}" Margin="0,4,0,0"
+                       Text="FN Boost non è affiliato a Epic Games o Microsoft. Fortnite è un marchio di Epic Games, Inc. Usalo a tua discrezione." />
+            <TextBlock x:Name="VersionText" Style="{StaticResource Small}" Margin="0,4,0,0" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
