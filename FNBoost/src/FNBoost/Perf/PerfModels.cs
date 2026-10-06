@@ -21,6 +21,12 @@ namespace FNBoost.Perf
 
     public enum OverlayCorner { TopLeft, TopRight, BottomLeft, BottomRight }
 
+    /// <summary>
+    /// Regione dei server Epic da usare come riferimento per il ping quando il server di gioco non
+    /// risponde all'ICMP. Endpoint ufficiali Epic: ping-&lt;regione&gt;.ds.on.epicgames.com.
+    /// </summary>
+    public enum PingRegion { Auto, Europe, NaEast, NaCentral, NaWest, Brazil, Asia, Oceania, MiddleEast }
+
     /// <summary>Risultato statistico calcolato da una serie di frametime (ms).</summary>
     public sealed class FrameStatsResult
     {
@@ -65,6 +71,108 @@ namespace FNBoost.Perf
         public double? GpuPercent { get; set; }
         public double RamPercent { get; set; }
         public double? VramUsedGb { get; set; }
+
+        // ---- Rete (null = non misurato) ----
+        /// <summary>Ping verso il server di gioco (o la regione Epic se il server non risponde), ms.</summary>
+        public double? PingMs { get; set; }
+        public double? JitterMs { get; set; }
+        /// <summary>Pacchetti ICMP persi verso il bersaglio del ping in questo secondo (0-100).</summary>
+        public double? LossPct { get; set; }
+        /// <summary>Ping verso il router (gateway predefinito): se è alto o instabile il problema è la rete di casa / Wi-Fi.</summary>
+        public double? GatewayPingMs { get; set; }
+        /// <summary>Pacchetti UDP al secondo ricevuti dal / inviati al server di gioco.</summary>
+        public double? PacketsInPerSec { get; set; }
+        public double? PacketsOutPerSec { get; set; }
+        /// <summary>Banda usata dal gioco (kbit/s).</summary>
+        public double? GameKbpsIn { get; set; }
+        public double? GameKbpsOut { get; set; }
+        /// <summary>Banda usata da tutte le altre app sulla stessa connessione (kbit/s, download + upload).</summary>
+        public double? OtherAppsKbps { get; set; }
+        /// <summary>Pausa più lunga tra due pacchetti ricevuti dal server in questo secondo (ms).</summary>
+        public double? MaxRecvGapMs { get; set; }
+        /// <summary>"Freeze" di rete iniziati in questo secondo (nessun pacchetto dal server per oltre 250 ms).</summary>
+        public int NetFreezes { get; set; }
+    }
+
+    /// <summary>Statistiche di un bersaglio di ping (finestra mobile o intera sessione).</summary>
+    public sealed class PingStats
+    {
+        /// <summary>Descrizione in italiano, es. "Server di gioco", "Regione Europa", "Router", "Internet (1.1.1.1)".</summary>
+        public string Target { get; set; } = "";
+        /// <summary>Host o IP pingato.</summary>
+        public string Host { get; set; } = "";
+        public double? LastMs { get; set; }
+        public double? AvgMs { get; set; }
+        public double? MinMs { get; set; }
+        public double? MaxMs { get; set; }
+        public double? P95Ms { get; set; }
+        /// <summary>Jitter = media della differenza assoluta tra ping consecutivi (ms).</summary>
+        public double? JitterMs { get; set; }
+        public double LossPct { get; set; }
+        public int Sent { get; set; }
+        public int Received { get; set; }
+    }
+
+    /// <summary>Stato della rete dal vivo (dentro LiveSnapshot.Net).</summary>
+    public sealed class NetworkSnapshot
+    {
+        public bool Available { get; set; }
+        public string StatusText { get; set; } = "";
+        /// <summary>Indirizzo IP:porta del server di gioco ricavato dal traffico UDP del gioco.</summary>
+        public string? ServerEndpoint { get; set; }
+        public string? RegionName { get; set; }
+        /// <summary>Ping usato come "ping di gioco": server se risponde, altrimenti regione Epic.</summary>
+        public PingStats? Game { get; set; }
+        public PingStats? Region { get; set; }
+        public PingStats? Gateway { get; set; }
+        public PingStats? Internet { get; set; }
+        public double PacketsInPerSec { get; set; }
+        public double PacketsOutPerSec { get; set; }
+        public double GameKbpsIn { get; set; }
+        public double GameKbpsOut { get; set; }
+        public double TotalKbpsIn { get; set; }
+        public double TotalKbpsOut { get; set; }
+        public double OtherAppsKbps { get; set; }
+        public double MaxRecvGapMs { get; set; }
+        /// <summary>Freeze di rete negli ultimi 60 s.</summary>
+        public int RecentFreezes { get; set; }
+        /// <summary>"Ethernet", "Wi-Fi", … dell'interfaccia usata per Internet.</summary>
+        public string ConnectionType { get; set; } = "";
+        public string AdapterName { get; set; } = "";
+        public double? LinkSpeedMbps { get; set; }
+        public int? WifiSignalPct { get; set; }
+    }
+
+    /// <summary>Riepilogo di rete di una sessione registrata.</summary>
+    public sealed class NetworkSummary
+    {
+        public List<string> ServerEndpoints { get; set; } = new();
+        public string? RegionName { get; set; }
+        /// <summary>"server" se il ping è stato misurato verso il server di gioco, "regione" se verso l'endpoint Epic.</summary>
+        public string PingTargetKind { get; set; } = "";
+        public PingStats? Game { get; set; }
+        public PingStats? Gateway { get; set; }
+        public PingStats? Internet { get; set; }
+        public string ConnectionType { get; set; } = "";
+        public double? LinkSpeedMbps { get; set; }
+        public int? WifiSignalPct { get; set; }
+        public double AvgPacketsInPerSec { get; set; }
+        public double AvgPacketsOutPerSec { get; set; }
+        public double AvgGameKbpsIn { get; set; }
+        public double AvgGameKbpsOut { get; set; }
+        public double AvgOtherAppsKbps { get; set; }
+        public double MaxOtherAppsKbps { get; set; }
+        public int Freezes { get; set; }
+        public double LongestFreezeMs { get; set; }
+    }
+
+    /// <summary>Un processo che ha usato CPU/RAM durante la sessione (letto dai contatori PDH, senza aprire i processi).</summary>
+    public sealed class ProcessUsage
+    {
+        public string Name { get; set; } = "";
+        public double AvgCpuPct { get; set; }
+        public double MaxCpuPct { get; set; }
+        public double AvgRamMb { get; set; }
     }
 
     /// <summary>Una sessione di gioco registrata (salvata in %LOCALAPPDATA%\FNBoost\sessions).</summary>
@@ -86,6 +194,10 @@ namespace FNBoost.Perf
         public double? FpsCap { get; set; }
         public int? RefreshHz { get; set; }
         public double? VramTotalGb { get; set; }
+        /// <summary>Riepilogo rete (null nelle sessioni registrate prima della misura di rete).</summary>
+        public NetworkSummary? Network { get; set; }
+        /// <summary>Processi in background che hanno pesato di più durante la sessione (CPU media decrescente).</summary>
+        public List<ProcessUsage> TopProcesses { get; set; } = new();
 
         [JsonIgnore] public string Title => string.IsNullOrWhiteSpace(Label) ? $"{StartedAt:dd/MM HH:mm}" : $"{StartedAt:dd/MM HH:mm} · {Label}";
         [JsonIgnore] public string DurationText => TimeSpan.FromSeconds(DurationSec).ToString(DurationSec >= 3600 ? @"h\:mm\:ss" : @"m\:ss");
@@ -124,6 +236,8 @@ namespace FNBoost.Perf
         public double RecordingSeconds { get; set; }
         public CaptureStatus Status { get; set; }
         public string StatusText { get; set; } = "";
+        /// <summary>Rete e ping (null se la misura di rete è disattivata).</summary>
+        public NetworkSnapshot? Net { get; set; }
     }
 
     /// <summary>Impostazioni del modulo Prestazioni (dentro AppSettings.Perf).</summary>
@@ -144,6 +258,14 @@ namespace FNBoost.Perf
         public double StutterMinMs { get; set; } = 12;
         /// <summary>Numero massimo di sessioni conservate (le più vecchie vengono eliminate).</summary>
         public int MaxSessions { get; set; } = 100;
+        /// <summary>Misura ping, jitter, perdita pacchetti e traffico del gioco (ETW Kernel-Network + ICMP).</summary>
+        public bool NetCaptureEnabled { get; set; } = true;
+        /// <summary>Regione Epic di riferimento per il ping (Auto = la più vicina).</summary>
+        public PingRegion Region { get; set; } = PingRegion.Auto;
+        /// <summary>Pinga anche il router per distinguere i problemi della rete di casa da quelli di Internet.</summary>
+        public bool PingGateway { get; set; } = true;
+        /// <summary>Registra i processi che usano più CPU/RAM durante le sessioni.</summary>
+        public bool TrackProcesses { get; set; } = true;
         public PerfOverlaySettings Overlay { get; set; } = new();
     }
 
@@ -166,6 +288,7 @@ namespace FNBoost.Perf
         private bool _showFrametime = true;
         private bool _showCpuGpu = true;
         private bool _showGraph = true;
+        private bool _showNet = true;
         private bool _compact;
         private string _monitor = "";
         private bool _onlyWhenGameFocused = true;
@@ -187,6 +310,8 @@ namespace FNBoost.Perf
         public bool ShowFrametime { get => _showFrametime; set => Set(ref _showFrametime, value); }
         public bool ShowCpuGpu { get => _showCpuGpu; set => Set(ref _showCpuGpu, value); }
         public bool ShowGraph { get => _showGraph; set => Set(ref _showGraph, value); }
+        /// <summary>Riga "Ping · jitter · perdita" nell'overlay.</summary>
+        public bool ShowNet { get => _showNet; set => Set(ref _showNet, value); }
         /// <summary>Layout su una riga sola.</summary>
         public bool Compact { get => _compact; set => Set(ref _compact, value); }
         /// <summary>Nome dispositivo del monitor (vuoto = principale).</summary>
