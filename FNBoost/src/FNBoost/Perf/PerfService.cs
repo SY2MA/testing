@@ -66,6 +66,21 @@ namespace FNBoost.Perf
         private bool _autoStartPending;
         private bool _stopPending;
 
+        // Rete e processi (creati e distrutti sotto _tickLock, usati solo dal tick).
+        private NetworkMonitor? _net;
+        private Pinger? _pinger;
+        private NicInfo? _nic;
+        private ProcessSampler? _procs;
+        private bool _netActive;
+        private PingRegion _netRegion;
+        private bool _netGateway;
+        private bool _procActive;
+        private int _procSeq;
+        private NicState? _lastNicState;
+        private NetSecondTraffic? _lastTraffic;
+        private readonly List<(double In, double Out)?> _totalKbps = new();
+        private volatile NetworkSnapshot? _netSnap;
+
         // Pubblicazione verso la UI.
         private LiveSnapshot? _pendingSnapshot;
         private int _publishQueued;
@@ -139,6 +154,12 @@ namespace FNBoost.Perf
                 _captureError = "Impossibile avviare la misura degli FPS: " + ex.Message;
             }
 
+            lock (_tickLock)
+            {
+                StartNet();
+                StartProcs();
+            }
+
             var timer = new Timer(OnTimer, null, Timeout.Infinite, Timeout.Infinite);
             _timer = timer;
             timer.Change(0, Timeout.Infinite);
@@ -183,6 +204,8 @@ namespace FNBoost.Perf
                 }
                 _sampler?.Dispose();
                 _sampler = null;
+                StopNet();
+                StopProcs();
             }
 
             _targetPids = Array.Empty<int>();
@@ -200,6 +223,8 @@ namespace FNBoost.Perf
             if (!full)
             {
                 // Finestra mobile, soglie e registrazione automatica vengono rilette a ogni tick.
+                // Rete e processi si riavviano da soli se le loro impostazioni sono cambiate.
+                if (_running) RestartAux();
                 return;
             }
             Stop();
@@ -379,6 +404,15 @@ namespace FNBoost.Perf
                 VramTotalGb = rec.VramTotalGb,
                 Stats = FrameStats.Compute(ft, factor, minMs)
             };
+            try
+            {
+                session.Network = BuildNetworkSummary(rec);
+                session.TopProcesses = rec.Procs.Top(10);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Riepilogo rete/processi della sessione: " + ex.Message);
+            }
             if (ft.Length < 2) return session;
 
             // Tempo della sessione basato sui timestamp ETW (comprende le pause brevi tra i frame).
@@ -423,6 +457,7 @@ namespace FNBoost.Perf
                     sample.RamPercent = Math.Round(sys.RamPercent, 1);
                     sample.VramUsedGb = sys.VramUsedGb is { } v ? Math.Round(v, 2) : null;
                 }
+                if (s < rec.Net.Count && rec.Net[s] is { } net) ApplyNet(sample, net);
                 session.Seconds.Add(sample);
             }
             return session;
@@ -536,13 +571,26 @@ namespace FNBoost.Perf
             if (secondTick)
             {
                 _sampler ??= CreateSampler();
-                int livePid;
-                lock (_lock) livePid = _livePid;
+                int livePid, recPid;
+                lock (_lock)
+                {
+                    livePid = _livePid;
+                    recPid = _rec?.Pid ?? 0;
+                }
                 var sys = _sampler?.Sample(livePid != 0 ? livePid : null) ?? default;
+                int gamePid = NetTargetPid(livePid, recPid);
+                var net = _netActive ? NetSecond(gamePid) : null;
+                if (_procs != null) _procs.ExcludeName = gamePid != 0 ? NameOf(gamePid) : null;
+                var procs = _procs?.TakeIfNew(ref _procSeq);
                 lock (_lock)
                 {
                     _sys = sys;
-                    _rec?.Sys.Add(sys);
+                    if (_rec != null)
+                    {
+                        _rec.Sys.Add(sys);
+                        _rec.Net.Add(net); // allineato a Sys: un elemento per secondo (null = rete non misurata)
+                        if (procs != null) _rec.Procs.Add(procs);
+                    }
                 }
             }
 
@@ -744,7 +792,8 @@ namespace FNBoost.Perf
                 IsRecording = recording,
                 RecordingSeconds = recSeconds,
                 Status = status,
-                StatusText = text
+                StatusText = text,
+                Net = _netActive ? _netSnap : null
             };
         }
 
@@ -807,6 +856,438 @@ namespace FNBoost.Perf
                 bool suppress = stopReason.StartsWith("durata", StringComparison.Ordinal);
                 Post(() => FinishRecording(manual: suppress, reason: stopReason));
             }
+        }
+
+        // ================= Rete e processi =================
+
+        /// <summary>Avvia traccia di rete, ping e lettura dell'interfaccia (sotto _tickLock).</summary>
+        private void StartNet()
+        {
+            if (!Settings.NetCaptureEnabled || _netActive) return;
+            _netActive = true;
+            _netRegion = Settings.Region;
+            _netGateway = Settings.PingGateway;
+            _lastTraffic = null;
+            _lastNicState = null;
+            _totalKbps.Clear();
+            _netSnap = new NetworkSnapshot { Available = false, StatusText = "Avvio della misura di rete…" };
+
+            try
+            {
+                var nic = new NicInfo();
+                nic.Start();
+                _nic = nic;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Lettura interfaccia di rete", ex);
+            }
+            try
+            {
+                var net = new NetworkMonitor();
+                net.SetLocalAddresses(NicInfo.ReadLocalAddresses());
+                net.Start();
+                _net = net;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Avvio traccia di rete", ex);
+            }
+            try
+            {
+                var pinger = new Pinger(Settings.Region, Settings.PingGateway);
+                pinger.Start();
+                _pinger = pinger;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Avvio ping", ex);
+            }
+            Log.Info("Misura di rete avviata (ping, jitter, perdita, traffico del gioco)");
+        }
+
+        /// <summary>Ferma rete e ping (sotto _tickLock). Ordine: prima i ping, poi la traccia, infine l'interfaccia.</summary>
+        private void StopNet()
+        {
+            _netActive = false;
+            _netSnap = null;
+            var pinger = _pinger;
+            var net = _net;
+            var nic = _nic;
+            _pinger = null;
+            _net = null;
+            _nic = null;
+            try
+            {
+                pinger?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Chiusura ping: " + ex.Message);
+            }
+            try
+            {
+                net?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Chiusura traccia di rete: " + ex.Message);
+            }
+            try
+            {
+                nic?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Chiusura lettura interfaccia: " + ex.Message);
+            }
+            _lastTraffic = null;
+            _lastNicState = null;
+            _totalKbps.Clear();
+        }
+
+        private void StartProcs()
+        {
+            if (!Settings.TrackProcesses || _procActive) return;
+            _procActive = true;
+            _procSeq = 0;
+            try
+            {
+                var p = new ProcessSampler();
+                p.Start();
+                _procs = p;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Campionamento processi", ex);
+            }
+        }
+
+        private void StopProcs()
+        {
+            _procActive = false;
+            var p = _procs;
+            _procs = null;
+            try
+            {
+                p?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Chiusura campionamento processi: " + ex.Message);
+            }
+        }
+
+        /// <summary>Riavvia rete e processi solo se le loro impostazioni sono cambiate.</summary>
+        private void RestartAux()
+        {
+            lock (_tickLock)
+            {
+                if (!_running || _disposed) return;
+                bool netChanged = Settings.NetCaptureEnabled != _netActive ||
+                                  (_netActive && (Settings.Region != _netRegion || Settings.PingGateway != _netGateway));
+                if (netChanged)
+                {
+                    StopNet();
+                    StartNet();
+                }
+                if (Settings.TrackProcesses != _procActive)
+                {
+                    StopProcs();
+                    StartProcs();
+                }
+            }
+        }
+
+        /// <summary>Processo di cui misurare il traffico: quello registrato, quello che renderizza o Fortnite aperto.</summary>
+        private int NetTargetPid(int livePid, int recPid)
+        {
+            if (recPid != 0) return recPid;
+            if (livePid != 0) return livePid;
+            if (Settings.Target == PerfTarget.Fortnite)
+            {
+                var targets = _targetPids;
+                if (targets.Length > 0) return targets[0];
+            }
+            return 0;
+        }
+
+        /// <summary>Un secondo di rete (dal tick a 1 Hz): traffico del gioco, ping, banda delle altre app. Aggiorna anche lo stato dal vivo.</summary>
+        private NetTick? NetSecond(int pid)
+        {
+            var net = _net;
+            var pinger = _pinger;
+            var nic = _nic;
+            if (net != null) net.TargetPid = pid;
+
+            // ---- interfaccia: indirizzi locali, router, banda totale ----
+            var nicState = nic?.State;
+            if (nicState != null && !ReferenceEquals(nicState, _lastNicState))
+            {
+                _lastNicState = nicState;
+                net?.SetLocalAddresses(nicState.LocalAddresses);
+            }
+            pinger?.SetGateway(_netGateway ? nicState?.Gateway : null);
+            var totalNow = nic?.SampleThroughput();
+            _totalKbps.Add(totalNow);
+            while (_totalKbps.Count > 8) _totalKbps.RemoveAt(0);
+
+            // ---- traffico del gioco (secondi chiusi con ~2 s di ritardo) ----
+            bool netOk = net != null && net.IsAvailable;
+            NetSecondTraffic? traffic = null;
+            if (net != null && netOk)
+            {
+                var done = net.TakeCompleted();
+                if (done.Count > 0)
+                {
+                    traffic = Combine(done);
+                    _lastTraffic = traffic;
+                }
+                else if (_lastTraffic != null)
+                {
+                    // Nessun secondo chiuso in questo tick (timer in anticipo): si ripetono le velocità, senza freeze.
+                    traffic = new NetSecondTraffic
+                    {
+                        StartMs = _lastTraffic.StartMs,
+                        PacketsIn = _lastTraffic.PacketsIn,
+                        PacketsOut = _lastTraffic.PacketsOut,
+                        BytesIn = _lastTraffic.BytesIn,
+                        BytesOut = _lastTraffic.BytesOut,
+                        Server = _lastTraffic.Server
+                    };
+                }
+                else
+                {
+                    traffic = new NetSecondTraffic();
+                }
+            }
+            NetEndpoint? server = net != null && netOk ? net.Server : null;
+            pinger?.SetServer(server?.Address);
+
+            var tick = new NetTick { Server = server?.ToString(), Nic = nicState };
+
+            // ---- ping ----
+            bool useServer = false;
+            if (pinger != null)
+            {
+                useServer = pinger.GameUsesServer;
+                var srv = pinger.Drain(PingRole.Server);
+                var reg = pinger.Drain(PingRole.Region);
+                var game = useServer ? srv : reg;
+                tick.GameIsServer = useServer;
+                tick.GamePings = game;
+                tick.RegionPings = reg;
+                tick.GatewayPings = pinger.Drain(PingRole.Gateway);
+                tick.InternetPings = pinger.Drain(PingRole.Internet);
+                tick.PingMs = AvgOk(game);
+                tick.LossPct = game.Count > 0 ? NetStats.LossPct(game) : null;
+                // Jitter "istantaneo" sugli ultimi 10 s (quello sui 60 s è nello stato dal vivo).
+                tick.JitterMs = pinger.GameStats(10000)?.JitterMs;
+                tick.GatewayPingMs = AvgOk(tick.GatewayPings);
+                tick.RegionName = pinger.RegionName;
+                tick.RegionHost = pinger.HostOf(PingRole.Region);
+                tick.BestRegionName = pinger.BestRegionName;
+                tick.BestRegionMs = pinger.BestRegionMs;
+            }
+
+            // ---- traffico ----
+            if (traffic != null)
+            {
+                tick.PacketsIn = traffic.PacketsIn;
+                tick.PacketsOut = traffic.PacketsOut;
+                tick.KbpsIn = Math.Round(traffic.KbpsIn, 1);
+                tick.KbpsOut = Math.Round(traffic.KbpsOut, 1);
+                tick.MaxGapMs = traffic.MaxRecvGapMs is { } g ? Math.Round(g, 1) : null;
+                tick.Freezes = traffic.Freezes;
+                tick.LongestFreezeMs = traffic.LongestFreezeMs;
+
+                // I secondi del gioco arrivano ~2 s in ritardo: si confrontano con la banda totale di allora.
+                const int lag = 2;
+                var total = _totalKbps.Count > lag ? _totalKbps[_totalKbps.Count - 1 - lag] : null;
+                total ??= totalNow;
+                if (total is { } t)
+                    tick.OtherKbps = Math.Round(Math.Max(0, t.In + t.Out - traffic.KbpsIn - traffic.KbpsOut), 1);
+            }
+
+            _netSnap = BuildNetSnapshot(tick, net, pinger, nicState, useServer, totalNow);
+            return tick;
+        }
+
+        private static NetSecondTraffic Combine(List<NetSecondTraffic> list)
+        {
+            if (list.Count == 1) return list[0];
+            // Più secondi chiusi nello stesso tick: medie al secondo, massimi e somme dei freeze.
+            var last = list[list.Count - 1];
+            return new NetSecondTraffic
+            {
+                StartMs = last.StartMs,
+                PacketsIn = (int)Math.Round(list.Average(x => x.PacketsIn)),
+                PacketsOut = (int)Math.Round(list.Average(x => x.PacketsOut)),
+                BytesIn = (long)list.Average(x => x.BytesIn),
+                BytesOut = (long)list.Average(x => x.BytesOut),
+                MaxRecvGapMs = list.Any(x => x.MaxRecvGapMs.HasValue) ? list.Max(x => x.MaxRecvGapMs ?? 0) : null,
+                Freezes = list.Sum(x => x.Freezes),
+                LongestFreezeMs = list.Max(x => x.LongestFreezeMs),
+                Server = last.Server
+            };
+        }
+
+        private static double? AvgOk(List<double?>? rtts)
+        {
+            if (rtts == null) return null;
+            double sum = 0;
+            int n = 0;
+            foreach (var r in rtts)
+            {
+                if (r is not { } v) continue;
+                sum += v;
+                n++;
+            }
+            return n > 0 ? Math.Round(sum / n, 1) : null;
+        }
+
+        private static NetworkSnapshot BuildNetSnapshot(NetTick tick, NetworkMonitor? net, Pinger? pinger, NicState? nic,
+            bool useServer, (double In, double Out)? total)
+        {
+            string status;
+            if (net?.Error is { } err) status = err;
+            else if (net == null) status = "Traffico del gioco non misurabile";
+            else if (tick.Server == null)
+                status = pinger?.RegionName is { } rn
+                    ? $"In attesa del traffico del gioco · ping verso la regione {rn}"
+                    : "In attesa del traffico del gioco…";
+            else if (pinger != null && pinger.ServerUnresponsive)
+                status = $"Il server di gioco non risponde al ping: si usa la regione {pinger.RegionName ?? "Epic"}";
+            else status = "Server di gioco " + tick.Server;
+
+            return new NetworkSnapshot
+            {
+                Available = pinger != null || (net != null && net.IsAvailable),
+                StatusText = status,
+                ServerEndpoint = tick.Server,
+                RegionName = pinger?.RegionName,
+                Game = pinger?.GameStats(),
+                Region = pinger?.Stats(PingRole.Region),
+                Gateway = pinger?.Stats(PingRole.Gateway),
+                Internet = pinger?.Stats(PingRole.Internet),
+                PingTargetKind = useServer ? "server" : "regione",
+                BestRegionName = pinger?.BestRegionName,
+                BestRegionPingMs = pinger?.BestRegionMs,
+                PacketsInPerSec = tick.PacketsIn ?? 0,
+                PacketsOutPerSec = tick.PacketsOut ?? 0,
+                GameKbpsIn = tick.KbpsIn ?? 0,
+                GameKbpsOut = tick.KbpsOut ?? 0,
+                TotalKbpsIn = total is { } t1 ? Math.Round(t1.In, 1) : 0,
+                TotalKbpsOut = total is { } t2 ? Math.Round(t2.Out, 1) : 0,
+                OtherAppsKbps = tick.OtherKbps ?? 0,
+                MaxRecvGapMs = tick.MaxGapMs ?? 0,
+                RecentFreezes = net?.RecentFreezes ?? 0,
+                ConnectionType = nic?.ConnectionType ?? "",
+                AdapterName = nic?.AdapterName ?? "",
+                LinkSpeedMbps = nic?.LinkSpeedMbps,
+                WifiSignalPct = nic?.WifiSignalPct
+            };
+        }
+
+        private static void ApplyNet(SecondSample sample, NetTick net)
+        {
+            sample.PingMs = net.PingMs;
+            sample.JitterMs = net.JitterMs;
+            sample.LossPct = net.LossPct;
+            sample.GatewayPingMs = net.GatewayPingMs;
+            sample.PacketsInPerSec = net.PacketsIn;
+            sample.PacketsOutPerSec = net.PacketsOut;
+            sample.GameKbpsIn = net.KbpsIn;
+            sample.GameKbpsOut = net.KbpsOut;
+            sample.OtherAppsKbps = net.OtherKbps;
+            sample.MaxRecvGapMs = net.MaxGapMs;
+            sample.NetFreezes = net.Freezes;
+        }
+
+        /// <summary>Riepilogo di rete della registrazione (null se la rete non è stata misurata).</summary>
+        private static NetworkSummary? BuildNetworkSummary(Recording rec)
+        {
+            var ticks = rec.Net.Where(n => n != null).Select(n => n!).ToList();
+            if (ticks.Count == 0) return null;
+
+            var servers = new List<string>();
+            foreach (var t in ticks)
+                if (t.Server != null && !servers.Contains(t.Server)) servers.Add(t.Server);
+
+            int serverSec = ticks.Count(t => t.GameIsServer && t.GamePings is { Count: > 0 });
+            int regionSec = ticks.Count(t => !t.GameIsServer && t.GamePings is { Count: > 0 });
+            bool kindServer = serverSec > 0 && serverSec >= regionSec;
+            var regionName = ticks.LastOrDefault(t => t.RegionName != null)?.RegionName;
+            var regionHost = ticks.LastOrDefault(t => !string.IsNullOrEmpty(t.RegionHost))?.RegionHost ?? "";
+            var best = ticks.LastOrDefault(t => t.BestRegionName != null);
+
+            var summary = new NetworkSummary
+            {
+                ServerEndpoints = servers,
+                RegionName = regionName,
+                PingTargetKind = serverSec + regionSec == 0 ? "" : kindServer ? "server" : "regione",
+                BestRegionName = best?.BestRegionName,
+                BestRegionPingMs = best?.BestRegionMs
+            };
+
+            if (serverSec + regionSec > 0)
+            {
+                // Solo i ping del tipo prevalente: mescolare server e regione falserebbe jitter e medie.
+                var game = ticks.Where(t => t.GameIsServer == kindServer && t.GamePings != null).SelectMany(t => t.GamePings!);
+                summary.Game = NetStats.Summarize(game,
+                    kindServer ? "Server di gioco" : "Regione " + (regionName ?? "Epic"),
+                    kindServer ? servers.LastOrDefault() ?? "" : regionHost);
+            }
+            var region = ticks.Where(t => t.RegionPings != null).SelectMany(t => t.RegionPings!).ToList();
+            if (region.Count > 0) summary.Region = NetStats.Summarize(region, "Regione " + (regionName ?? "Epic"), regionHost);
+            var gw = ticks.Where(t => t.GatewayPings != null).SelectMany(t => t.GatewayPings!).ToList();
+            if (gw.Count > 0) summary.Gateway = NetStats.Summarize(gw, "Router", "router");
+            var inet = ticks.Where(t => t.InternetPings != null).SelectMany(t => t.InternetPings!).ToList();
+            if (inet.Count > 0) summary.Internet = NetStats.Summarize(inet, "Internet (" + Pinger.InternetHost + ")", Pinger.InternetHost);
+
+            var nic = ticks.LastOrDefault(t => t.Nic != null && t.Nic.ConnectionType.Length > 0)?.Nic;
+            if (nic != null)
+            {
+                summary.ConnectionType = nic.ConnectionType;
+                summary.LinkSpeedMbps = nic.LinkSpeedMbps;
+            }
+            var wifi = ticks.Where(t => t.Nic?.WifiSignalPct != null).Select(t => (double)t.Nic!.WifiSignalPct!.Value).ToList();
+            if (wifi.Count > 0) summary.WifiSignalPct = (int)Math.Round(wifi.Average());
+
+            // Medie solo sui secondi "in partita" (pacchetti dal gioco), per non diluirle con menu e caricamenti.
+            var connected = ticks.Where(t => t.PacketsIn is > 0).ToList();
+            if (connected.Count > 0)
+            {
+                summary.AvgPacketsInPerSec = Math.Round(connected.Average(t => t.PacketsIn!.Value), 1);
+                summary.AvgPacketsOutPerSec = Math.Round(connected.Average(t => t.PacketsOut ?? 0), 1);
+                summary.AvgGameKbpsIn = Math.Round(connected.Average(t => t.KbpsIn ?? 0), 1);
+                summary.AvgGameKbpsOut = Math.Round(connected.Average(t => t.KbpsOut ?? 0), 1);
+            }
+            var other = ticks.Where(t => t.OtherKbps.HasValue).Select(t => t.OtherKbps!.Value).ToList();
+            if (other.Count > 0)
+            {
+                summary.AvgOtherAppsKbps = Math.Round(other.Average(), 1);
+                summary.MaxOtherAppsKbps = Math.Round(other.Max(), 1);
+            }
+            summary.Freezes = ticks.Sum(t => t.Freezes);
+            summary.LongestFreezeMs = Math.Round(ticks.Max(t => t.LongestFreezeMs), 1);
+            return summary;
+        }
+
+        /// <summary>Un secondo di misure di rete (non più modificato dopo la creazione).</summary>
+        private sealed class NetTick
+        {
+            public double? PingMs, JitterMs, LossPct, GatewayPingMs;
+            public int? PacketsIn, PacketsOut;
+            public double? KbpsIn, KbpsOut, OtherKbps, MaxGapMs;
+            public int Freezes;
+            public double LongestFreezeMs;
+            public bool GameIsServer;
+            public List<double?>? GamePings, RegionPings, GatewayPings, InternetPings;
+            public string? Server;
+            public string? RegionName, RegionHost, BestRegionName;
+            public double? BestRegionMs;
+            public NicState? Nic;
         }
 
         // ================= Pubblicazione sulla UI =================
@@ -988,6 +1469,8 @@ namespace FNBoost.Perf
             public int? RefreshHz;
             public double? VramTotalGb;
             public bool FortniteConfigRead;
+            public readonly List<NetTick?> Net = new();
+            public readonly ProcessUsageAccumulator Procs = new();
         }
 
         /// <summary>Buffer circolare (istante, frametime) che cresce quando serve.</summary>

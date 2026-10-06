@@ -97,6 +97,8 @@ namespace FNBoost.Perf
             AddBottleneck(list, active, avg, hz, capped, vsyncLike, belowRefresh);
             AddMemory(list, session, active);
             AddBackgroundActivity(list, active);
+            AddNetwork(list, session, st, seconds);
+            AddProcesses(list, session);
             AddComparison(list, session, history);
             return list;
         }
@@ -416,6 +418,8 @@ namespace FNBoost.Perf
 
             var msg = Compare(session, prev) + ".";
             if (changes.Count > 0) msg += " Differenze: " + string.Join("; ", changes) + ".";
+            var netDelta = NetworkDelta(session, prev);
+            if (netDelta.Length > 0) msg += " " + netDelta;
 
             CheckStatus sev;
             string title;
@@ -430,6 +434,239 @@ namespace FNBoost.Perf
 
             list.Add(new PerfInsight { Severity = sev, Title = title, Message = msg, Hint = hint });
         }
+
+        // ---- rete ----
+
+        /// <summary>Ping, jitter, perdita, rete di casa, Wi-Fi, banda delle altre app e freeze. Niente se la sessione non ha dati di rete.</summary>
+        private static void AddNetwork(List<PerfInsight> list, PerfSession session, FrameStatsResult st, List<SecondSample> seconds)
+        {
+            var net = session.Network;
+            if (net == null) return;
+            bool server = string.Equals(net.PingTargetKind, "server", StringComparison.OrdinalIgnoreCase);
+            bool wifi = string.Equals(net.ConnectionType, "Wi-Fi", StringComparison.OrdinalIgnoreCase);
+            var game = net.Game;
+            var gw = net.Gateway;
+            string target = server ? "server di gioco" : "regione Epic" + (string.IsNullOrEmpty(net.RegionName) ? "" : " " + net.RegionName);
+            bool gwSlow = gw != null && gw.Received >= 10 && gw.AvgMs is > 10;
+            bool gwJitter = gw != null && gw.Received >= 10 && gw.JitterMs is > 5;
+            bool gwLoss = gw != null && gw.Sent >= 10 && gw.Sent - gw.Received >= 2 && gw.LossPct > 0;
+            bool homeProblem = gwSlow || gwJitter || gwLoss;
+
+            // ---- ping ----
+            if (game != null && game.Received >= 10 && game.AvgMs is { } ping)
+            {
+                var msg = $"Ping medio {N0(ping)} ms verso il {target} (minimo {N0(game.MinMs ?? ping)}, 95° percentile {N0(game.P95Ms ?? ping)}), " +
+                          $"jitter {N1(game.JitterMs ?? 0)} ms, perdita {N1(game.LossPct)}%.";
+                if (!server)
+                    msg += " Il server della partita non risponde al ping (o non è stato rilevato): il valore è quello della regione Epic, indicativo del ping reale.";
+                double? best = net.BestRegionPingMs;
+                bool farServer = best.HasValue && best.Value + 30 < ping;
+
+                if (ping > 80)
+                {
+                    string hint;
+                    if (farServer && server)
+                        hint = $"La regione Epic più vicina ({net.BestRegionName}) risponde in {N0(best!.Value)} ms: il server della partita è lontano. " +
+                               "In Fortnite controlla Impostazioni → Gioco → Regione matchmaking e scegli quella più vicina (con \"Auto\" a volte finisci altrove).";
+                    else if (farServer)
+                        hint = $"La regione {net.RegionName} è lontana: {net.BestRegionName} risponde in {N0(best!.Value)} ms. " +
+                               "Scegli la regione più vicina sia in Fortnite (Regione matchmaking) sia nelle impostazioni di FN Boost.";
+                    else if (homeProblem)
+                        hint = "Anche il router risponde lento o in modo irregolare: una parte del ritardo nasce nella rete di casa (vedi sotto).";
+                    else if (net.Internet?.AvgMs is { } inet && inet > 60)
+                        hint = $"Anche verso Internet (1.1.1.1) il ping è alto ({N0(inet)} ms): dipende dalla linea o dal provider, non dal PC.";
+                    else
+                        hint = "La distanza dal data center conta più di ogni ottimizzazione: usa la regione di matchmaking più vicina. " +
+                               "Il cavo Ethernet toglie qualche ms e soprattutto instabilità.";
+                    list.Add(new PerfInsight
+                    {
+                        Severity = ping > 120 ? CheckStatus.Bad : CheckStatus.Warn,
+                        Title = "Ping alto",
+                        Message = msg,
+                        Hint = hint
+                    });
+                }
+                else
+                {
+                    list.Add(new PerfInsight
+                    {
+                        Severity = CheckStatus.Ok,
+                        Title = "Ping buono",
+                        Message = msg,
+                        Hint = server
+                            ? "Sotto gli 80 ms la latenza non è un limite per il competitivo."
+                            : "Il ping della regione Epic è buono; quello del server reale può essere qualche ms diverso."
+                    });
+                }
+
+                // ---- jitter ----
+                if (game.JitterMs is { } jit && jit > 10)
+                    list.Add(new PerfInsight
+                    {
+                        Severity = jit > 25 ? CheckStatus.Bad : CheckStatus.Warn,
+                        Title = "Ping instabile (jitter)",
+                        Message = $"Il ping varia in media di {N1(jit)} ms da un secondo all'altro verso il {target}.",
+                        Hint = gwJitter || gwSlow
+                            ? "L'instabilità c'è già verso il router: la causa è nella rete di casa (Wi-Fi, router, altri dispositivi che scaricano)."
+                            : "Il router è stabile: la variabilità nasce fuori casa (linea, provider o percorso verso il server). " +
+                              "Chiudi i download in background; se persiste a tutte le ore, segnalalo al provider."
+                    });
+
+                // ---- perdita ----
+                if (game.LossPct > 1)
+                {
+                    string hint;
+                    if (gwLoss) hint = "Si perdono pacchetti già verso il router: il problema è il Wi-Fi o il collegamento al router.";
+                    else if (net.Internet is { Sent: >= 10 } i && i.LossPct > 1)
+                        hint = "Si perdono pacchetti anche verso Internet (1.1.1.1): è la linea o il provider. Riavvia il modem/router e, se continua, contatta il provider.";
+                    else
+                        hint = "Il resto della rete non perde pacchetti: può essere il percorso verso il server oppure il server che limita le risposte al ping " +
+                               "(in quel caso in gioco non si nota nulla). Se senti lag, confronta con altre sessioni.";
+                    list.Add(new PerfInsight
+                    {
+                        Severity = game.LossPct > 3 ? CheckStatus.Bad : CheckStatus.Warn,
+                        Title = "Pacchetti persi",
+                        Message = $"{N1(game.LossPct)}% dei ping verso il {target} senza risposta ({game.Sent - game.Received} su {game.Sent}).",
+                        Hint = hint
+                    });
+                }
+            }
+
+            // ---- rete di casa ----
+            if (homeProblem && gw != null)
+            {
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Warn,
+                    Title = "Rete di casa instabile",
+                    Message = $"Ping verso il router: media {N1(gw.AvgMs ?? 0)} ms, jitter {N1(gw.JitterMs ?? 0)} ms, perdita {N1(gw.LossPct)}%. " +
+                              "In una rete di casa sana è di 1-2 ms, costante e senza perdite.",
+                    Hint = wifi
+                        ? "Sei in Wi-Fi: il cavo Ethernet è la soluzione migliore. In alternativa usa la banda 5 GHz, avvicina il PC al router " +
+                          "(o togli ostacoli) e controlla chi altro usa la rete in quel momento (streaming, download, videochiamate)."
+                        : "Controlla cavo e porta del router, riavvia il router e verifica che altri dispositivi non stiano saturando la rete " +
+                          "(streaming, download, backup)."
+                });
+            }
+
+            // ---- Wi-Fi ----
+            if (wifi && net.WifiSignalPct is { } sig && sig < 60)
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Warn,
+                    Title = "Segnale Wi-Fi debole",
+                    Message = $"Segnale Wi-Fi medio {sig}% durante la sessione.",
+                    Hint = "Con un segnale debole aumentano jitter e pacchetti persi. Usa il cavo se puoi, oppure avvicina il router, " +
+                           "passa alla banda 5 GHz o valuta un ripetitore/sistema mesh."
+                });
+
+            // ---- banda delle altre app ----
+            if (net.AvgOtherAppsKbps > 2000 || net.MaxOtherAppsKbps > 10000)
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Warn,
+                    Title = "Altre app usano la connessione",
+                    Message = $"Durante la sessione le altre app di questo PC hanno usato in media {Mbps(net.AvgOtherAppsKbps)} Mbit/s " +
+                              $"(picco {Mbps(net.MaxOtherAppsKbps)} Mbit/s)" +
+                              (net.AvgGameKbpsIn + net.AvgGameKbpsOut > 0 ? $"; il gioco ne usa circa {Mbps(net.AvgGameKbpsIn + net.AvgGameKbpsOut)} Mbit/s." : "."),
+                    Hint = "Probabili download in background: Windows Update / Ottimizzazione recapito, Steam o altri launcher, OneDrive o altri cloud, " +
+                           "video nel browser. Mettili in pausa mentre giochi. Nota: qui si vede solo il traffico di questo PC, non degli altri dispositivi di casa."
+                });
+
+            // ---- freeze di rete e confronto con gli stutter ----
+            var corr = NetStats.Correlate(seconds);
+            if (net.Freezes > 0)
+            {
+                double minutes = Math.Max(1, session.DurationSec / 60.0);
+                double perMin = net.Freezes / minutes;
+                var sev = perMin >= 1 || net.LongestFreezeMs >= 2000 ? CheckStatus.Bad
+                    : net.Freezes >= 3 || net.LongestFreezeMs >= 1000 ? CheckStatus.Warn
+                    : CheckStatus.Info;
+                var msg = $"{net.Freezes} pause nella ricezione dei dati dal server (la più lunga {N0(net.LongestFreezeMs)} ms): " +
+                          "in gioco si sentono come lag o rubber-banding (giocatori che si teletrasportano, colpi non registrati).";
+                if (corr.StutterSeconds == 0 || corr.FreezeSeconds >= corr.StutterSeconds)
+                    msg += $" In questa sessione i freeze di rete ({corr.FreezeSeconds} s) pesano più degli scatti degli FPS ({corr.StutterSeconds} s).";
+                else if (corr.StutterSeconds >= 2 * corr.FreezeSeconds)
+                    msg += $" Gli scatti degli FPS ({corr.StutterSeconds} s) sono più frequenti dei freeze di rete ({corr.FreezeSeconds} s): la priorità è il PC.";
+                else
+                    msg += $" Scatti degli FPS ({corr.StutterSeconds} s) e freeze di rete ({corr.FreezeSeconds} s) hanno un peso simile.";
+                if (corr.FreezeSeconds >= 3 && corr.FreezeWithStutter * 2 >= corr.FreezeSeconds)
+                    msg += " Molti freeze coincidono con uno scatto dei frame: potrebbe essere un blocco dell'intero PC (driver, DPC) più che della rete.";
+                list.Add(new PerfInsight
+                {
+                    Severity = sev,
+                    Title = "Freeze di rete (lag)",
+                    Message = msg,
+                    Hint = homeProblem
+                        ? "Il router stesso risponde in modo irregolare: inizia dalla rete di casa (cavo, Wi-Fi a 5 GHz, altri dispositivi)."
+                        : "Chiudi i download in background e prova il cavo. Se router e Internet restano stabili ma i freeze continuano, " +
+                          "la causa è il percorso verso il server o il server stesso."
+                });
+            }
+            else if (net.AvgPacketsInPerSec > 0 && st.Stutters >= 10)
+            {
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Info,
+                    Title = "Nessun freeze di rete",
+                    Message = $"Il server ha inviato dati senza interruzioni, mentre gli FPS hanno avuto {st.Stutters} stutter.",
+                    Hint = "Gli scatti che senti vengono dal PC, non dalla connessione: guarda i suggerimenti sugli stutter."
+                });
+            }
+
+            // ---- pacchetti dal server ----
+            var inPkts = seconds.Where(s => s.PacketsInPerSec is >= 1).Select(s => s.PacketsInPerSec!.Value).ToList();
+            if (inPkts.Count >= 60)
+            {
+                double med = NetStats.Median(inPkts);
+                if (med < 20)
+                    list.Add(new PerfInsight
+                    {
+                        Severity = CheckStatus.Info,
+                        Title = "Pochi aggiornamenti dal server",
+                        Message = $"Mediana di {N0(med)} pacchetti al secondo ricevuti dal server (in {inPkts.Count} secondi con traffico).",
+                        Hint = "Durante una partita di solito il server ne invia di più: valori bassi sono normali in menu, attese o modalità tranquille, " +
+                               "ma se coincidono con lag possono indicare una connessione congestionata."
+                    });
+            }
+        }
+
+        private static void AddProcesses(List<PerfInsight> list, PerfSession session)
+        {
+            var heavy = (session.TopProcesses ?? new List<ProcessUsage>())
+                .Where(p => p != null && p.AvgCpuPct > 5)
+                .OrderByDescending(p => p.AvgCpuPct)
+                .Take(3)
+                .ToList();
+            if (heavy.Count == 0) return;
+            var names = string.Join(", ", heavy.Select(p =>
+                $"{p.Name} ({N0(p.AvgCpuPct)}% CPU in media, picco {N0(p.MaxCpuPct)}%{(p.AvgRamMb >= 300 ? $", {N1(p.AvgRamMb / 1024.0)} GB di RAM" : "")})"));
+            list.Add(new PerfInsight
+            {
+                Severity = CheckStatus.Warn,
+                Title = "Programmi in background pesanti",
+                Message = "Durante la sessione: " + names + ".",
+                Hint = "Se non ti servono mentre giochi chiudili (o rimandane il lavoro): tolgono CPU al gioco e possono causare scatti. " +
+                       "Le percentuali sono sul totale della CPU."
+            });
+        }
+
+        /// <summary>"ping 35 → 48 ms, jitter 2 → 5 ms, perdita 0 → 1,2%" se entrambe le sessioni hanno la rete.</summary>
+        private static string NetworkDelta(PerfSession cur, PerfSession prev)
+        {
+            var c = cur.Network?.Game;
+            var p = prev.Network?.Game;
+            if (c?.AvgMs == null || p?.AvgMs == null) return "";
+            var parts = new List<string> { $"ping {N0(p.AvgMs.Value)} → {N0(c.AvgMs.Value)} ms" };
+            if (c.JitterMs.HasValue && p.JitterMs.HasValue) parts.Add($"jitter {N1(p.JitterMs.Value)} → {N1(c.JitterMs.Value)} ms");
+            parts.Add($"perdita {N1(p.LossPct)} → {N1(c.LossPct)}%");
+            var text = "Rete: " + string.Join(", ", parts);
+            if (!string.Equals(cur.Network!.PingTargetKind, prev.Network!.PingTargetKind, StringComparison.OrdinalIgnoreCase))
+                text += " (misurati verso bersagli diversi: server in una, regione Epic nell'altra)";
+            return text + ".";
+        }
+
+        private static string Mbps(double kbps) => N1(kbps / 1000.0);
 
         // ---- formattazione ----
 
