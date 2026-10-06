@@ -40,6 +40,7 @@ namespace FNBoost.Tests
             T.Run("andamento: calo, miglioramento, migliore", TrendTests);
 
             CrosshairTests.RunAll();
+            ReportTests.RunAll();
 
             Console.WriteLine();
             Console.WriteLine($"{T.Passed} test superati, {T.FailureList.Count} asserzioni fallite.");
