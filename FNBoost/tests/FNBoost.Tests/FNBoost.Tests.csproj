@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Test della parte "pura" del modulo Prestazioni (statistiche, archivio, analisi).
+       Compila solo sorgenti senza WPF/Windows, quindi gira anche su Linux/macOS:
+       cd FNBoost/tests/FNBoost.Tests && dotnet run -c Release -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>FNBoost.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../src/FNBoost/Perf/PerfModels.cs" Link="Linked/PerfModels.cs" />
+    <Compile Include="../../src/FNBoost/Perf/FrameStats.cs" Link="Linked/FrameStats.cs" />
+    <Compile Include="../../src/FNBoost/Perf/PerfAnalyzer.cs" Link="Linked/PerfAnalyzer.cs" />
+    <Compile Include="../../src/FNBoost/Perf/PerfSessionStore.cs" Link="Linked/PerfSessionStore.cs" />
+    <Compile Include="../../src/FNBoost/Core/ObservableObject.cs" Link="Linked/ObservableObject.cs" />
+    <Compile Include="../../src/FNBoost/Core/CheckStatus.cs" Link="Linked/CheckStatus.cs" />
+  </ItemGroup>
+
+</Project>
