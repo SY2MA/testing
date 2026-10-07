@@ -239,7 +239,7 @@ namespace FNBoost.Perf
                     Severity = CheckStatus.Info,
                     Title = "Probabile gioco in secondo piano",
                     Message = $"{SegmentText(legacy)} la sessione è a ~30 FPS con la GPU sotto il 10%, mentre il resto va a circa {N0(legacy.CoreMedianFps)} FPS. " +
-                              "È la firma di Fortnite in secondo piano (per esempio mentre avvii o fermi la registrazione dalla finestra di FN Boost): " +
+                              $"È la firma di {GameRef(session.ProcessName)} in secondo piano (per esempio mentre avvii o fermi la registrazione dalla finestra di FN Boost): " +
                               $"1% low ({N0(original.Stats?.Low1Fps ?? 0)} FPS), stutter e regolarità della sessione sono falsati da quel tratto e non indicano un problema del PC.",
                     Hint = "I frametime di questa sessione non sono disponibili, quindi non è stato possibile ricalcolare le statistiche sul gioco vero. " +
                            "Le sessioni nuove escludono da sole il tempo fuori fuoco."
@@ -274,7 +274,7 @@ namespace FNBoost.Perf
                     Severity = CheckStatus.Info,
                     Title = "Tempo fuori fuoco escluso",
                     Message = $"{N0(session.UnfocusedSec)} s ({session.ExcludedFrames} frame) con il gioco non in primo piano non sono stati contati: " +
-                              "in secondo piano Fortnite si limita da solo a ~30 FPS, quindi non sono prestazioni del PC.",
+                              $"{BackgroundThrottleText(session.ProcessName)}, quindi non sono prestazioni del PC.",
                     Hint = $"Le statistiche si riferiscono a {DurationText(inFocus)} di gioco in primo piano (esclusi anche ~0,5 s di assestamento a ogni ritorno nel gioco)."
                 });
             }
@@ -773,8 +773,25 @@ namespace FNBoost.Perf
         private static string DurationText(double sec) =>
             sec >= 3600 ? TimeSpan.FromSeconds(sec).ToString(@"h\:mm\:ss", Inv) : TimeSpan.FromSeconds(sec).ToString(@"m\:ss", Inv);
 
-        private static string DisplayName(string? process) =>
+        /// <summary>Nome da mostrare per il processo di una sessione: "Fortnite" per il client, "Gioco" se manca.</summary>
+        public static string DisplayName(string? process) =>
             string.IsNullOrWhiteSpace(process) ? "Gioco" :
-            process.StartsWith("FortniteClient", StringComparison.OrdinalIgnoreCase) ? "Fortnite" : process;
+            IsFortnite(process) ? "Fortnite" : process;
+
+        /// <summary>Nome dentro una frase: "Fortnite", il nome del processo oppure "il gioco".</summary>
+        public static string GameRef(string? process) =>
+            string.IsNullOrWhiteSpace(process) ? "il gioco" : DisplayName(process);
+
+        /// <summary>
+        /// Perché i frame in secondo piano non contano. Il limite a ~30 FPS è misurato su Fortnite: per una sessione
+        /// di un altro gioco (bersaglio "app in primo piano") la frase resta generica.
+        /// </summary>
+        public static string BackgroundThrottleText(string? process) =>
+            IsFortnite(process)
+                ? "in secondo piano Fortnite si limita da solo a ~30 FPS"
+                : "in secondo piano molti giochi rallentano da soli (Fortnite, per esempio, scende a ~30 FPS)";
+
+        private static bool IsFortnite(string? process) =>
+            process != null && process.StartsWith("FortniteClient", StringComparison.OrdinalIgnoreCase);
     }
 }

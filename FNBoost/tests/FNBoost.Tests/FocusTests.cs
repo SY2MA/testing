@@ -21,6 +21,7 @@ namespace FNBoost.Tests
         {
             Console.WriteLine("FocusFilter");
             T.Run("cronologia del primo piano: margine, assestamento, intervallo aperto, pulizia", TimelineBasics);
+            T.Run("controllo del primo piano arrivato in ritardo: nessun finto cambio di fuoco", TimelineStalePoll);
             T.Run("maschera: frame dentro, fuori e a cavallo del cambio di fuoco", MaskBasics);
             T.Run("intervalli di frame esclusi: andata e ritorno", RangesRoundtrip);
             T.Run("report reale (frame puliti): statistiche = solo gioco, regolarità alta", EvidenceClean);
@@ -32,10 +33,13 @@ namespace FNBoost.Tests
             T.Run("periodo della sessione in UTC (orari del log di Unreal)", SessionWindowConversion);
             T.Run("conteggi sessione/intero log, RHI e versione dell'avvio giusto", LogWindowCounts);
             T.Run("solo i segnali della sessione diventano consigli", LogWindowRecommendations);
+            T.Run("confine tra file: il log corrente tagliato non eredita versione e RHI del backup", LogFileBoundary);
 
             Console.WriteLine("Report e modalità Performance");
             T.Run("sessione buona: verdetto chiaro e solo miglioramenti facoltativi", GoodSessionReport);
             T.Run("sessione da migliorare: niente verdetto positivo", BadSessionVerdict);
+            T.Run("sessione vecchia senza frametime: nessun giudizio sugli FPS falsati", LegacyVerdictWithoutFrametimes);
+            T.Run("sessione di un altro gioco: verdetto e testi senza Fortnite", OtherGameTexts);
             T.Run("modalità Performance = dx11 + es31, DirectX 12 = dx12 + sm6", PerformanceModeIni);
         }
 
@@ -143,7 +147,9 @@ namespace FNBoost.Tests
             T.Near(400 + FocusTimeline.SettleMs, closed[0].EndMs, 1e-9, "fine = ritorno + assestamento");
             T.Near(400, tl.FocusedSinceMs, 1e-9, "in primo piano da 400");
             T.True(tl.IsExcludedAt(850) && !tl.IsExcludedAt(950) && !tl.IsExcludedAt(-100), "assestamento compreso, poi non più");
-            tl.Add(350, false); // orologio all'indietro: trattato come lo stesso istante
+            tl.Add(350, false); // istante all'indietro: lettura arrivata fuori ordine, ignorata
+            T.True(tl.Focused && tl.ClosedCount == 1, "lettura fuori ordine ignorata");
+            tl.Add(500, false);
             T.True(!tl.Focused, "perso di nuovo");
             tl.Add(2000, true);
             T.Equal(2, tl.ClosedCount, "due intervalli chiusi");
@@ -151,6 +157,28 @@ namespace FNBoost.Tests
             T.Equal(1, tl.ClosedCount, "pulizia degli intervalli finiti");
             tl.Reset();
             T.True(!tl.HasData && tl.Snapshot().Length == 0, "reset");
+        }
+
+        private static void TimelineStalePoll()
+        {
+            // Scenario della review: il callback A legge "fuori fuoco" a 1000 ms ma prende il lock dopo B, che ha letto
+            // "in primo piano" a 1100 ms. La lettura di A è superata e non deve aprire un intervallo.
+            var tl = new FocusTimeline();
+            for (double t = 0; t <= 900; t += 100) tl.Add(t, true);
+            tl.Add(1100, true); // B
+            tl.Add(1000, false); // A, in ritardo
+            tl.Add(1200, true);
+            T.True(tl.Focused && tl.Snapshot().Length == 0, "nessun intervallo escluso");
+            T.True(!tl.IsExcludedAt(1100) && !tl.IsExcludedAt(1500), "il gioco in primo piano resta contato");
+
+            // Al contrario: una lettura "in primo piano" in ritardo non chiude l'intervallo aperto.
+            var tl2 = new FocusTimeline();
+            tl2.Add(0, true);
+            tl2.Add(100, false);
+            tl2.Add(300, false);
+            tl2.Add(200, true); // in ritardo
+            T.True(!tl2.Focused && tl2.ClosedCount == 0, "resta fuori fuoco");
+            T.True(tl2.IsExcludedAt(400), "i frame in secondo piano restano esclusi");
         }
 
         private static void MaskBasics()
@@ -455,6 +483,60 @@ namespace FNBoost.Tests
             T.True(wr.Any(r => r.Title == "Crash della GPU nel log di Fortnite" && r.Severity == CheckStatus.Bad), "crash GPU senza periodo");
         }
 
+        private static void LogFileBoundary()
+        {
+            // Righe come le passa AnalyzeDirectory: backup completo, poi il log corrente letto solo in coda
+            // (troppo grande: niente "Log file open", niente LogInit/LogRHI).
+            var all = TwoRunLog();
+            int split = all.FindIndex(1, l => l.StartsWith("Log file open", StringComparison.Ordinal));
+            var backup = all.Take(split).ToList();
+            var mainTail = all.Skip(split).Where(l => l.StartsWith("[", StringComparison.Ordinal)).ToList();
+            var lines = new List<string> { FortniteLogAnalyzer.FileStart };
+            lines.AddRange(backup);
+            lines.Add(FortniteLogAnalyzer.FileStartHeadMissing);
+            lines.AddRange(mainTail);
+            var (ws, we) = Window();
+            var f = FortniteLogAnalyzer.Analyze(lines, new SanitizeContext(), ws, we);
+            T.True(f.RhiInUse == null, $"RHI sconosciuta, non quella del backup ({f.RhiInUse})");
+            T.True(f.GameBuild == null, $"versione sconosciuta, non quella del backup ({f.GameBuild})");
+            T.Equal(backup.Count + mainTail.Count, f.TotalLines, "le righe sintetiche non contano");
+            T.Equal(1, f.Session!.Hitches, "conteggi della sessione invariati");
+            // Il backup resta riconosciuto se il periodo cade lì.
+            var old = FortniteLogAnalyzer.Analyze(lines, new SanitizeContext(), new DateTime(2026, 10, 6, 22, 44, 0), new DateTime(2026, 10, 6, 22, 50, 0));
+            T.Equal("D3D12 · SM6", old.RhiInUse, "RHI dell'avvio del backup");
+
+            // File completo (con "Log file open"): versione e RHI ci sono.
+            var whole = new List<string> { FortniteLogAnalyzer.FileStart };
+            whole.AddRange(backup);
+            whole.Add(FortniteLogAnalyzer.FileStart);
+            whole.AddRange(all.Skip(split));
+            var w = FortniteLogAnalyzer.Analyze(whole, new SanitizeContext(), ws, we);
+            T.Equal("D3D11 · ES3_1", w.RhiInUse, "RHI del log corrente");
+            T.Equal("++Fortnite+Release-42.30-CL-58813929", w.GameBuild, "versione del log corrente");
+
+            // Su disco: log corrente oltre il limite di righe → letto in coda e senza ereditare dal backup.
+            var dir = Path.Combine(Path.GetTempPath(), "fnboost-logtest-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                File.WriteAllLines(Path.Combine(dir, "FortniteGame-backup-2026.10.07-10.12.30.log"), backup);
+                using (var sw = new StreamWriter(Path.Combine(dir, "FortniteGame.log")))
+                {
+                    foreach (var l in all.Skip(split).Take(5)) sw.WriteLine(l); // testa: Log file open, Build, RHI
+                    int n = FortniteLogAnalyzer.MaxLines - FortniteLogAnalyzer.MaxLines / 5 + 1000;
+                    for (int i = 0; i < n; i++) sw.WriteLine(Lu(SessionStartUtc.AddMilliseconds(i % 100000), "LogFort: x"));
+                }
+                var d = FortniteLogAnalyzer.AnalyzeDirectory(dir, new SanitizeContext(), true, ws, we);
+                T.True(d.Truncated, "log corrente troncato");
+                T.Equal(2, d.Sources.Count, "due file letti");
+                T.True(d.RhiInUse == null && d.GameBuild == null, $"niente RHI/versione del backup ({d.RhiInUse} / {d.GameBuild})");
+            }
+            finally
+            {
+                try { Directory.Delete(dir, true); } catch { /* temp */ }
+            }
+        }
+
         // ================= Report =================
 
         private static ReportData GoodReport()
@@ -556,6 +638,47 @@ namespace FNBoost.Tests
             capMiss.Session.FpsCap = null;
             capMiss.Session.RefreshHz = 120;
             T.True(ReportBuilder.ComputeVerdict(capMiss).Good, "senza limite: confronto con il refresh");
+        }
+
+        private static void LegacyVerdictWithoutFrametimes()
+        {
+            // Sessione vecchia con il tratto a ~30 FPS e GPU ferma, ma frametime mancanti: niente correzione.
+            var e = MakeEvidence(realistic: true);
+            var old = LegacySession(e, out _);
+            var d = new ReportData { Session = old, Insights = PerfAnalyzer.Analyze(old, new[] { old }) };
+            ReportBuilder.BuildRecommendations(d);
+            T.True(!d.PerformsWell, "nessun verdetto positivo");
+            var v = d.Verdict ?? "";
+            T.Contains(v, "Nessun giudizio sugli FPS", "lo dice");
+            T.True(!v.Contains("Prestazioni da migliorare") && !v.Contains("parecchi stutter"), "non incolpa il PC");
+            T.Contains(v, "Fortnite va a circa 16", "FPS del gioco vero (~165)");
+            T.True(d.Insights.Any(i => i.Title == "Probabile gioco in secondo piano"), "coerente con l'analisi");
+        }
+
+        private static void OtherGameTexts()
+        {
+            const string other = "VALORANT-Win64-Shipping";
+            var e = MakeEvidence(realistic: true);
+            var (frames, _) = Build(e);
+            var session = new PerfSession
+            {
+                Id = "o", StartedAt = SessionStartUtc.ToLocalTime(), ProcessName = other, DurationSec = frames.DurationSec, Stats = frames.Stats,
+                Seconds = frames.Seconds, FpsCap = 165, RefreshHz = 165, FocusTracked = true, UnfocusedSec = frames.UnfocusedSec,
+                ExcludedFrames = frames.ExcludedFrames, ExcludedRanges = frames.ExcludedRanges
+            };
+            var d = new ReportData { Session = session, Insights = PerfAnalyzer.Analyze(session, new[] { session }, e.Ft) };
+            ReportBuilder.BuildRecommendations(d);
+            T.True(d.PerformsWell, "sessione buona");
+            T.Contains(d.Verdict ?? "", "Il PC fa girare bene " + other, "verdetto col nome del gioco");
+            T.True(!(d.Verdict ?? "").Contains("Fortnite"), "niente Fortnite nel verdetto");
+            var focus = d.Insights.First(i => i.Title == "Tempo fuori fuoco escluso").Message;
+            T.True(!focus.Contains("Fortnite si limita da solo"), "analisi: nessuna affermazione su Fortnite");
+            var text = ReportBuilder.BuildSummaryText(d);
+            T.True(!text.Contains("Fortnite scende da solo") && !text.Contains("Fortnite si limita da solo"), "riassunto: idem");
+            T.Equal("in secondo piano Fortnite si limita da solo a ~30 FPS", PerfAnalyzer.BackgroundThrottleText(Fn), "per Fortnite resta specifico");
+            T.Equal("il gioco", PerfAnalyzer.GameRef(""), "senza nome: il gioco");
+            var unnamed = new ReportData { Session = new PerfSession { Stats = new FrameStatsResult { Frames = 1000, AvgFps = 165, Low1Fps = 150 }, FpsCap = 165 } };
+            T.Contains(ReportBuilder.ComputeVerdict(unnamed).Verdict ?? "", "Il PC fa girare bene il gioco", "processo sconosciuto");
         }
 
         private static void PerformanceModeIni()

@@ -252,18 +252,15 @@ namespace FNBoost.Perf
                 Add(ft, new Point(pad, pad * 0.7));
                 return Finish(new Size(ft.Width + pad * 2, ft.Height + pad * 1.4), minWidth);
             }
-            if (!snap.GameFocused)
-            {
-                // Gioco in secondo piano (es. mentre configuri FN Boost): Fortnite scende da solo a ~30 FPS,
-                // mostrarli sembrerebbe un problema del PC. Le statistiche riprendono al ritorno nel gioco.
-                var ft = Ft("FPS: gioco fuori fuoco", Math.Max(9, fs * 0.8), _text, false, ppd);
-                Add(ft, new Point(pad, pad * 0.7));
-                return Finish(new Size(ft.Width + pad * 2, ft.Height + pad * 1.4), minWidth);
-            }
-
+            // Gioco in secondo piano (es. mentre configuri FN Boost, cioè l'anteprima): molti giochi, Fortnite
+            // compreso, scendono da soli a ~30 FPS e mostrarli sembrerebbe un problema del PC. Il layout resta
+            // completo (così l'anteprima mostra righe, colori e grafico) con le statistiche della finestra, che
+            // contengono già solo frame in primo piano; cambiano solo FPS attuali e frametime.
+            bool focused = snap.GameFocused;
             var w = snap.Window;
-            string fps = N0(snap.CurrentFps);
-            string ftMs = snap.LastFrametimeMs > 0 ? snap.LastFrametimeMs.ToString("0.0", CultureInfo.CurrentCulture) + " ms" : "–";
+            string fps = focused ? N0(snap.CurrentFps) : "–";
+            string ftMs = !focused ? (s.ShowFps ? "–" : "fuori fuoco")
+                : snap.LastFrametimeMs > 0 ? snap.LastFrametimeMs.ToString("0.0", CultureInfo.CurrentCulture) + " ms" : "–";
             string cpuGpu = $"{snap.CpuPercent:0}%" + (snap.GpuPercent is { } g ? $" / {g:0}%" : " / –");
 
             if (s.Compact)
@@ -272,7 +269,14 @@ namespace FNBoost.Perf
             // ---- Layout a righe: etichetta a sinistra, valore allineato a destra ----
             double y = pad * 0.7;
             double width = 0;
-            if (s.ShowFps)
+            if (s.ShowFps && !focused)
+            {
+                var off = Ft("FPS: fuori fuoco", fs, _label, true, ppd);
+                Add(off, new Point(pad, y));
+                width = off.Width;
+                y += off.Height * 1.1;
+            }
+            else if (s.ShowFps)
             {
                 var big = Ft(fps, fs * 1.9, _accent, true, ppd);
                 var unit = Ft("FPS", fs * 0.8, _label, true, ppd);
@@ -361,7 +365,9 @@ namespace FNBoost.Perf
             var w = snap.Window;
             double fs = s.FontSize;
             var parts = new List<FormattedText>();
-            if (s.ShowFps)
+            if (s.ShowFps && !snap.GameFocused)
+                parts.Add(Ft("FPS fuori fuoco", fs * 0.8, _label, true, ppd));
+            else if (s.ShowFps)
             {
                 parts.Add(Ft(fps, fs * 1.15, _accent, true, ppd));
                 parts.Add(Ft(" FPS", fs * 0.8, _label, true, ppd));
@@ -378,7 +384,8 @@ namespace FNBoost.Perf
             if (s.ShowMinMax) Pair("min/max", $"{N0(w.MinFps)}/{N0(w.MaxFps)}");
             if (s.ShowFrametime) Pair("", ftMs);
             if (s.ShowCpuGpu) Pair("CPU/GPU", cpuGpu);
-            if (parts.Count == 0) parts.Add(Ft(fps + " FPS", fs, _accent, true, ppd));
+            if (parts.Count == 0)
+                parts.Add(snap.GameFocused ? Ft(fps + " FPS", fs, _accent, true, ppd) : Ft("FPS fuori fuoco", fs * 0.8, _label, true, ppd));
             if (s.ShowNet && NetValues(snap) is { } net)
             {
                 parts.Add(Ft("  ·  ", fs * 0.8, _label, false, ppd));

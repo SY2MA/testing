@@ -202,7 +202,7 @@ namespace FNBoost.Report
                 }
             }
             if (session is { UnfocusedSec: >= 1, UnfocusedEstimated: false })
-                d.Notes.Add($"{session.UnfocusedSec:0} s con il gioco non in primo piano (Fortnite in secondo piano scende da solo a ~30 FPS) " +
+                d.Notes.Add($"{session.UnfocusedSec:0} s con il gioco non in primo piano ({PerfAnalyzer.BackgroundThrottleText(session.ProcessName)}) " +
                             "sono esclusi da statistiche, stutter e grafici; nel file frametimes.csv quei frame hanno focused = 0.");
             var excludedMask = ft != null ? FocusFilter.MaskFromRanges(ft.Length, session?.ExcludedRanges) : null;
 
@@ -509,7 +509,7 @@ namespace FNBoost.Report
             sb.AppendLine("  summary.txt                  Riassunto breve da incollare direttamente in una chat.");
             if (hasFrametimes)
                 sb.AppendLine("  frametimes.csv               Tutti i frametime della sessione (index, time_ms, frametime_ms, fps, focused) per analisi dettagliate.\n" +
-                              "                               focused = 0: gioco non in primo piano (Fortnite scende da solo a ~30 FPS), escluso dalle statistiche.");
+                              "                               focused = 0: gioco non in primo piano (Fortnite, per esempio, scende da solo a ~30 FPS), escluso dalle statistiche.");
             sb.AppendLine("  fortnite-log-highlights.txt  Le righe più significative del log di Fortnite (errori, rete, hitch, shader, crash).");
             sb.AppendLine("  fnboost-log.txt              Le ultime righe del registro di FN Boost (tweak applicati, errori dell'app).");
             sb.AppendLine();
@@ -529,7 +529,7 @@ namespace FNBoost.Report
             sb.AppendLine("COME SONO MISURATI I DATI");
             sb.AppendLine("  FPS e frametime arrivano dagli eventi ETW Present di Windows (come PresentMon e Xbox Game Bar), senza toccare il gioco.");
             sb.AppendLine("  I frame presentati mentre il gioco non era la finestra in primo piano (più ~0,5 s di assestamento al ritorno)");
-            sb.AppendLine("  non contano nelle statistiche: in secondo piano Fortnite si limita da solo a ~30 FPS.");
+            sb.AppendLine("  non contano nelle statistiche: in secondo piano molti giochi rallentano da soli (Fortnite si limita a ~30 FPS).");
             sb.AppendLine("  Il log di Fortnite è analizzato per il periodo della sessione (±60 s, orari UTC); il resto del log è solo contesto.");
             sb.AppendLine("  Il ping è un ping ICMP inviato da FN Boost: può differire di qualche ms da quello mostrato in Fortnite.");
             return sb.ToString();

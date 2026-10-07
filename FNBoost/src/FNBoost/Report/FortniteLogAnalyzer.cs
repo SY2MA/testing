@@ -112,6 +112,15 @@ namespace FNBoost.Report
 
         private const RegexOptions Opt = RegexOptions.CultureInvariant | RegexOptions.Compiled;
 
+        /// <summary>
+        /// Righe sintetiche (mai presenti in un log vero, iniziano con NUL) che AnalyzeDirectory mette all'inizio di ogni file:
+        /// ogni file è un avvio diverso del gioco anche quando la sua riga "Log file open" è stata tagliata via.
+        /// Con <see cref="FileStartHeadMissing"/> l'inizio del file manca (letto solo in coda): versione e API grafica
+        /// di quell'avvio sono sconosciute e non vanno prese dall'avvio precedente.
+        /// </summary>
+        public const string FileStart = "\0FNBoost:file";
+        public const string FileStartHeadMissing = "\0FNBoost:file-head-missing";
+
         // [2026.10.06-21.09.08:123][ 42]LogNet: Warning: messaggio
         private static readonly Regex Timed = new(
             @"^\[(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})\.(\d{2}):(\d{3})\]\[\s*\d+\]([A-Za-z][A-Za-z0-9_]*):\s?(.*)$", Opt);
@@ -188,6 +197,7 @@ namespace FNBoost.Report
                     var (b, t, err) = ReadTail(backup, MaxBytes / 5, MaxLines / 5);
                     if (err == null)
                     {
+                        lines.Add(t ? FileStartHeadMissing : FileStart);
                         lines.AddRange(b);
                         sources.Add(Path.GetFileName(backup));
                         truncated |= t;
@@ -199,6 +209,7 @@ namespace FNBoost.Report
                     var (m, t, err) = ReadTail(main, MaxBytes - MaxBytes / 5, MaxLines - MaxLines / 5);
                     if (err == null)
                     {
+                        lines.Add(t ? FileStartHeadMissing : FileStart);
                         lines.AddRange(m);
                         sources.Add(Path.GetFileName(main));
                         truncated |= t;
@@ -279,9 +290,11 @@ namespace FNBoost.Report
             public int SessionCount;
         }
 
-        /// <summary>Un avvio del gioco dentro il log (separati dalle righe "Log file open").</summary>
+        /// <summary>Un avvio del gioco dentro il log (separati dalle righe "Log file open" e dai confini tra file).</summary>
         private sealed class Run
         {
+            /// <summary>Inizio dell'avvio tagliato via (file letto solo in coda): versione e API grafica sconosciute.</summary>
+            public bool HeadMissing;
             public string? Build;
             public string? EngineVersion;
             public string? Rhi;
@@ -332,6 +345,15 @@ namespace FNBoost.Report
             foreach (var raw in lines ?? Array.Empty<string>())
             {
                 if (raw == null) continue;
+                // Confine tra file (riga sintetica, non conta come riga del log): nuovo avvio.
+                if (raw == FileStart || raw == FileStartHeadMissing)
+                {
+                    if (!IsEmpty(runs[^1])) runs.Add(new Run());
+                    runs[^1].HeadMissing = raw == FileStartHeadMissing;
+                    inWindow = false;
+                    skipContinuation = false;
+                    continue;
+                }
                 f.TotalLines++;
                 var line = raw.TrimEnd('\r');
                 if (line.Length == 0) continue;
@@ -340,6 +362,7 @@ namespace FNBoost.Report
                 if (line.StartsWith("Log file open", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!IsEmpty(runs[^1])) runs.Add(new Run());
+                    runs[^1].HeadMissing = false; // l'inizio dell'avvio c'è
                     inWindow = false;
                     continue;
                 }
@@ -529,7 +552,10 @@ namespace FNBoost.Report
 
             // Versione e API grafica dell'avvio che copre la sessione; senza periodo (o se nessun avvio lo copre) l'ultimo.
             var chosen = ChooseRun(runs, hasWindow ? windowStart : null, hasWindow ? windowEnd : null);
-            f.GameBuild = chosen?.Build ?? chosen?.EngineVersion ?? runs.Select(r => r.Build ?? r.EngineVersion).LastOrDefault(b => b != null);
+            // Se l'inizio di quell'avvio manca (file troppo grande, letto solo in coda) restano sconosciute:
+            // l'avvio precedente può avere un'altra versione o un'altra API grafica.
+            f.GameBuild = chosen?.Build ?? chosen?.EngineVersion ??
+                          (chosen is { HeadMissing: true } ? null : runs.Select(r => r.Build ?? r.EngineVersion).LastOrDefault(b => b != null));
             f.RhiInUse = chosen?.Rhi ?? chosen?.DefaultRhi;
 
             // I server di gioco visti nel log possono restare in chiaro nelle righe evidenziate.

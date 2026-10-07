@@ -39,6 +39,8 @@ namespace FNBoost.Perf
         private SystemSampler? _sampler;
         private Timer? _timer;
         private Timer? _focusTimer;
+        /// <summary>1 mentre un controllo del primo piano è in corso: i callback del timer periodico non si sovrappongono.</summary>
+        private int _focusPolling;
         private bool _running;
         private PerfTarget _runningTarget;
         private volatile bool _disposed;
@@ -596,6 +598,9 @@ namespace FNBoost.Perf
         private void OnFocusPoll(object? state)
         {
             if (_disposed || !_running) return;
+            // Il timer è periodico: con il thread pool sotto carico un callback in ritardo potrebbe aggiungere una lettura
+            // più vecchia dopo una più nuova (finto cambio di fuoco). Se il controllo precedente è ancora in corso si salta.
+            if (Interlocked.Exchange(ref _focusPolling, 1) == 1) return;
             try
             {
                 int fgPid = 0;
@@ -615,6 +620,10 @@ namespace FNBoost.Perf
                 if (_focusErrorLogged) return;
                 _focusErrorLogged = true;
                 Log.Warn("Controllo del primo piano non riuscito: " + ex.Message);
+            }
+            finally
+            {
+                Volatile.Write(ref _focusPolling, 0);
             }
         }
 

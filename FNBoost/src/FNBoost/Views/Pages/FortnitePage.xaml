@@ -74,7 +74,7 @@
                                 <ComboBoxItem Content="Finestra" />
                             </ComboBox>
                             <TextBlock Style="{StaticResource Small}" Margin="0,0,0,14"
-                                       Text="Il mirino overlay è garantito in 'Schermo intero in finestra'. In modalità Performance (Direct3D 11) attiva il tweak 'Ottimizzazioni per i giochi in finestra': così anche in finestra Windows usa il flip model e la latenza resta vicina allo schermo intero." />
+                                       Text="Il mirino overlay è garantito in 'Schermo intero in finestra'. In modalità Performance (Direct3D 11) il tweak 'Ottimizzazioni per i giochi in finestra' può aiutare: se il gioco presenta ancora i frame col vecchio modello 'blt', Windows li passa al flip model e la latenza si avvicina allo schermo intero. Nessun effetto se il gioco usa già il flip model o in DirectX 12." />
 
                             <TextBlock Text="Preset qualità (scalabilità)" Style="{StaticResource Label}" />
                             <ComboBox x:Name="PresetCombo" Margin="0,6,0,2">

@@ -53,7 +53,7 @@ namespace FNBoost.Perf
         /// <summary>Intervalli chiusi registrati finora (dal più vecchio).</summary>
         public int ClosedCount => _closed.Count;
 
-        /// <summary>Registra un controllo: nowMs crescente sull'orologio interno.</summary>
+        /// <summary>Registra un controllo: nowMs crescente sull'orologio interno. Un controllo più vecchio dell'ultimo è ignorato.</summary>
         public void Add(double nowMs, bool focused)
         {
             if (!double.IsFinite(nowMs)) return;
@@ -66,7 +66,9 @@ namespace FNBoost.Perf
                 else _openStartMs = nowMs - LeadMarginMs;
                 return;
             }
-            if (nowMs < _lastPollMs) nowMs = _lastPollMs; // orologio monotono, per sicurezza
+            // L'orologio è monotono: un istante all'indietro è una lettura arrivata fuori ordine, quindi superata
+            // da quella più recente. Usarla creerebbe un finto cambio di fuoco.
+            if (nowMs < _lastPollMs) return;
             if (focused != _focused)
             {
                 if (!focused)

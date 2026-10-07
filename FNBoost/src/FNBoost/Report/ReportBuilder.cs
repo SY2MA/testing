@@ -320,14 +320,24 @@ namespace FNBoost.Report
         /// <summary>
         /// Sessione buona = 1% low ≥ 60% della media, al massimo 2 stutter al minuto e media ≥ 95% del limite FPS
         /// (o del refresh del monitor se non c'è un limite). Restituisce anche la frase di giudizio (null senza sessione).
+        /// Sessione vecchia con tratto in secondo piano non correggibile (frametime mancanti): nessun giudizio sui numeri,
+        /// che sono falsati da quel tratto (stessa regola di PerfAnalyzer).
         /// </summary>
         public static (bool Good, string? Verdict) ComputeVerdict(ReportData d)
         {
             var s = d?.Session;
             var st = s?.Stats;
             if (s == null || st == null || !st.HasData || !(st.AvgFps > 0)) return (false, null);
-            double ratio = st.Low1Fps / st.AvgFps;
             double target = s.FpsCap is > 0 ? s.FpsCap.Value : s.RefreshHz is > 1 ? s.RefreshHz.Value : 0;
+            string game = PerfAnalyzer.GameRef(s.ProcessName);
+            if (!s.FocusTracked && !s.UnfocusedEstimated && FocusFilter.DetectBackground(s.Seconds) is { } bg)
+            {
+                string core = target > 0 ? $" ({F0(bg.CoreMedianFps / target * 100)}% {(s.FpsCap is > 0 ? "del limite di " + F0(target) : "dei " + F0(target) + " Hz del monitor")})" : "";
+                return (false, $"Nessun giudizio sugli FPS: all'inizio o alla fine la sessione è a ~30 FPS con la GPU quasi ferma (probabile gioco in secondo piano) " +
+                               $"e 1% low, stutter e regolarità sono falsati da quel tratto. Nel resto della sessione {game} va a circa {F0(bg.CoreMedianFps)} FPS{core}. " +
+                               "I frametime per ricalcolare non sono disponibili: registra una nuova sessione per un giudizio affidabile.");
+            }
+            double ratio = st.Low1Fps / st.AvgFps;
             bool reachesTarget = target <= 0 || st.AvgFps >= 0.95 * target;
             bool good = ratio >= 0.6 && st.StuttersPerMin <= 2 && reachesTarget;
             string targetText = target <= 0 ? "" :
@@ -335,7 +345,7 @@ namespace FNBoost.Report
             string numbers = $"media {F0(st.AvgFps)} FPS{targetText}, 1% low {F0(st.Low1Fps)} FPS ({F0(ratio * 100)}% della media), {F1(st.StuttersPerMin)} stutter al minuto";
             string focus = s.UnfocusedSec >= 1 ? $" (esclusi {F0(s.UnfocusedSec)} s con il gioco fuori fuoco)" : "";
             if (good)
-                return (true, $"Il PC fa girare bene Fortnite: {numbers}{focus}. Non c'è nulla da correggere per gli FPS: " +
+                return (true, $"Il PC fa girare bene {game}: {numbers}{focus}. Non c'è nulla da correggere per gli FPS: " +
                               "i punti qui sotto sono miglioramenti facoltativi (o riguardano la rete, che non dipende dal PC).");
             var why = new List<string>();
             if (ratio < 0.6) why.Add("i frame più lenti sono lontani dalla media");
@@ -687,7 +697,7 @@ namespace FNBoost.Report
                           $"stutter {st.Stutters} ({F1(st.StuttersPerMin)}/min) · regolarità {F0(st.ConsistencyScore)}/100 · frametime medio {F1(st.AvgFrametimeMs)} ms, max {F1(st.MaxFrametimeMs)} ms\n");
                 if (s.UnfocusedSec >= 1)
                     sb.Append($"Esclusi {F0(s.UnfocusedSec)} s ({s.ExcludedFrames} frame) con il gioco fuori fuoco{(s.UnfocusedEstimated ? " (stima: tratto a ~30 FPS con GPU ferma)" : "")}: " +
-                              "in secondo piano Fortnite scende da solo a ~30 FPS.\n");
+                              PerfAnalyzer.BackgroundThrottleText(s.ProcessName) + ".\n");
                 var cpu = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 && !x.Unfocused ? x.CpuPercent : null);
                 var gpu = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 && !x.Unfocused ? x.GpuPercent : null);
                 var ram = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 && !x.Unfocused ? x.RamPercent : null);
@@ -935,7 +945,7 @@ namespace FNBoost.Report
             // ---- metodo ----
             h.Append("<footer><h2>Come vengono misurati i dati</h2><ul>");
             h.Append("<li><b>FPS e frametime</b>: eventi ETW <i>Present</i> di DirectX letti da Windows, lo stesso metodo di PresentMon e della Xbox Game Bar. Il frametime è il tempo tra due Present consecutivi (MsBetweenPresents). FN Boost non entra mai nel processo del gioco.</li>");
-            h.Append("<li><b>Gioco fuori fuoco</b>: circa 10 volte al secondo FN Boost controlla quale finestra è in primo piano (solo GetForegroundWindow, nessun accesso al gioco). I frame presentati mentre Fortnite non è in primo piano, quelli a cavallo del cambio e ~0,5 s di assestamento al ritorno sono esclusi da statistiche, stutter e grafici: in secondo piano il gioco si limita da solo a ~30 FPS. Nelle sessioni vecchie l'esclusione è stimata (tratto iniziale/finale a ~30 FPS con GPU sotto il 10%).</li>");
+            h.Append("<li><b>Gioco fuori fuoco</b>: circa 10 volte al secondo FN Boost controlla quale finestra è in primo piano (solo GetForegroundWindow, nessun accesso al gioco). I frame presentati mentre il gioco non è in primo piano, quelli a cavallo del cambio e ~0,5 s di assestamento al ritorno sono esclusi da statistiche, stutter e grafici: in secondo piano molti giochi rallentano da soli (Fortnite si limita a ~30 FPS). Nelle sessioni vecchie l'esclusione è stimata (tratto iniziale/finale a ~30 FPS con GPU sotto il 10%).</li>");
             h.Append("<li><b>FPS medi</b> = frame totali / tempo totale. <b>1% low</b> e <b>0,1% low</b> = FPS calcolati dalla media dell'1% e dello 0,1% dei frametime più lunghi (i momenti peggiori). <b>Stutter</b> = frame molto più lunghi della mediana dei frame vicini.</li>");
             h.Append("<li><b>CPU, GPU, RAM, processi</b>: contatori di prestazioni di Windows (PDH), campionati una volta al secondo.</li>");
             h.Append("<li><b>Ping</b>: ping ICMP inviato da FN Boost al server di gioco (o all'endpoint Epic della regione se il server non risponde), al router e a Internet. Può differire di qualche millisecondo dal ping mostrato in gioco, che è misurato a livello di applicazione. Jitter = variazione media tra ping consecutivi.</li>");

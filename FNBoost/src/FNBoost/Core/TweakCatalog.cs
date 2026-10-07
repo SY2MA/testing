@@ -90,10 +90,10 @@ namespace FNBoost.Core
                 Category = "Windows – Grafica",
                 Title = "Ottimizzazioni per i giochi in finestra",
                 Description = "Usa il modello di presentazione 'flip' anche per i giochi DirectX 10/11 in finestra o senza bordi: meno latenza, VRR e Auto HDR funzionanti.",
-                Details = "Conta per Fortnite in modalità Performance, che gira su Direct3D 11 (feature level ES3_1, lo scrive il gioco nel suo log), " +
+                Details = "Può contare per Fortnite in modalità Performance, che gira su Direct3D 11 (feature level ES3_1, lo scrive il gioco nel suo log), " +
                           "quando giochi in 'Schermo intero in finestra': se il gioco presenta i frame con il vecchio modello 'blt', Windows li copia e li compone " +
                           "col desktop (più latenza, niente VRR); con questa opzione li passa al flip model, con latenza vicina allo schermo intero. " +
-                          "In DirectX 12 o in schermo intero esclusivo non cambia nulla. Opzione ufficiale di Impostazioni › Schermo › Grafica.",
+                          "In DirectX 12, in schermo intero esclusivo o se il gioco usa già il flip model non cambia nulla. Opzione ufficiale di Impostazioni › Schermo › Grafica.",
                 Technical = @"HKCU\Software\Microsoft\DirectX\UserGpuPreferences  DirectXUserGlobalSettings: SwapEffectUpgradeEnable=1",
                 // Variabile: nessun effetto in DirectX 12 o a schermo intero, utile in Performance (D3D11) in finestra.
                 Impact = Impact.Variable,
