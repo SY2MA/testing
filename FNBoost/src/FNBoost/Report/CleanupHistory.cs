@@ -1,0 +1,3 @@
+namespace FNBoost.Report
+{
+}

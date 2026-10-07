@@ -35,6 +35,9 @@
     <Compile Include="../../src/FNBoost/Report/FortniteLogAnalyzer.cs" Link="Linked/FortniteLogAnalyzer.cs" />
     <Compile Include="../../src/FNBoost/Report/ReportModels.cs" Link="Linked/ReportModels.cs" />
     <Compile Include="../../src/FNBoost/Report/ReportBuilder.cs" Link="Linked/ReportBuilder.cs" />
+    <Compile Include="../../src/FNBoost/Perf/CapAnalysis.cs" Link="Linked/CapAnalysis.cs" />
+    <Compile Include="../../src/FNBoost/Perf/HitchContext.cs" Link="Linked/HitchContext.cs" />
+    <Compile Include="../../src/FNBoost/Report/CleanupHistory.cs" Link="Linked/CleanupHistory.cs" />
   </ItemGroup>
 
 </Project>

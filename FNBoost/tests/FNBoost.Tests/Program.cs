@@ -45,6 +45,9 @@ namespace FNBoost.Tests
             NetTests.RunAll();
             PhaseTests.RunAll();
             ReportTests.RunAll();
+            LogTests.RunAll();
+            CapTests.RunAll();
+            InsightTests.RunAll();
 
             Console.WriteLine();
             Console.WriteLine($"{T.Passed} test superati, {T.FailureList.Count} asserzioni fallite.");
