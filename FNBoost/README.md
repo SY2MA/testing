@@ -4,7 +4,7 @@ App nativa per Windows 11 (C# / WPF, .NET 10) che:
 
 1. **Analizza il PC** e segnala ciò che limita FPS, costanza dei frametime e stutter in Fortnite.
 2. **Applica solo tweak sicuri e reversibili**: ogni valore originale viene salvato prima della modifica e si ripristina con un clic.
-3. **Configura Fortnite** (GameUserSettings.ini) a gioco chiuso, con backup automatico.
+3. **Configura Fortnite** (GameUserSettings.ini) a gioco chiuso, con backup automatico. Modalità *Performance* = `PreferredRHI=dx11` + `PreferredFeatureLevel=es31` (gli stessi valori che scrive il gioco: nel log compare "RHI D3D11 with Feature Level ES3_1 … will be used"); *DirectX 12* = `dx12` + `sm6`.
 4. **Mostra un mirino personalizzato** a livelli in una finestra overlay trasparente che non tocca il gioco.
 5. **Misura gli FPS** (media, 1% low, 0,1% low, min/max, stutter) con un overlay in gioco, registra le sessioni e le analizza nel tempo.
 6. **Misura ping, jitter, perdita di pacchetti e traffico del gioco** e crea un **report diagnostico** da condividere, già ripulito dai dati personali.
@@ -50,7 +50,7 @@ Al primo avvio Windows SmartScreen può avvisare perché l'exe non è firmato: *
 | Game Bar: niente registrazione in background | Ferma la cattura continua che usa GPU, encoder e disco | Medio | Nessuno | No |
 | Piano energetico "Prestazioni elevate" | Frequenze CPU stabili e niente core parking | Medio | Basso (consumi a riposo) | No |
 | HAGS (pianificazione GPU hardware) | Richiesta per DLSS Frame Generation; effetto variabile | Variabile | Basso | Sì |
-| Ottimizzazioni giochi in finestra | Flip model per DX10/11 in finestra (Fortnite è già DX12) | Basso | Nessuno | No |
+| Ottimizzazioni giochi in finestra | Flip model per i giochi DX10/11 in finestra: conta per Fortnite in modalità Performance (Direct3D 11) in *Schermo intero in finestra*; nessun effetto in DirectX 12 | Variabile | Nessuno | No |
 | Fortnite su GPU ad alte prestazioni | Evita che il gioco finisca sulla GPU integrata (UHD 770) | Alto se l'iGPU è attiva | Nessuno | No |
 | Priorità CPU "Alta" per Fortnite (IFEO) | Windows avvia il gioco con priorità alta. L'app non apre il processo | Basso | Basso | No |
 | Priorità MMCSS giochi | SystemResponsiveness 10, NetworkThrottling off, classe Games alta | Basso | Nessuno | No |
@@ -101,13 +101,15 @@ Sono contrassegnati come *Consigliato*: Modalità Gioco, Game Bar, piano energet
 | **Stutter** | frame lungo almeno 2,5 volte la mediana dei 60 frame precedenti **e** almeno 12 ms (sensibilità regolabile). Mostrato anche come stutter al minuto |
 | **Consistenza** | punteggio 0-100: quanto l'1% low resta vicino alla media (≥ 95% della media = pieno punteggio), meno una penalità per gli stutter frequenti |
 
+**Gioco fuori fuoco.** Quando Fortnite non è la finestra in primo piano (per esempio mentre avvii o fermi la registrazione dalla finestra di FN Boost) il gioco si limita da solo a ~30 FPS. Circa 10 volte al secondo FN Boost controlla quale finestra è in primo piano (solo `GetForegroundWindow` + `GetWindowThreadProcessId`, nessun handle verso il gioco): i frame presentati fuori fuoco, quelli a cavallo del cambio e ~0,5 s di assestamento al ritorno **non entrano** in finestra mobile, statistiche, stutter e campioni al secondo. FPS dal vivo, overlay e pannello mostrano "fuori fuoco" invece del numero; nei grafici quei secondi sono buchi (bande grigie nel report). La registrazione automatica parte solo con il gioco in primo piano da almeno 5 s e il tempo fuori fuoco non conta per la durata minima. Le sessioni registrate prima di questa misura con un tratto iniziale/finale a ~30 FPS e GPU sotto il 10% vengono corrette nell'analisi e nel report (stima, dichiarata come tale).
+
 **Overlay in gioco.** `Ctrl+Alt+F` mostra un piccolo contatore sopra al gioco: FPS grandi, media, 1% low (giallo se scende sotto metà della media), 0,1% low, min/max, frametime, CPU/GPU e un mini grafico dei frametime. Angolo, monitor, distanza dal bordo, dimensione del testo, colori, sfondo, righe visibili e layout compatto su una riga sono configurabili. Di base si vede solo con il gioco in primo piano (e mentre configuri FN Boost). È una finestra trasparente click-through come il mirino.
 
 **Sessioni e storico.** Con la registrazione automatica ogni partita (da quando Fortnite inizia a renderizzare a quando smette) diventa una sessione; in alternativa `Ctrl+Alt+R` o il pulsante *Avvia registrazione*. Le sessioni più corte del minimo impostato non vengono salvate. Ogni sessione conserva tutti i frametime, un campione al secondo (FPS, 1% low, CPU, GPU, RAM, VRAM), i tweak FN Boost attivi, modalità di rendering e limite FPS letti da GameUserSettings.ini e la frequenza del monitor. La pagina **Prestazioni** mostra l'elenco con etichette modificabili (es. "dopo tweak", "DX12"), l'andamento delle ultime sessioni, e per ogni sessione 16 statistiche, FPS nel tempo, CPU contro GPU e l'istogramma dei frametime. La Panoramica riassume l'ultima sessione.
 
 **Analisi automatica.** Per ogni sessione FN Boost spiega cosa vede: gioco fluido o irregolare, FPS fermi al limite impostato o agganciati al refresh (VSync), probabile limite GPU (GPU al 95-100%) o CPU (GPU scarica e FPS bassi), molti stutter (con distinzione tra quelli dei primi minuti, tipici della compilazione shader in DX12, e quelli sparsi, tipici di attività in background), VRAM o RAM quasi piene. Confronta poi la sessione con la precedente dello stesso gioco (media, 1% low, stutter, tweak cambiati) e segnala cali o miglioramenti nel tempo.
 
-**Esportazione CSV.** Ogni sessione si esporta in CSV (`index,time_ms,frametime_ms,fps`, un frame per riga) da aprire in Excel o CapFrameX.
+**Esportazione CSV.** Ogni sessione si esporta in CSV (`index,time_ms,frametime_ms,fps,focused`, un frame per riga) da aprire in Excel o CapFrameX. Sono esportati tutti i frame: `focused = 0` indica quelli esclusi dalle statistiche perché il gioco era fuori fuoco.
 
 **Limiti, onestamente:**
 - Misura i frame **presentati dal gioco** (l'equivalente di *MsBetweenPresents* di PresentMon), non quelli effettivamente mostrati dal monitor: con VSync, G-Sync/FreeSync o Frame Generation le due cose possono differire. Non misura la latenza.
@@ -145,6 +147,8 @@ Niente iniezioni, hook, handle verso il gioco, lettura della memoria o input sim
 - **Esporta report completo (.zip)**: crea `Documenti\FN Boost\Report\FNBoost-Report-<data>.zip` con `report.html` (da aprire nel browser, con grafici), `report.json` (dati completi), `summary.txt`, `frametimes.csv`, gli eventi utili del log di Fortnite, il registro di FN Boost e un `README.txt`. Usa la sessione selezionata nello storico, altrimenti l'ultima salvata. A fine esportazione si apre Esplora file con lo ZIP già selezionato, pronto da allegare.
 - **Copia riepilogo per la chat**: copia negli appunti un testo di massimo 4000 caratteri da incollare in una chat (anche con un assistente AI) o in un messaggio.
 - **Apri cartella report**: apre la cartella dei report.
+
+**Log di Fortnite nel report.** Il log può coprire molte ore e più avvii del gioco. Gli orari del log di Unreal sono in UTC: FN Boost converte l'inizio della sessione e conta a parte le righe del periodo della sessione (± 60 s). Solo quelle diventano consigli; i totali dell'intero log sono mostrati come contesto. Avvisi ed errori generici sono rumore normale (Fortnite ne scrive migliaia anche quando funziona tutto). Il report riporta anche la versione del gioco e l'API grafica davvero usata (es. `D3D11 · ES3_1` in modalità Performance) accanto ai valori `PreferredRHI`/`PreferredFeatureLevel` del file ini. Quando la sessione è buona (1% low ≥ 60% della media, al massimo 2 stutter al minuto, media ≥ 95% del limite FPS) il report lo dice chiaramente e i consigli diventano facoltativi.
 
 **Privacy.** Il report è pensato per essere condiviso, quindi prima del salvataggio vengono rimossi: nome utente di Windows e percorsi del profilo, nome del PC, ID dell'account Epic, e-mail, token nelle URL, IP locali/privati e il tuo IP pubblico. Dal log di Fortnite si prendono solo gli eventi tecnici (connessione, server, hitch, shader, crash, memoria): chat, party e lista amici vengono saltati, quindi niente nomi di giocatori. Restano in chiaro solo gli IP dei server di gioco e gli endpoint Epic, che servono alla diagnosi. Controlla comunque il contenuto prima di inviarlo.
 

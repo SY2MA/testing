@@ -27,6 +27,26 @@ namespace FNBoost.Report
         public string Text { get; set; } = "";
         /// <summary>Quante righe uguali (a parte i numeri) sono state raggruppate in questa.</summary>
         public int Count { get; set; } = 1;
+        /// <summary>Quante di queste righe cadono nel periodo della sessione analizzata (0 se nessun periodo).</summary>
+        public int SessionCount { get; set; }
+        /// <summary>Almeno una riga del gruppo è nel periodo della sessione.</summary>
+        public bool InSession => SessionCount > 0;
+    }
+
+    /// <summary>Conteggi di una parte del log (il periodo della sessione).</summary>
+    public sealed class LogCounts
+    {
+        /// <summary>Righe con orario nel periodo (più le righe di continuazione che le seguono).</summary>
+        public int Lines { get; set; }
+        public int Warnings { get; set; }
+        public int Errors { get; set; }
+        public int NetworkIssues { get; set; }
+        public Dictionary<string, int> NetworkKeywords { get; set; } = new();
+        public int Hitches { get; set; }
+        public int ShaderMessages { get; set; }
+        public int CrashMarkers { get; set; }
+        public Dictionary<string, int> CrashKinds { get; set; } = new();
+        public int MemoryWarnings { get; set; }
     }
 
     /// <summary>Risultato dell'analisi del log di Fortnite (FortniteGame.log).</summary>
@@ -63,8 +83,19 @@ namespace FNBoost.Report
         public int CrashMarkers { get; set; }
         public Dictionary<string, int> CrashKinds { get; set; } = new();
         public int MemoryWarnings { get; set; }
-        /// <summary>Fino a 80 righe, dalla più rilevante, ciascuna al massimo 220 caratteri.</summary>
+        /// <summary>Fino a 80 righe, dalla più rilevante, ciascuna al massimo 220 caratteri (prima quelle della sessione).</summary>
         public List<LogHighlight> Highlights { get; set; } = new();
+
+        // ---- Periodo della sessione ----
+        // I conteggi qui sopra (Warnings, Errors, NetworkIssues, Hitches, …) riguardano TUTTO il log letto, che può coprire
+        // molte ore e più avvii del gioco: sono contesto. Quelli della sessione sono in Session.
+        /// <summary>Inizio del periodo analizzato come "sessione", sull'orologio del log (UTC). Null = nessun periodo.</summary>
+        public DateTime? WindowStart { get; set; }
+        public DateTime? WindowEnd { get; set; }
+        /// <summary>Conteggi delle sole righe nel periodo della sessione (null se non è stato indicato un periodo).</summary>
+        public LogCounts? Session { get; set; }
+        /// <summary>API grafica davvero usata dal gioco, dalle righe "RHI … will be used" (es. "D3D11 · ES3_1").</summary>
+        public string? RhiInUse { get; set; }
     }
 
     /// <summary>
@@ -116,6 +147,10 @@ namespace FNBoost.Report
         private static readonly string[] MemoryNeedles = { "Out of memory", "OutOfMemory", "low memory" };
 
         private static readonly string[] RhiCategories = { "LogD3D12RHI", "LogD3D11RHI", "LogRHI" };
+        // LogRHI: RHI D3D11 with Feature Level ES3_1 is supported and will be used.
+        private static readonly Regex RhiUsed = new(@"\bRHI\s+(\w+)\s+with\s+Feature\s+Level\s+(\w+)\s+is\s+supported\s+and\s+will\s+be\s+used", Opt | RegexOptions.IgnoreCase);
+        // LogRHI: Display: Using Default RHI: D3D12
+        private static readonly Regex RhiDefault = new(@"Using\s+Default\s+RHI:\s*(\w+)", Opt | RegexOptions.IgnoreCase);
         private static readonly string[] RhiNeedles = { "adapter", "driver", "feature level", "Using Default RHI", "Chosen" };
 
         // ================= Lettura file =================
@@ -124,7 +159,10 @@ namespace FNBoost.Report
         /// Analizza FortniteGame.log e (se c'è) il backup più recente della sessione precedente,
         /// utile quando il gioco è andato in crash. Non lancia eccezioni: in caso di problemi lo dice in Note.
         /// </summary>
-        public static LogFindings AnalyzeDirectory(string? logsDir, SanitizeContext ctx, bool includeBackup = true)
+        /// <param name="windowStart">Inizio del periodo della sessione sull'orologio del log (UTC), null = nessun periodo.</param>
+        /// <param name="windowEnd">Fine del periodo della sessione (UTC).</param>
+        public static LogFindings AnalyzeDirectory(string? logsDir, SanitizeContext ctx, bool includeBackup = true,
+            DateTime? windowStart = null, DateTime? windowEnd = null)
         {
             try
             {
@@ -172,7 +210,7 @@ namespace FNBoost.Report
                 if (sources.Count == 0)
                     return new LogFindings { Note = string.Join(" ", notes) };
 
-                var f = Analyze(lines, ctx);
+                var f = Analyze(lines, ctx, windowStart, windowEnd);
                 f.Sources = sources;
                 f.Truncated = truncated;
                 if (notes.Count > 0) f.Note = string.Join(" ", notes);
@@ -238,17 +276,57 @@ namespace FNBoost.Report
             public string Kind = "";
             public string Text = "";
             public int Count;
+            public int SessionCount;
         }
 
-        public static LogFindings Analyze(IEnumerable<string> lines, SanitizeContext ctx)
+        /// <summary>Un avvio del gioco dentro il log (separati dalle righe "Log file open").</summary>
+        private sealed class Run
+        {
+            public string? Build;
+            public string? EngineVersion;
+            public string? Rhi;
+            public string? DefaultRhi;
+            public DateTime? First;
+            public DateTime? Last;
+        }
+
+        /// <summary>
+        /// Periodo della sessione per il log: gli orari di Unreal sono in UTC, la sessione ha l'ora locale.
+        /// Si tiene un margine di <paramref name="marginSec"/> secondi prima e dopo.
+        /// </summary>
+        public static (DateTime Start, DateTime End) SessionWindowUtc(DateTime startedAtLocal, double durationSec, double marginSec = 60)
+        {
+            var startUtc = startedAtLocal.Kind == DateTimeKind.Utc ? startedAtLocal : startedAtLocal.ToUniversalTime();
+            double dur = double.IsFinite(durationSec) && durationSec > 0 ? durationSec : 0;
+            // Arrotondato al millisecondo (come gli orari del log), senza errori di virgola mobile.
+            long Ticks(double sec) => (long)Math.Round(sec * 1000) * TimeSpan.TicksPerMillisecond;
+            return (DateTime.SpecifyKind(startUtc.AddTicks(Ticks(-marginSec)), DateTimeKind.Unspecified),
+                    DateTime.SpecifyKind(startUtc.AddTicks(Ticks(dur + marginSec)), DateTimeKind.Unspecified));
+        }
+
+        /// <summary>
+        /// Analizza le righe del log. Con windowStart/windowEnd (orologio del log, UTC) conta a parte le righe del periodo
+        /// della sessione (<see cref="LogFindings.Session"/>): le righe senza orario seguono l'ultima riga con orario.
+        /// Versione del gioco e API grafica vengono prese dall'avvio del gioco che copre la sessione (o dall'ultimo).
+        /// </summary>
+        public static LogFindings Analyze(IEnumerable<string> lines, SanitizeContext ctx, DateTime? windowStart = null, DateTime? windowEnd = null)
         {
             ctx ??= new SanitizeContext();
             var f = new LogFindings { Found = true };
+            bool hasWindow = windowStart != null && windowEnd != null && windowEnd >= windowStart;
+            var ses = hasWindow ? new LogCounts() : null;
+            if (hasWindow)
+            {
+                f.WindowStart = windowStart;
+                f.WindowEnd = windowEnd;
+            }
             var cats = new Dictionary<string, LogCategoryCount>(StringComparer.Ordinal);
             var candidates = new Dictionary<string, Candidate>(StringComparer.Ordinal);
             var servers = new List<string>();
             var gpu = new List<string>();
+            var runs = new List<Run> { new() };
             bool skipContinuation = false;
+            bool inWindow = false;
             int order = 0;
 
             foreach (var raw in lines ?? Array.Empty<string>())
@@ -257,6 +335,14 @@ namespace FNBoost.Report
                 f.TotalLines++;
                 var line = raw.TrimEnd('\r');
                 if (line.Length == 0) continue;
+
+                // Ogni file di log (un avvio del gioco) inizia con "Log file open, <data locale>".
+                if (line.StartsWith("Log file open", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!IsEmpty(runs[^1])) runs.Add(new Run());
+                    inWindow = false;
+                    continue;
+                }
 
                 string? category = null;
                 string verbosity = "";
@@ -289,6 +375,9 @@ namespace FNBoost.Report
                     }
                 }
 
+                // Le righe senza orario appartengono al momento dell'ultima riga con orario.
+                if (time != null) inWindow = hasWindow && time >= windowStart && time <= windowEnd;
+
                 // Privacy: chat, party, amici → riga saltata (e anche le righe di continuazione che la seguono).
                 if (category != null)
                 {
@@ -306,24 +395,38 @@ namespace FNBoost.Report
                     continue;
                 }
 
+                var run = runs[^1];
                 if (time != null)
                 {
                     f.FirstTime ??= time;
                     f.LastTime = time;
+                    run.First ??= time;
+                    run.Last = time;
                 }
+                if (inWindow) ses!.Lines++;
 
                 bool isWarn = verbosity == "Warning";
                 bool isErr = verbosity == "Error" || verbosity == "Fatal";
                 if (category != null && (isWarn || isErr))
                 {
                     if (!cats.TryGetValue(category, out var c)) cats[category] = c = new LogCategoryCount { Category = category };
-                    if (isWarn) { c.Warnings++; f.Warnings++; }
-                    else { c.Errors++; f.Errors++; }
+                    if (isWarn) { c.Warnings++; f.Warnings++; if (inWindow) ses!.Warnings++; }
+                    else { c.Errors++; f.Errors++; if (inWindow) ses!.Errors++; }
                 }
 
-                if (f.GameBuild == null && category == "LogInit" &&
-                    (message.StartsWith("Build: ", StringComparison.Ordinal) || message.StartsWith("Engine Version: ", StringComparison.Ordinal)))
-                    f.GameBuild = Truncate(message.Substring(message.IndexOf(':') + 1).Trim(), 120);
+                if (category == "LogInit")
+                {
+                    if (message.StartsWith("Build: ", StringComparison.Ordinal))
+                        run.Build ??= Truncate(message.Substring(message.IndexOf(':') + 1).Trim(), 120);
+                    else if (message.StartsWith("Engine Version: ", StringComparison.Ordinal))
+                        run.EngineVersion ??= Truncate(message.Substring(message.IndexOf(':') + 1).Trim(), 120);
+                }
+                if (category == "LogRHI")
+                {
+                    var r = RhiUsed.Match(message);
+                    if (r.Success) run.Rhi = $"{r.Groups[1].Value} · {r.Groups[2].Value}";
+                    else if (RhiDefault.Match(message) is { Success: true } d) run.DefaultRhi = d.Groups[1].Value;
+                }
 
                 // ---- classificazione ----
                 string? kind = null;
@@ -334,18 +437,21 @@ namespace FNBoost.Report
                 foreach (var needle in CrashNeedles)
                 {
                     if (!line.Contains(needle, StringComparison.OrdinalIgnoreCase)) continue;
-                    f.CrashKinds[needle] = f.CrashKinds.TryGetValue(needle, out var n) ? n + 1 : 1;
+                    Inc(f.CrashKinds, needle);
+                    if (inWindow) Inc(ses!.CrashKinds, needle);
                     crashLine = true;
                 }
                 if (crashLine)
                 {
                     f.CrashMarkers++;
+                    if (inWindow) ses!.CrashMarkers++;
                     kind = "crash"; score = 100;
                 }
 
                 if (MemoryNeedles.Any(n => line.Contains(n, StringComparison.OrdinalIgnoreCase)))
                 {
                     f.MemoryWarnings++;
+                    if (inWindow) ses!.MemoryWarnings++;
                     if (kind == null) { kind = "memoria"; score = 80; }
                 }
 
@@ -355,12 +461,14 @@ namespace FNBoost.Report
                     foreach (var (kw, needle, ic) in NetKeywords)
                     {
                         if (!message.Contains(needle, ic ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) continue;
-                        f.NetworkKeywords[kw] = f.NetworkKeywords.TryGetValue(kw, out var n) ? n + 1 : 1;
+                        Inc(f.NetworkKeywords, kw);
+                        if (inWindow) Inc(ses!.NetworkKeywords, kw);
                         any = true;
                     }
                     if (any)
                     {
                         f.NetworkIssues++;
+                        if (inWindow) ses!.NetworkIssues++;
                         if (kind == null) { kind = "rete"; score = 55; }
                     }
                     if (category == "LogNet") CollectServers(message, servers);
@@ -369,17 +477,19 @@ namespace FNBoost.Report
                 if (line.Contains("hitch", StringComparison.OrdinalIgnoreCase))
                 {
                     f.Hitches++;
+                    if (inWindow) ses!.Hitches++;
                     if (kind == null) { kind = "hitch"; score = 45; }
                 }
 
                 if (Pso.IsMatch(line) || line.Contains("shader", StringComparison.OrdinalIgnoreCase))
                 {
                     f.ShaderMessages++;
+                    if (inWindow) ses!.ShaderMessages++;
                     if (kind == null && (isWarn || isErr)) { kind = "shader"; score = 30; }
                 }
 
                 if (category != null && RhiCategories.Contains(category) &&
-                    RhiNeedles.Any(n => message.Contains(n, StringComparison.OrdinalIgnoreCase)))
+                    (RhiNeedles.Any(n => message.Contains(n, StringComparison.OrdinalIgnoreCase)) || message.Contains("will be used", StringComparison.OrdinalIgnoreCase)))
                 {
                     if (gpu.Count < 20)
                     {
@@ -399,14 +509,15 @@ namespace FNBoost.Report
                 if (candidates.TryGetValue(key, out var existing))
                 {
                     existing.Count++;
+                    if (inWindow) existing.SessionCount++;
                     continue;
                 }
-                if (candidates.Count >= 5000 && score < 45) continue; // limite di memoria sui log enormi
+                if (candidates.Count >= 5000 && score < 45 && !inWindow) continue; // limite di memoria sui log enormi
                 var shown = time is { } t ? $"[{t:yyyy.MM.dd HH:mm:ss}] " : "";
                 shown += category != null
                     ? $"{category}: {(verbosity.Length > 0 && verbosity != "Display" && verbosity != "Log" ? verbosity + ": " : "")}{message}"
                     : line.Trim();
-                candidates[key] = new Candidate { Score = score, Order = order++, Kind = kind, Text = shown, Count = 1 };
+                candidates[key] = new Candidate { Score = score, Order = order++, Kind = kind, Text = shown, Count = 1, SessionCount = inWindow ? 1 : 0 };
             }
 
             f.TopCategories = cats.Values
@@ -414,16 +525,25 @@ namespace FNBoost.Report
                 .Take(15).ToList();
             f.ServerAddresses = servers;
             f.GpuInfo = gpu;
+            f.Session = ses;
+
+            // Versione e API grafica dell'avvio che copre la sessione; senza periodo (o se nessun avvio lo copre) l'ultimo.
+            var chosen = ChooseRun(runs, hasWindow ? windowStart : null, hasWindow ? windowEnd : null);
+            f.GameBuild = chosen?.Build ?? chosen?.EngineVersion ?? runs.Select(r => r.Build ?? r.EngineVersion).LastOrDefault(b => b != null);
+            f.RhiInUse = chosen?.Rhi ?? chosen?.DefaultRhi;
 
             // I server di gioco visti nel log possono restare in chiaro nelle righe evidenziate.
+            // Con un periodo di sessione si mostrano prima le righe della sessione, poi il resto come contesto.
             var hctx = ctx.With(servers);
             f.Highlights = candidates.Values
-                .OrderByDescending(c => c.Score).ThenByDescending(c => c.Count > 1 ? 1 : 0).ThenBy(c => c.Order)
+                .OrderByDescending(c => hasWindow && c.SessionCount > 0 ? 1 : 0)
+                .ThenByDescending(c => c.Score).ThenByDescending(c => c.Count > 1 ? 1 : 0).ThenBy(c => c.Order)
                 .Take(MaxHighlights)
                 .Select(c => new LogHighlight
                 {
                     Kind = c.Kind,
                     Count = c.Count,
+                    SessionCount = c.SessionCount,
                     Text = Truncate(Sanitizer.Sanitize(c.Text, hctx), MaxHighlightChars)
                 })
                 .ToList();
@@ -431,12 +551,30 @@ namespace FNBoost.Report
             return f;
         }
 
+        private static bool IsEmpty(Run r) =>
+            r.First == null && r.Build == null && r.EngineVersion == null && r.Rhi == null && r.DefaultRhi == null;
+
+        /// <summary>L'ultimo avvio che si sovrappone al periodo; altrimenti l'ultimo iniziato prima della sua fine; altrimenti l'ultimo.</summary>
+        private static Run? ChooseRun(List<Run> runs, DateTime? start, DateTime? end)
+        {
+            var real = runs.Where(r => !IsEmpty(r)).ToList();
+            if (real.Count == 0) return null;
+            if (start == null || end == null) return real[^1];
+            var overlap = real.LastOrDefault(r => r.First != null && r.Last != null && r.First <= end && r.Last >= start);
+            if (overlap != null) return overlap;
+            return real.LastOrDefault(r => r.First != null && r.First <= end) ?? real[^1];
+        }
+
+        private static void Inc(Dictionary<string, int> d, string key) => d[key] = d.TryGetValue(key, out var n) ? n + 1 : 1;
+
         /// <summary>Testo leggibile delle righe evidenziate (per fortnite-log-highlights.txt).</summary>
         public static string FormatHighlights(LogFindings f)
         {
             var sb = new StringBuilder();
+            bool window = f.Session != null;
             foreach (var h in f.Highlights)
-                sb.Append('[').Append(h.Kind).Append(h.Count > 1 ? $" ×{h.Count}" : "").Append("] ").AppendLine(h.Text);
+                sb.Append('[').Append(h.Kind).Append(h.Count > 1 ? $" ×{h.Count}" : "")
+                  .Append(window ? (h.InSession ? " · sessione" : " · fuori sessione") : "").Append("] ").AppendLine(h.Text);
             return sb.ToString();
         }
 

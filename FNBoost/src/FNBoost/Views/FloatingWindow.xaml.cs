@@ -175,7 +175,8 @@ namespace FNBoost.Views
 
             if (snap.HasData)
             {
-                PerfFpsText.Text = snap.CurrentFps.ToString("0", c);
+                // In secondo piano Fortnite rallenta da solo a ~30 FPS: niente numero, che sarebbe fuorviante.
+                PerfFpsText.Text = snap.GameFocused ? snap.CurrentFps.ToString("0", c) : "–";
                 PerfAvgText.Text = F(w.AvgFps);
                 PerfLow1Text.Text = F(w.Low1Fps);
                 PerfLow01Text.Text = F(w.Low01Fps);
@@ -186,7 +187,7 @@ namespace FNBoost.Views
                     ? (Brush)FindResource("WarnBrush")
                     : (Brush)FindResource("TextBrush");
                 PerfGraph.Frametimes = snap.RecentFrametimes;
-                PerfStatusText.Text = $"{snap.LastFrametimeMs.ToString("0.0", c)} ms";
+                PerfStatusText.Text = snap.GameFocused ? $"{snap.LastFrametimeMs.ToString("0.0", c)} ms" : "fuori fuoco";
                 PerfStatusText.ToolTip = snap.StatusText;
             }
             else

@@ -74,7 +74,7 @@
                                 <ComboBoxItem Content="Finestra" />
                             </ComboBox>
                             <TextBlock Style="{StaticResource Small}" Margin="0,0,0,14"
-                                       Text="Il mirino overlay è garantito in 'Schermo intero in finestra'. In DirectX 12 la differenza di latenza tra le due modalità è minima su Windows 11." />
+                                       Text="Il mirino overlay è garantito in 'Schermo intero in finestra'. In modalità Performance (Direct3D 11) attiva il tweak 'Ottimizzazioni per i giochi in finestra': così anche in finestra Windows usa il flip model e la latenza resta vicina allo schermo intero." />
 
                             <TextBlock Text="Preset qualità (scalabilità)" Style="{StaticResource Label}" />
                             <ComboBox x:Name="PresetCombo" Margin="0,6,0,2">
@@ -147,7 +147,7 @@
                         <Run>Un tetto stabile (es. 240 su monitor 240 Hz, o 3 FPS sotto la frequenza con G-SYNC/FreeSync) dà frametime regolari: lo stutter percepito è la variazione, non la media.</Run>
                         <LineBreak /><LineBreak />
                         <Run FontWeight="SemiBold">4. Modalità Performance per la massima costanza.</Run>
-                        <Run>Pesa molto meno su CPU e GPU di DirectX 12. Su Fortnite il collo di bottiglia è spesso la CPU: qui RAM veloce (XMP) e Modalità Gioco contano più dei settaggi grafici.</Run>
+                        <Run>Gira su Direct3D 11 a feature level ridotto e pesa molto meno su CPU e GPU di DirectX 12. Su Fortnite il collo di bottiglia è spesso la CPU: qui RAM veloce (XMP) e Modalità Gioco contano più dei settaggi grafici. In 'Schermo intero in finestra' attiva anche le Ottimizzazioni per i giochi in finestra.</Run>
                         <LineBreak /><LineBreak />
                         <Run FontWeight="SemiBold">5. Se lo stutter non sparisce dopo un aggiornamento driver:</Run>
                         <Run>pulisci la cache shader (pagina Pulizia) una sola volta, poi gioca 2–3 partite per ricostruirla. È la procedura indicata anche dal supporto Epic.</Run>

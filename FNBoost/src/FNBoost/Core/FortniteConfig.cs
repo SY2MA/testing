@@ -25,6 +25,9 @@ namespace FNBoost.Core
 
         public RenderMode RenderMode { get; set; }
         public string RawRhi { get; set; } = "";
+        /// <summary>Valori grezzi di [D3DRHIPreference]: PreferredRHI (es. "dx11", "dx12") e PreferredFeatureLevel (es. "es31", "sm6").</summary>
+        public string PreferredRhi { get; set; } = "";
+        public string PreferredFeatureLevel { get; set; } = "";
         public double FrameRateLimit { get; set; }
         public bool VSync { get; set; }
         public int Reflex { get; set; }
@@ -55,6 +58,8 @@ namespace FNBoost.Core
             var rhi = ini.Get(Rhi, "PreferredRHI") ?? "";
             var level = ini.Get(Rhi, "PreferredFeatureLevel") ?? "";
             s.RawRhi = $"{rhi}/{level}";
+            s.PreferredRhi = rhi;
+            s.PreferredFeatureLevel = level;
             s.RenderMode = level.Equals("es31", StringComparison.OrdinalIgnoreCase) ? RenderMode.Performance
                          : rhi.Equals("dx12", StringComparison.OrdinalIgnoreCase) ? RenderMode.DirectX12
                          : RenderMode.Unknown;
@@ -124,7 +129,9 @@ namespace FNBoost.Core
             switch (RenderMode)
             {
                 case RenderMode.Performance:
-                    ini.Set(Rhi, "PreferredRHI", "dx12");
+                    // Gli stessi valori che scrive il gioco: la modalità Prestazioni gira su Direct3D 11 con feature
+                    // level ES3_1 (nel log: "RHI D3D11 with Feature Level ES3_1 is supported and will be used").
+                    ini.Set(Rhi, "PreferredRHI", "dx11");
                     ini.Set(Rhi, "PreferredFeatureLevel", "es31");
                     break;
                 case RenderMode.DirectX12:

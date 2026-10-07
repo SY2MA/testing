@@ -297,7 +297,10 @@ namespace FNBoost.Views.Pages
             var w = snap.Window;
             bool data = snap.HasData;
             bool stats = data && w.HasData;
-            FpsNowText.Text = data ? N0(snap.CurrentFps) : "–";
+            // Gioco in secondo piano: Fortnite scende da solo a ~30 FPS, mostrarli come FPS sarebbe fuorviante.
+            bool unfocused = data && !snap.GameFocused;
+            FpsNowText.Text = unfocused ? "fuori fuoco" : data ? N0(snap.CurrentFps) : "–";
+            FpsNowSub.Text = unfocused ? "il gioco non è in primo piano" : "ultimo secondo";
             AvgText.Text = stats ? N0(w.AvgFps) : "–";
             Low1Text.Text = stats ? N0(w.Low1Fps) : "–";
             Low1Sub.Text = stats && w.AvgFps > 0 ? $"{(w.Low1Fps / w.AvgFps * 100).ToString("0", C)}% della media" : "frame più lenti";
@@ -314,8 +317,9 @@ namespace FNBoost.Views.Pages
             GameText.Text = data ? DisplayName(snap.ProcessName) : "–";
             GameSub.Text = data && snap.ProcessId is int pid ? $"PID {pid}" : "in attesa";
             ProcessLine.Text = data && w.HasData
-                ? $"{DisplayName(snap.ProcessName)} · {w.Frames.ToString("N0", C)} frame negli ultimi {w.DurationSec.ToString("0", C)} s"
-                : "";
+                ? $"{DisplayName(snap.ProcessName)} · {w.Frames.ToString("N0", C)} frame in primo piano negli ultimi {P?.Settings.WindowSeconds ?? 30} s" +
+                  (snap.WindowExcludedFrames > 0 ? $" ({snap.WindowExcludedFrames.ToString("N0", C)} fuori fuoco esclusi)" : "")
+                : unfocused ? $"{DisplayName(snap.ProcessName)} è in secondo piano: le statistiche riprendono quando torni al gioco." : "";
 
             CpuText.Text = snap.CpuPercent.ToString("0", C) + "%";
             CpuScale.ScaleX = Math.Clamp(snap.CpuPercent / 100, 0, 1);
@@ -699,7 +703,7 @@ namespace FNBoost.Views.Pages
             SessionHint.Text = "Esportazione in corso…";
             try
             {
-                int frames = await Task.Run(() => WriteCsv(store, session.Id, path));
+                int frames = await Task.Run(() => WriteCsv(store, session, path, StutterFactor(), StutterMinMs()));
                 SessionHint.Text = $"Esportati {frames.ToString("N0", C)} frame in {Path.GetFileName(path)}.";
                 Log.Info($"Sessione esportata in CSV: {path}");
             }
@@ -714,28 +718,22 @@ namespace FNBoost.Views.Pages
             }
         }
 
-        /// <summary>Un frame per riga: indice, istante di fine frame (ms dall'inizio), frametime e FPS istantanei. Formato invariante.</summary>
-        private static int WriteCsv(PerfSessionStore store, string id, string path)
+        /// <summary>
+        /// Un frame per riga: indice, istante di fine frame (ms dall'inizio), frametime, FPS istantanei e focused
+        /// (1 = gioco in primo piano, 0 = escluso dalle statistiche perché fuori fuoco). Formato invariante.
+        /// </summary>
+        private static int WriteCsv(PerfSessionStore store, PerfSession session, string path, double factor, double minMs)
         {
-            var ft = store.LoadFrametimes(id) ?? throw new InvalidOperationException("frametime della sessione non trovati");
-            var inv = CultureInfo.InvariantCulture;
-            using var w = new StreamWriter(path, false, new UTF8Encoding(false));
-            w.WriteLine("index,time_ms,frametime_ms,fps");
-            double t = 0;
-            var sb = new StringBuilder(64);
-            for (int i = 0; i < ft.Length; i++)
-            {
-                double f = ft[i];
-                t += f;
-                sb.Clear();
-                sb.Append(i.ToString(inv)).Append(',')
-                  .Append(t.ToString("0.###", inv)).Append(',')
-                  .Append(f.ToString("0.####", inv)).Append(',')
-                  .Append(f > 0 ? (1000.0 / f).ToString("0.##", inv) : "0");
-                w.WriteLine(sb);
-            }
+            var ft = store.LoadFrametimes(session.Id) ?? throw new InvalidOperationException("frametime della sessione non trovati");
+            // Sessioni vecchie: si usa la stima del tratto in secondo piano, se c'è.
+            var eff = FocusFilter.RepairLegacy(session, ft, factor, minMs) ?? session;
+            using var w = new StreamWriter(path, false, new UTF8Encoding(false), 1 << 16);
+            FNBoost.Report.ReportBuilder.WriteFrametimesCsv(w, ft, FocusFilter.MaskFromRanges(ft.Length, eff.ExcludedRanges));
             return ft.Length;
         }
+
+        private double StutterFactor() => P?.Settings.StutterFactor is > 1 and var f ? f : 2.5;
+        private double StutterMinMs() => Math.Max(0, P?.Settings.StutterMinMs ?? 12);
 
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -776,9 +774,81 @@ namespace FNBoost.Views.Pages
 
             // Grafici dai campioni al secondo (già nei metadati: nessun caricamento).
             var secs = s.Seconds ?? new List<SecondSample>();
-            SessionFpsChart.Values = secs.Select(x => x.Fps).ToArray();
-            SessionFpsChart.Values2 = secs.Select(x => x.Low1Fps > 0 ? x.Low1Fps : double.NaN).ToArray();
-            SessionFpsChart.XLabel = $"tempo · {s.DurationText}";
+            ShowSessionCharts(s);
+            ShowSessionNetwork(s, secs);
+            ShowSessionProcesses(s);
+
+            // Confronto: proposta automatica = sessione precedente dello stesso gioco.
+            var others = _sessions.Where(x => x.Id != s.Id).ToList();
+            CompareCombo.ItemsSource = others;
+            CompareCombo.SelectedItem = others
+                .Where(x => x.StartedAt < s.StartedAt && string.Equals(x.ProcessName, s.ProcessName, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(x => x.StartedAt)
+                .FirstOrDefault();
+            UpdateCompare();
+
+            if (!reload) return;
+
+            // Frametime completi + analisi: possono essere milioni di valori, quindi in background.
+            // Le sessioni registrate prima della misura del primo piano vengono corrette se hanno un tratto
+            // iniziale/finale a ~30 FPS con la GPU ferma (gioco in secondo piano): vedi FocusFilter.RepairLegacy.
+            int seq = ++_analysisSeq;
+            double factor = StutterFactor(), minMs = StutterMinMs();
+            SessionHistogram.Frametimes = null;
+            HistogramStatus.Text = "Caricamento dei frametime…";
+            SessionInsights.ItemsSource = null;
+            InsightsLoading.Visibility = Visibility.Visible;
+            var p = P;
+            if (p == null) return;
+            var store = p.Store;
+            var history = _sessions.ToList();
+            try
+            {
+                var (frametimes, insights, eff, total) = await Task.Run(() =>
+                {
+                    var ft = store.LoadFrametimes(s.Id);
+                    var e = FocusFilter.RepairLegacy(s, ft, factor, minMs) ?? s;
+                    var ins = PerfAnalyzer.Analyze(e, history, ft);
+                    // Istogramma solo dei frame con il gioco in primo piano.
+                    var focused = ft == null ? null : FocusFilter.FocusedFrametimes(ft, e);
+                    return (focused, ins, e, ft?.Length ?? 0);
+                });
+                if (seq != _analysisSeq) return; // nel frattempo è stata scelta un'altra sessione
+                if (!ReferenceEquals(eff, s))
+                {
+                    // Statistiche e grafici ricalcolati sul gioco vero (la sessione salvata resta com'è).
+                    StatsGrid.ItemsSource = BuildStats(eff.Stats, eff);
+                    ShowSessionCharts(eff);
+                }
+                SessionHistogram.Frametimes = frametimes;
+                int excluded = total - (frametimes?.Length ?? 0);
+                HistogramStatus.Text = frametimes == null
+                    ? "Frametime non disponibili per questa sessione"
+                    : excluded > 0
+                        ? $"{frametimes.Length.ToString("N0", C)} frame in primo piano ({excluded.ToString("N0", C)} fuori fuoco esclusi)"
+                        : $"{frametimes.Length.ToString("N0", C)} frame";
+                SessionInsights.ItemsSource = insights.Select(InsightRow.From).ToList();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Analisi sessione", ex);
+                if (seq == _analysisSeq) HistogramStatus.Text = "Analisi non riuscita: " + ex.Message;
+            }
+            finally
+            {
+                if (seq == _analysisSeq) InsightsLoading.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>FPS nel tempo (i secondi fuori fuoco sono buchi) e CPU/GPU dai campioni al secondo.</summary>
+        private void ShowSessionCharts(PerfSession s)
+        {
+            var secs = s.Seconds ?? new List<SecondSample>();
+            SessionFpsChart.Values = secs.Select(x => x.Unfocused ? double.NaN : x.Fps).ToArray();
+            SessionFpsChart.Values2 = secs.Select(x => !x.Unfocused && x.Low1Fps > 0 ? x.Low1Fps : double.NaN).ToArray();
+            SessionFpsChart.XLabel = s.UnfocusedSec >= 1
+                ? $"tempo · {s.DurationText} · buchi = gioco fuori fuoco ({N0(s.UnfocusedSec)} s esclusi{(s.UnfocusedEstimated ? ", stima" : "")})"
+                : $"tempo · {s.DurationText}";
             if (s.FpsCap is { } cap && cap > 0)
             {
                 SessionFpsChart.ReferenceValue = cap;
@@ -799,54 +869,6 @@ namespace FNBoost.Views.Pages
                 ? secs.Select(x => x.GpuPercent ?? double.NaN).ToArray()
                 : null;
             SessionLoadChart.XLabel = secs.Any(x => x.GpuPercent.HasValue) ? null : "GPU non disponibile";
-            ShowSessionNetwork(s, secs);
-            ShowSessionProcesses(s);
-
-            // Confronto: proposta automatica = sessione precedente dello stesso gioco.
-            var others = _sessions.Where(x => x.Id != s.Id).ToList();
-            CompareCombo.ItemsSource = others;
-            CompareCombo.SelectedItem = others
-                .Where(x => x.StartedAt < s.StartedAt && string.Equals(x.ProcessName, s.ProcessName, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(x => x.StartedAt)
-                .FirstOrDefault();
-            UpdateCompare();
-
-            if (!reload) return;
-
-            // Frametime completi + analisi: possono essere milioni di valori, quindi in background.
-            int seq = ++_analysisSeq;
-            SessionHistogram.Frametimes = null;
-            HistogramStatus.Text = "Caricamento dei frametime…";
-            SessionInsights.ItemsSource = null;
-            InsightsLoading.Visibility = Visibility.Visible;
-            var p = P;
-            if (p == null) return;
-            var store = p.Store;
-            var history = _sessions.ToList();
-            try
-            {
-                var (frametimes, insights) = await Task.Run(() =>
-                {
-                    var ft = store.LoadFrametimes(s.Id);
-                    var ins = PerfAnalyzer.Analyze(s, history, ft);
-                    return (ft, ins);
-                });
-                if (seq != _analysisSeq) return; // nel frattempo è stata scelta un'altra sessione
-                SessionHistogram.Frametimes = frametimes;
-                HistogramStatus.Text = frametimes == null
-                    ? "Frametime non disponibili per questa sessione"
-                    : $"{frametimes.Length.ToString("N0", C)} frame";
-                SessionInsights.ItemsSource = insights.Select(InsightRow.From).ToList();
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Analisi sessione", ex);
-                if (seq == _analysisSeq) HistogramStatus.Text = "Analisi non riuscita: " + ex.Message;
-            }
-            finally
-            {
-                if (seq == _analysisSeq) InsightsLoading.Visibility = Visibility.Collapsed;
-            }
         }
 
         private static string Meta(PerfSession s)
@@ -904,6 +926,11 @@ namespace FNBoost.Views.Pages
                         Tip = "Numero di frame misurati nella sessione." },
                 new() { Label = "Durata", Value = s.DurationText, Brush = text,
                         Tip = "Durata della registrazione." },
+                new() { Label = "Fuori fuoco (esclusi)",
+                        Value = s.FocusTracked || s.UnfocusedEstimated ? $"{N0(s.UnfocusedSec)} s{(s.UnfocusedEstimated ? " (stima)" : "")}" : "non misurato",
+                        Brush = text,
+                        Tip = "Tempo con il gioco non in primo piano (es. mentre usavi FN Boost): Fortnite rallenta da solo a ~30 FPS, " +
+                              "quindi quei frame non entrano nelle statistiche. Nelle sessioni vecchie è una stima (tratto iniziale/finale a ~30 FPS con GPU ferma)." },
                 new() { Label = "Gioco", Value = DisplayName(s.ProcessName), Brush = text,
                         Tip = "Processo misurato (dall'elenco processi di Windows)." },
             };

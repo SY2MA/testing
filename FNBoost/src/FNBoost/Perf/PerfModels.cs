@@ -92,6 +92,19 @@ namespace FNBoost.Perf
         public double? MaxRecvGapMs { get; set; }
         /// <summary>"Freeze" di rete iniziati in questo secondo (nessun pacchetto dal server per oltre 250 ms).</summary>
         public int NetFreezes { get; set; }
+
+        /// <summary>
+        /// Secondo passato (per più di metà) con il gioco non in primo piano: Fortnite in secondo piano si limita da solo
+        /// a ~30 FPS, quindi Fps, Low1Fps, MaxFrametimeMs e Stutters restano a 0 e i grafici lo mostrano come un buco.
+        /// </summary>
+        public bool Unfocused { get; set; }
+    }
+
+    /// <summary>Intervallo di frame consecutivi [Start, Start + Count) dentro i frametime di una sessione.</summary>
+    public sealed class FrameRange
+    {
+        public int Start { get; set; }
+        public int Count { get; set; }
     }
 
     /// <summary>Statistiche di un bersaglio di ping (finestra mobile o intera sessione).</summary>
@@ -214,6 +227,24 @@ namespace FNBoost.Perf
         /// <summary>Processi in background che hanno pesato di più durante la sessione (CPU media decrescente).</summary>
         public List<ProcessUsage> TopProcesses { get; set; } = new();
 
+        // ---- Primo piano (false/0/null nelle sessioni registrate prima di questa misura) ----
+        /// <summary>true se durante la registrazione è stato controllato se il gioco era la finestra in primo piano.</summary>
+        public bool FocusTracked { get; set; }
+        /// <summary>
+        /// Secondi di frame esclusi dalle statistiche perché il gioco non era in primo piano (più il breve assestamento
+        /// dopo il ritorno al gioco). Sono comunque nei frametime salvati: vedi <see cref="ExcludedRanges"/>.
+        /// </summary>
+        public double UnfocusedSec { get; set; }
+        /// <summary>Numero di frame esclusi dalle statistiche (gioco fuori fuoco).</summary>
+        public int ExcludedFrames { get; set; }
+        /// <summary>Frame esclusi, come intervalli di indici nel file dei frametime (null o vuoto = nessuno).</summary>
+        public List<FrameRange>? ExcludedRanges { get; set; }
+        /// <summary>
+        /// true se l'esclusione non è stata misurata ma stimata a posteriori (sessione vecchia con un tratto iniziale/finale
+        /// a ~30 FPS e GPU quasi ferma: vedi FocusFilter.RepairLegacy).
+        /// </summary>
+        public bool UnfocusedEstimated { get; set; }
+
         [JsonIgnore] public string Title => string.IsNullOrWhiteSpace(Label) ? $"{StartedAt:dd/MM HH:mm}" : $"{StartedAt:dd/MM HH:mm} · {Label}";
         [JsonIgnore] public string DurationText => TimeSpan.FromSeconds(DurationSec).ToString(DurationSec >= 3600 ? @"h\:mm\:ss" : @"m\:ss");
     }
@@ -253,6 +284,13 @@ namespace FNBoost.Perf
         public string StatusText { get; set; } = "";
         /// <summary>Rete e ping (null se la misura di rete è disattivata).</summary>
         public NetworkSnapshot? Net { get; set; }
+        /// <summary>
+        /// false se il gioco misurato non è la finestra in primo piano: Fortnite in secondo piano scende da solo a ~30 FPS,
+        /// quindi la UI mostra "fuori fuoco" invece degli FPS e la finestra mobile non conta quei frame.
+        /// </summary>
+        public bool GameFocused { get; set; } = true;
+        /// <summary>Frame della finestra mobile esclusi perché il gioco era fuori fuoco.</summary>
+        public int WindowExcludedFrames { get; set; }
     }
 
     /// <summary>Impostazioni del modulo Prestazioni (dentro AppSettings.Perf).</summary>

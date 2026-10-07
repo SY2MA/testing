@@ -40,6 +40,7 @@ namespace FNBoost.Tests
             T.Run("Compare: testo di confronto", CompareText);
             T.Run("andamento: calo, miglioramento, migliore", TrendTests);
 
+            FocusTests.RunAll();
             CrosshairTests.RunAll();
             NetTests.RunAll();
             ReportTests.RunAll();

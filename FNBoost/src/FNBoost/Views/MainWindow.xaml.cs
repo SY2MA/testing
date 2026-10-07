@@ -109,7 +109,9 @@ namespace FNBoost.Views
             var c = CultureInfo.CurrentCulture;
             if (snap.HasData)
             {
-                PerfLiveText.Text = $"FPS {snap.CurrentFps.ToString("0", c)} · 1% low {snap.Window.Low1Fps.ToString("0", c)}";
+                PerfLiveText.Text = snap.GameFocused
+                    ? $"FPS {snap.CurrentFps.ToString("0", c)} · 1% low {snap.Window.Low1Fps.ToString("0", c)}"
+                    : "FPS: gioco fuori fuoco";
                 PerfLiveText.ToolTip = $"{snap.StatusText}\nMedia {snap.Window.AvgFps.ToString("0", c)} · 0,1% low {snap.Window.Low01Fps.ToString("0", c)}";
             }
             else

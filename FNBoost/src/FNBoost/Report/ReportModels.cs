@@ -35,6 +35,13 @@ namespace FNBoost.Report
         public LogFindings? Log { get; set; }
         /// <summary>"Cosa non va / cosa migliorare", in ordine di priorità.</summary>
         public List<Recommendation> Recommendations { get; set; } = new();
+        /// <summary>
+        /// true se la sessione è buona (1% low ≥ 60% della media, ≤ 2 stutter al minuto, media ≥ 95% del limite FPS o del
+        /// refresh): il report lo dice chiaramente e i consigli sulle prestazioni diventano facoltativi.
+        /// </summary>
+        public bool PerformsWell { get; set; }
+        /// <summary>Giudizio in una frase sulle prestazioni della sessione (null senza sessione).</summary>
+        public string? Verdict { get; set; }
     }
 
     public sealed class ReportSystem
@@ -110,6 +117,10 @@ namespace FNBoost.Report
         public double? FreeGb { get; set; }
         public bool ConfigFound { get; set; }
         public FortniteSettingsSummary? Settings { get; set; }
+        /// <summary>API grafica che il gioco ha detto di usare nel suo log (es. "D3D11 · ES3_1"), null se non trovata.</summary>
+        public string? RhiInUse { get; set; }
+        /// <summary>Versione del gioco dal log (es. "++Fortnite+Release-42.30-CL-58813929").</summary>
+        public string? GameBuild { get; set; }
     }
 
     /// <summary>Solo le impostazioni rilevanti per le prestazioni lette da GameUserSettings.ini (nessun'altra chiave).</summary>
@@ -130,6 +141,9 @@ namespace FNBoost.Report
         public bool RayTracing { get; set; }
         public bool Nanite { get; set; }
         public bool MotionBlur { get; set; }
+        /// <summary>Valori grezzi di [D3DRHIPreference] nel file ini (es. "dx11" e "es31" per la modalità Prestazioni).</summary>
+        public string PreferredRhi { get; set; } = "";
+        public string PreferredFeatureLevel { get; set; } = "";
     }
 
     /// <summary>Una riga della tabella "sessioni precedenti".</summary>
@@ -173,5 +187,7 @@ namespace FNBoost.Report
         public string Source { get; set; } = "";
         /// <summary>Impatto stimato sul gioco: 1 basso, 2 medio, 3 alto.</summary>
         public int Impact { get; set; } = 1;
+        /// <summary>Miglioramento facoltativo: la sessione è già buona (vedi ReportData.PerformsWell).</summary>
+        public bool Optional { get; set; }
     }
 }

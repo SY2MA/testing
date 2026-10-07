@@ -594,10 +594,15 @@ namespace FNBoost.Tests
             var sw = new StringWriter();
             ReportBuilder.WriteFrametimesCsv(sw, new[] { 5f, float.NaN, 10f });
             var csv = sw.ToString().Split('\n');
-            T.Equal("index,time_ms,frametime_ms,fps", csv[0], "intestazione");
-            T.Equal("0,5,5,200", csv[1], "riga 1");
-            T.Equal("1,5,,", csv[2], "frame non valido");
-            T.Equal("2,15,10,100", csv[3], "riga 3 (punto decimale invariante)");
+            T.Equal("index,time_ms,frametime_ms,fps,focused", csv[0], "intestazione");
+            T.Equal("0,5,5,200,1", csv[1], "riga 1");
+            T.Equal("1,5,,,1", csv[2], "frame non valido");
+            T.Equal("2,15,10,100,1", csv[3], "riga 3 (punto decimale invariante)");
+            var sw2 = new StringWriter();
+            ReportBuilder.WriteFrametimesCsv(sw2, new[] { 33.3f, 6f, 6f }, new[] { true, false, false });
+            var csv2 = sw2.ToString().Split('\n');
+            T.Equal("0,33.3,33.3,30.03,0", csv2[1], "frame fuori fuoco: focused = 0 (esportato comunque)");
+            T.Equal("1,39.3,6,166.67,1", csv2[2], "frame in primo piano: focused = 1");
 
             var y = new double?[10000];
             for (int i = 0; i < y.Length; i++) y[i] = 100;

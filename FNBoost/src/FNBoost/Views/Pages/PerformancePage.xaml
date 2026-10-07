@@ -197,11 +197,11 @@
 
             <!-- ===================== Numeri dal vivo ===================== -->
             <UniformGrid Columns="5" Margin="0,0,-10,0">
-                <Border Style="{StaticResource Tile}" ToolTip="FPS dell'ultimo secondo.">
+                <Border Style="{StaticResource Tile}" ToolTip="FPS dell'ultimo secondo. Con il gioco in secondo piano mostra «fuori fuoco»: Fortnite rallenta da solo a ~30 FPS e quei frame non entrano nelle statistiche.">
                     <StackPanel>
                         <TextBlock Text="FPS ORA" Style="{StaticResource TileLabel}" />
                         <TextBlock x:Name="FpsNowText" Style="{StaticResource TileValue}" Foreground="{StaticResource Accent2Brush}" Text="–" />
-                        <TextBlock Text="ultimo secondo" Style="{StaticResource TileSub}" />
+                        <TextBlock x:Name="FpsNowSub" Text="ultimo secondo" Style="{StaticResource TileSub}" />
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource Tile}" ToolTip="Frame totali divisi per il tempo della finestra mobile: la media reale.">
@@ -349,7 +349,7 @@
                 <Border Grid.Column="2" Style="{StaticResource Card}">
                     <StackPanel>
                         <TextBlock Text="FPS nel tempo" Style="{StaticResource CardTitle}" />
-                        <perf:LineChart x:Name="FpsChart" Height="170" Margin="0,10,0,0" XLabel="ultimi 120 secondi" Legend="FPS al secondo" />
+                        <perf:LineChart x:Name="FpsChart" Height="170" Margin="0,10,0,0" XLabel="ultimi 120 secondi · buchi = gioco fuori fuoco" Legend="FPS al secondo" />
                     </StackPanel>
                 </Border>
             </Grid>

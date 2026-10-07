@@ -118,10 +118,14 @@ namespace FNBoost.Report
             d.Insights = d.Insights.Select(x => SanitizeInsight(x, c)).ToList();
             d.Trend = d.Trend.Select(x => SanitizeInsight(x, c)).ToList();
             foreach (var p in d.PreviousSessions) p.Label = S(p.Label);
+            d.Fortnite.GameBuild = d.Fortnite.GameBuild == null ? null : S(d.Fortnite.GameBuild);
+            d.Fortnite.RhiInUse = d.Fortnite.RhiInUse == null ? null : S(d.Fortnite.RhiInUse);
+            d.Verdict = d.Verdict == null ? null : S(d.Verdict);
             if (d.Log is { } log)
             {
                 log.Note = log.Note == null ? null : S(log.Note);
                 log.GameBuild = log.GameBuild == null ? null : S(log.GameBuild);
+                log.RhiInUse = log.RhiInUse == null ? null : S(log.RhiInUse);
                 log.GpuInfo = log.GpuInfo.Select(S).ToList();
                 log.Sources = log.Sources.Select(S).ToList();
                 foreach (var h in log.Highlights) h.Text = S(h.Text);
@@ -175,10 +179,14 @@ namespace FNBoost.Report
             return h;
         }
 
-        /// <summary>CSV dei frametime: index,time_ms,frametime_ms,fps (cultura invariante, time_ms = fine del frame).</summary>
-        public static void WriteFrametimesCsv(TextWriter w, IReadOnlyList<float> frametimes)
+        /// <summary>
+        /// CSV dei frametime: index,time_ms,frametime_ms,fps,focused (cultura invariante, time_ms = fine del frame).
+        /// Si esportano TUTTI i frame; focused = 0 indica quelli esclusi dalle statistiche perché il gioco era fuori fuoco
+        /// (excluded[i] = true), così chi analizza il file può riprodurre esattamente i numeri del report.
+        /// </summary>
+        public static void WriteFrametimesCsv(TextWriter w, IReadOnlyList<float> frametimes, IReadOnlyList<bool>? excluded = null)
         {
-            w.Write("index,time_ms,frametime_ms,fps\n");
+            w.Write("index,time_ms,frametime_ms,fps,focused\n");
             double t = 0;
             for (int i = 0; i < frametimes.Count; i++)
             {
@@ -192,7 +200,7 @@ namespace FNBoost.Report
                 w.Write(ok ? ft.ToString("0.###", Inv) : "");
                 w.Write(',');
                 w.Write(ok && ft > 0 ? (1000.0 / ft).ToString("0.##", Inv) : "");
-                w.Write('\n');
+                w.Write(excluded != null && i < excluded.Count && excluded[i] ? ",0\n" : ",1\n");
             }
         }
 
@@ -242,6 +250,8 @@ namespace FNBoost.Report
         {
             var list = new List<Recommendation>();
             if (d == null) return list;
+            // Effetto collaterale voluto: il giudizio sulla sessione decide il tono dei consigli.
+            (d.PerformsWell, d.Verdict) = ComputeVerdict(d);
 
             foreach (var c in d.Checks.Where(c => c.Status >= CheckStatus.Warn))
                 list.Add(Rec(c.Status, c.Title, c.Message, c.Hint, "Sistema"));
@@ -279,6 +289,23 @@ namespace FNBoost.Report
                 else dup.Impact = Math.Max(dup.Impact, r.Impact);
             }
 
+            // Sessione buona: i consigli su prestazioni e sistema diventano facoltativi. Restano come sono i problemi di rete
+            // (non dipendono dal PC), i crash e la memoria del log, e i controlli di sistema gravi.
+            if (d.PerformsWell)
+            {
+                foreach (var r in result)
+                {
+                    bool keep = r.Source == "Rete" ||
+                                (r.Source == "Sistema" && r.Severity == CheckStatus.Bad) ||
+                                (r.Source == "Log di Fortnite" && (r.Title.Contains("rash", StringComparison.Ordinal) || r.Title.Contains("memoria", StringComparison.OrdinalIgnoreCase) ||
+                                                                   r.Title.Contains("connessione", StringComparison.OrdinalIgnoreCase)));
+                    if (keep) continue;
+                    r.Optional = true;
+                    r.Severity = CheckStatus.Info;
+                    r.Impact = 1;
+                }
+            }
+
             return result
                 .Select((r, idx) => (r, idx))
                 .OrderByDescending(x => (int)x.r.Severity)
@@ -288,6 +315,33 @@ namespace FNBoost.Report
                 .Select(x => x.r)
                 .Take(25)
                 .ToList();
+        }
+
+        /// <summary>
+        /// Sessione buona = 1% low ≥ 60% della media, al massimo 2 stutter al minuto e media ≥ 95% del limite FPS
+        /// (o del refresh del monitor se non c'è un limite). Restituisce anche la frase di giudizio (null senza sessione).
+        /// </summary>
+        public static (bool Good, string? Verdict) ComputeVerdict(ReportData d)
+        {
+            var s = d?.Session;
+            var st = s?.Stats;
+            if (s == null || st == null || !st.HasData || !(st.AvgFps > 0)) return (false, null);
+            double ratio = st.Low1Fps / st.AvgFps;
+            double target = s.FpsCap is > 0 ? s.FpsCap.Value : s.RefreshHz is > 1 ? s.RefreshHz.Value : 0;
+            bool reachesTarget = target <= 0 || st.AvgFps >= 0.95 * target;
+            bool good = ratio >= 0.6 && st.StuttersPerMin <= 2 && reachesTarget;
+            string targetText = target <= 0 ? "" :
+                s.FpsCap is > 0 ? $" ({F0(st.AvgFps / target * 100)}% del limite di {F0(target)})" : $" ({F0(st.AvgFps / target * 100)}% dei {F0(target)} Hz del monitor)";
+            string numbers = $"media {F0(st.AvgFps)} FPS{targetText}, 1% low {F0(st.Low1Fps)} FPS ({F0(ratio * 100)}% della media), {F1(st.StuttersPerMin)} stutter al minuto";
+            string focus = s.UnfocusedSec >= 1 ? $" (esclusi {F0(s.UnfocusedSec)} s con il gioco fuori fuoco)" : "";
+            if (good)
+                return (true, $"Il PC fa girare bene Fortnite: {numbers}{focus}. Non c'è nulla da correggere per gli FPS: " +
+                              "i punti qui sotto sono miglioramenti facoltativi (o riguardano la rete, che non dipende dal PC).");
+            var why = new List<string>();
+            if (ratio < 0.6) why.Add("i frame più lenti sono lontani dalla media");
+            if (st.StuttersPerMin > 2) why.Add("ci sono parecchi stutter");
+            if (!reachesTarget) why.Add(s.FpsCap is > 0 ? "la media resta sotto il limite FPS impostato" : "la media resta sotto il refresh del monitor");
+            return (false, $"Prestazioni da migliorare: {numbers}{focus}; {string.Join(", ", why)}. I punti qui sotto sono in ordine di priorità.");
         }
 
         private static int SourceRank(string source)
@@ -442,16 +496,33 @@ namespace FNBoost.Report
                     "La CPU usata da altri programmi è tolta al gioco: abbassa soprattutto 1% low e regolarità."));
         }
 
+        /// <summary>
+        /// Consigli dal log di Fortnite. Diventano consigli SOLO le righe del periodo della sessione (log.Session):
+        /// il log può coprire molte ore e più avvii del gioco, e avvisi/errori generici sono rumore normale.
+        /// Senza sessione (nessun periodo) si usa tutto il log, dicendolo. Unica eccezione: i segnali di crash fuori dalla
+        /// sessione compaiono come informazione, perché un crash di un avvio precedente resta utile da sapere.
+        /// </summary>
         private static void AddLog(List<Recommendation> list, LogFindings? log)
         {
             if (log == null || !log.Found) return;
-            if (log.CrashMarkers > 0)
+            var ses = log.Session;
+            bool window = ses != null;
+            int crash = window ? ses!.CrashMarkers : log.CrashMarkers;
+            var crashKinds = window ? ses!.CrashKinds : log.CrashKinds;
+            int memory = window ? ses!.MemoryWarnings : log.MemoryWarnings;
+            int net = window ? ses!.NetworkIssues : log.NetworkIssues;
+            var netKw = window ? ses!.NetworkKeywords : log.NetworkKeywords;
+            int hitches = window ? ses!.Hitches : log.Hitches;
+            int shader = window ? ses!.ShaderMessages : log.ShaderMessages;
+            string where = window ? "durante la sessione" : "nel log (nessuna sessione da confrontare: tutto il log)";
+
+            if (crash > 0)
             {
-                bool gpu = log.CrashKinds.Keys.Any(k => k.Contains("GPU", StringComparison.OrdinalIgnoreCase) ||
-                                                        k.Contains("DXGI", StringComparison.OrdinalIgnoreCase) ||
-                                                        k.Contains("D3D", StringComparison.OrdinalIgnoreCase));
+                bool gpu = crashKinds.Keys.Any(k => k.Contains("GPU", StringComparison.OrdinalIgnoreCase) ||
+                                                    k.Contains("DXGI", StringComparison.OrdinalIgnoreCase) ||
+                                                    k.Contains("D3D", StringComparison.OrdinalIgnoreCase));
                 list.Add(Rec(CheckStatus.Bad, gpu ? "Crash della GPU nel log di Fortnite" : "Crash o errori gravi nel log di Fortnite",
-                    $"Il log contiene {Plural(log.CrashMarkers, "riga", "righe")} con segnali di crash: " + string.Join(", ", log.CrashKinds.Select(k => $"{k.Key} ×{k.Value}")) + ".",
+                    $"Il log contiene {Plural(crash, "riga", "righe")} con segnali di crash {where}: " + string.Join(", ", crashKinds.Select(k => $"{k.Key} ×{k.Value}")) + ".",
                     gpu
                         ? "Aggiorna (o reinstalla pulito) il driver video, togli overclock/undervolt di GPU e memoria, verifica alimentatore e temperature. In Fortnite prova la modalità DirectX 12 senza ray tracing."
                         : "Verifica i file del gioco dall'Epic Games Launcher (Libreria › ⋯ › Gestisci › Verifica), togli overclock e controlla la RAM (es. Diagnostica memoria Windows).",
@@ -461,25 +532,34 @@ namespace FNBoost.Report
                         : "I crash fanno perdere partite intere: vanno risolti prima di ottimizzare gli FPS.",
                     3));
             }
-            if (log.MemoryWarnings > 0)
+            else if (window && log.CrashMarkers > 0)
+            {
+                list.Add(Rec(CheckStatus.Info, "Segnali di crash nel log, fuori dalla sessione",
+                    $"Nel resto del log (fuori dal periodo della sessione) ci sono {Plural(log.CrashMarkers, "riga", "righe")} con segnali di crash: " +
+                    string.Join(", ", log.CrashKinds.Select(k => $"{k.Key} ×{k.Value}")) + ". Durante la sessione analizzata no.",
+                    "Se il gioco si è chiuso da solo in un avvio precedente, verifica i file del gioco dall'Epic Games Launcher e aggiorna il driver video; altrimenti ignoralo.",
+                    "Log di Fortnite",
+                    "Non riguarda la sessione misurata, ma un crash in un avvio precedente è comunque un indizio utile.", 1));
+            }
+            if (memory > 0)
                 list.Add(Rec(CheckStatus.Warn, "Avvisi di memoria nel log di Fortnite",
-                    $"{Plural(log.MemoryWarnings, "riga parla", "righe parlano")} di memoria insufficiente.",
+                    $"{Plural(memory, "riga parla", "righe parlano")} di memoria insufficiente {where}.",
                     "Chiudi le app pesanti, lascia il file di paging gestito da Windows e abbassa la qualità delle texture.",
                     "Log di Fortnite", null, 2));
-            if (log.NetworkIssues >= 5)
+            if (net >= 5)
                 list.Add(Rec(CheckStatus.Warn, "Problemi di connessione nel log di Fortnite",
-                    $"{Plural(log.NetworkIssues, "riga", "righe")} di rete con timeout, disconnessioni o pacchetti fuori ordine (" +
-                    string.Join(", ", log.NetworkKeywords.OrderByDescending(k => k.Value).Select(k => $"{k.Key} ×{k.Value}")) + ").",
+                    $"{Plural(net, "riga", "righe")} di rete con timeout, disconnessioni o pacchetti fuori ordine {where} (" +
+                    string.Join(", ", netKw.OrderByDescending(k => k.Value).Select(k => $"{k.Key} ×{k.Value}")) + ").",
                     "Confronta con ping e perdita misurati da FN Boost: se anche quelli sono alti il problema è la connessione, altrimenti può essere il server.",
                     "Log di Fortnite", null, 2));
-            if (log.Hitches >= 10)
+            if (hitches >= 10)
                 list.Add(Rec(CheckStatus.Warn, "Hitch registrati dal gioco",
-                    $"Il gioco ha registrato {log.Hitches} hitch (blocchi del thread di gioco o di caricamento).",
+                    $"Il gioco ha registrato {hitches} hitch (blocchi del thread di gioco o di caricamento) {where}.",
                     "Spesso dipendono dallo streaming dei dati: tieni Fortnite su SSD, chiudi le app in background e controlla che la RAM non sia piena.",
                     "Log di Fortnite", null, 2));
-            if (log.ShaderMessages >= 50)
+            if (shader >= 50)
                 list.Add(Rec(CheckStatus.Info, "Compilazione shader in corso",
-                    $"{log.ShaderMessages} messaggi su shader/PSO nel log.",
+                    $"{shader} messaggi su shader/PSO {where}.",
                     "Dopo un aggiornamento del gioco o del driver è normale per qualche partita; non cancellare la cache shader senza motivo.",
                     "Log di Fortnite",
                     "Mentre gli shader vengono compilati compaiono stutter che spariscono da soli.", 1));
@@ -604,10 +684,13 @@ namespace FNBoost.Report
                 var st = s.Stats ?? new FrameStatsResult();
                 sb.Append($"\n[SESSIONE {s.StartedAt.ToString("dd/MM/yyyy HH:mm", Inv)}{(string.IsNullOrWhiteSpace(s.Label) ? "" : " · " + Clip(s.Label, 40))} · {Duration(s.DurationSec)}]\n");
                 sb.Append($"Media {F0(st.AvgFps)} FPS · 1% low {F0(st.Low1Fps)} · 0,1% low {F0(st.Low01Fps)} · min/max {F0(st.MinFps)}/{F0(st.MaxFps)} · " +
-                          $"stutter {F1(st.StuttersPerMin)}/min · regolarità {F0(st.ConsistencyScore)}/100 · frametime medio {F1(st.AvgFrametimeMs)} ms, max {F1(st.MaxFrametimeMs)} ms\n");
-                var cpu = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 ? x.CpuPercent : null);
-                var gpu = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 ? x.GpuPercent : null);
-                var ram = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 ? x.RamPercent : null);
+                          $"stutter {st.Stutters} ({F1(st.StuttersPerMin)}/min) · regolarità {F0(st.ConsistencyScore)}/100 · frametime medio {F1(st.AvgFrametimeMs)} ms, max {F1(st.MaxFrametimeMs)} ms\n");
+                if (s.UnfocusedSec >= 1)
+                    sb.Append($"Esclusi {F0(s.UnfocusedSec)} s ({s.ExcludedFrames} frame) con il gioco fuori fuoco{(s.UnfocusedEstimated ? " (stima: tratto a ~30 FPS con GPU ferma)" : "")}: " +
+                              "in secondo piano Fortnite scende da solo a ~30 FPS.\n");
+                var cpu = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 && !x.Unfocused ? x.CpuPercent : null);
+                var gpu = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 && !x.Unfocused ? x.GpuPercent : null);
+                var ram = Avg(s.Seconds ?? new List<SecondSample>(), x => x.Fps > 0 && !x.Unfocused ? x.RamPercent : null);
                 sb.Append($"CPU media {F0(cpu)}% · GPU media {F0(gpu)}% · RAM {F0(ram)}%" +
                           $"{(s.FpsCap is > 0 ? $" · cap {F0(s.FpsCap)}" : "")}{(s.RefreshHz is > 0 ? $" · monitor {s.RefreshHz} Hz" : "")}" +
                           $"{(string.IsNullOrEmpty(s.RenderMode) ? "" : " · rendering " + s.RenderMode)}\n");
@@ -625,20 +708,36 @@ namespace FNBoost.Report
                           $"{(string.IsNullOrEmpty(net.ConnectionType) ? "" : " · " + net.ConnectionType)}{(net.WifiSignal is { } w ? $" (segnale {w}%)" : "")}\n");
             }
 
+            if (!string.IsNullOrEmpty(d.Verdict))
+                sb.Append("\n[VERDETTO]\n").Append(d.Verdict).Append('\n');
+
             if (d.Recommendations.Count > 0)
             {
-                sb.Append("\n[COSA NON VA / COSA MIGLIORARE]\n");
+                sb.Append(d.PerformsWell ? "\n[MIGLIORAMENTI FACOLTATIVI]\n" : "\n[COSA NON VA / COSA MIGLIORARE]\n");
                 int i = 1;
                 foreach (var r in d.Recommendations.Take(8))
-                    sb.Append($"{i++}. [{SevText(r.Severity)}] {r.Title}: {Clip(r.Problem, 150)} → {Clip(r.WhatToDo, 150)}\n");
+                    sb.Append($"{i++}. [{SevText(r)}] {r.Title}: {Clip(r.Problem, 150)} → {Clip(r.WhatToDo, 150)}\n");
             }
-            else sb.Append("\n[COSA NON VA] nessun problema evidente rilevato.\n");
+            else sb.Append(d.PerformsWell
+                ? "\n[MIGLIORAMENTI FACOLTATIVI] nessuno: non c'è niente da cambiare.\n"
+                : "\n[COSA NON VA] nessun problema evidente rilevato.\n");
 
             if (d.Log is { Found: true } log)
             {
                 sb.Append("\n[LOG DI FORTNITE]\n");
-                sb.Append($"{log.Warnings} avvisi, {log.Errors} errori · crash {log.CrashMarkers} · rete {log.NetworkIssues} · hitch {log.Hitches} · shader {log.ShaderMessages} · memoria {log.MemoryWarnings}\n");
-                foreach (var h in log.Highlights.Take(5))
+                if (log.Session is { } ses && log.WindowStart != null)
+                {
+                    sb.Append($"Durante la sessione ({log.WindowStart.Value.ToString("HH:mm:ss", Inv)}–{log.WindowEnd?.ToString("HH:mm:ss", Inv)} UTC, ±60 s): " +
+                              $"crash {ses.CrashMarkers} · rete {ses.NetworkIssues} · hitch {ses.Hitches} · shader {ses.ShaderMessages} · memoria {ses.MemoryWarnings} · " +
+                              $"avvisi {ses.Warnings}, errori {ses.Errors}{(ses.Lines == 0 ? " (nessuna riga del log in quel periodo)" : "")}\n");
+                    sb.Append($"Intero log (contesto{LogSpanText(log)}): crash {log.CrashMarkers} · rete {log.NetworkIssues} · hitch {log.Hitches} · shader {log.ShaderMessages} · " +
+                              $"avvisi {log.Warnings}, errori {log.Errors}\n");
+                }
+                else
+                    sb.Append($"Intero log{LogSpanText(log)}: crash {log.CrashMarkers} · rete {log.NetworkIssues} · hitch {log.Hitches} · shader {log.ShaderMessages} · memoria {log.MemoryWarnings} · " +
+                              $"avvisi {log.Warnings}, errori {log.Errors}\n");
+                sb.Append("Avvisi ed errori generici sono normali: Fortnite ne scrive migliaia anche quando funziona tutto.\n");
+                foreach (var h in log.Highlights.Where(h => log.Session == null || h.InSession).Take(5))
                     sb.Append("- ").Append(Clip(h.Text, 180)).Append(h.Count > 1 ? $" (×{h.Count})" : "").Append('\n');
             }
 
@@ -663,6 +762,7 @@ namespace FNBoost.Report
                 return string.Join(" · ", parts);
             }
             parts.Add("rendering " + s.RenderMode);
+            if (f.RhiInUse != null) parts.Add("API usata (log) " + f.RhiInUse);
             parts.Add("limite FPS " + (s.FpsCap > 0 ? F0(s.FpsCap) : "illimitato"));
             parts.Add("VSync " + OnOff(s.VSync));
             parts.Add("Reflex " + ReflexText(s.Reflex));
@@ -672,9 +772,27 @@ namespace FNBoost.Report
             parts.Add("Nanite " + OnOff(s.Nanite));
             parts.Add("motion blur " + OnOff(s.MotionBlur));
             var line = string.Join(" · ", parts);
+            if (s.PreferredRhi.Length > 0 || s.PreferredFeatureLevel.Length > 0 || f.GameBuild != null)
+                line += $"\nini: PreferredRHI={(s.PreferredRhi.Length > 0 ? s.PreferredRhi : "–")} PreferredFeatureLevel={(s.PreferredFeatureLevel.Length > 0 ? s.PreferredFeatureLevel : "–")}" +
+                        (f.GameBuild != null ? " · versione " + f.GameBuild : "");
             if (s.Scalability.Count > 0)
                 line += "\nQualità: " + string.Join(" ", s.Scalability.Select(kv => $"{ShortSg(kv.Key)}={kv.Value}"));
             return line;
+        }
+
+        /// <summary>", 11,5 h: 06/10 22:43 → 07/10 10:18 UTC" se il log ha orari, altrimenti "".</summary>
+        private static string LogSpanText(LogFindings log)
+        {
+            var dur = LogSpanDuration(log);
+            return dur.Length == 0 ? "" : $"{dur}: {log.FirstTime!.Value.ToString("dd/MM HH:mm", Inv)} → {log.LastTime!.Value.ToString("dd/MM HH:mm", Inv)} UTC";
+        }
+
+        /// <summary>", 11,5 h" (o ", 25 min") = quanto tempo copre il log letto, "" senza orari.</summary>
+        private static string LogSpanDuration(LogFindings log)
+        {
+            if (log.FirstTime is not { } a || log.LastTime is not { } b || b < a) return "";
+            double h = (b - a).TotalHours;
+            return h >= 1 ? $", {F1(h)} h" : $", {F0((b - a).TotalMinutes)} min";
         }
 
         // ================= HTML =================
@@ -720,6 +838,8 @@ namespace FNBoost.Report
                 Tile(h, "Min / max", $"{F0(st.MinFps)} / {F0(st.MaxFps)}", "FPS", null);
                 Tile(h, "Stutter", F1(st.StuttersPerMin), "al minuto", GradeLow(st.StuttersPerMin, 2, 10));
                 Tile(h, "Regolarità", F0(st.ConsistencyScore), "/ 100", Grade(st.ConsistencyScore / 100, 0.75, 0.5));
+                if (s!.UnfocusedSec >= 1)
+                    Tile(h, "Fuori fuoco (esclusi)", F0(s.UnfocusedSec), s.UnfocusedEstimated ? "s · stima" : "s", CheckStatus.Info);
             }
             if (net.HasAny)
             {
@@ -730,7 +850,9 @@ namespace FNBoost.Report
             h.Append("</div></section>\n");
 
             // ---- cosa non va ----
-            h.Append("<section><h2>Cosa non va / Cosa migliorare</h2>");
+            h.Append(d.PerformsWell ? "<section><h2>Verdetto e miglioramenti facoltativi</h2>" : "<section><h2>Cosa non va / Cosa migliorare</h2>");
+            if (!string.IsNullOrEmpty(d.Verdict))
+                h.Append($"<p class=\"verdict {(d.PerformsWell ? "s-ok" : "s-warn")}\">{E(d.Verdict)}</p>");
             if (d.Recommendations.Count == 0)
                 h.Append("<p class=\"ok\">Nessun problema evidente rilevato nei dati disponibili.</p>");
             else
@@ -738,7 +860,7 @@ namespace FNBoost.Report
                 h.Append("<ol class=\"recs\">");
                 foreach (var r in d.Recommendations)
                 {
-                    h.Append($"<li class=\"rec {SevClass(r.Severity)}\"><div class=\"rec-head\"><span class=\"badge {SevClass(r.Severity)}\">{E(SevText(r.Severity))}</span>");
+                    h.Append($"<li class=\"rec {SevClass(r.Severity)}\"><div class=\"rec-head\"><span class=\"badge {SevClass(r.Severity)}\">{E(SevText(r))}</span>");
                     h.Append($"<b>{E(r.Title)}</b><span class=\"muted small\">{E(r.Source)} · impatto {E(ImpactText(r.Impact))}</span></div>");
                     h.Append($"<dl><dt>Problema</dt><dd>{E(r.Problem)}</dd><dt>Perché conta</dt><dd>{E(r.WhyItMatters)}</dd><dt>Cosa fare</dt><dd>{E(r.WhatToDo)}</dd></dl></li>");
                 }
@@ -784,7 +906,7 @@ namespace FNBoost.Report
             AppendSystem(h, d);
 
             // ---- Fortnite ----
-            AppendFortnite(h, d.Fortnite);
+            AppendFortnite(h, d.Fortnite, d.Log);
 
             // ---- tweak ----
             if (d.Tweaks.Count > 0)
@@ -813,11 +935,12 @@ namespace FNBoost.Report
             // ---- metodo ----
             h.Append("<footer><h2>Come vengono misurati i dati</h2><ul>");
             h.Append("<li><b>FPS e frametime</b>: eventi ETW <i>Present</i> di DirectX letti da Windows, lo stesso metodo di PresentMon e della Xbox Game Bar. Il frametime è il tempo tra due Present consecutivi (MsBetweenPresents). FN Boost non entra mai nel processo del gioco.</li>");
+            h.Append("<li><b>Gioco fuori fuoco</b>: circa 10 volte al secondo FN Boost controlla quale finestra è in primo piano (solo GetForegroundWindow, nessun accesso al gioco). I frame presentati mentre Fortnite non è in primo piano, quelli a cavallo del cambio e ~0,5 s di assestamento al ritorno sono esclusi da statistiche, stutter e grafici: in secondo piano il gioco si limita da solo a ~30 FPS. Nelle sessioni vecchie l'esclusione è stimata (tratto iniziale/finale a ~30 FPS con GPU sotto il 10%).</li>");
             h.Append("<li><b>FPS medi</b> = frame totali / tempo totale. <b>1% low</b> e <b>0,1% low</b> = FPS calcolati dalla media dell'1% e dello 0,1% dei frametime più lunghi (i momenti peggiori). <b>Stutter</b> = frame molto più lunghi della mediana dei frame vicini.</li>");
             h.Append("<li><b>CPU, GPU, RAM, processi</b>: contatori di prestazioni di Windows (PDH), campionati una volta al secondo.</li>");
             h.Append("<li><b>Ping</b>: ping ICMP inviato da FN Boost al server di gioco (o all'endpoint Epic della regione se il server non risponde), al router e a Internet. Può differire di qualche millisecondo dal ping mostrato in gioco, che è misurato a livello di applicazione. Jitter = variazione media tra ping consecutivi.</li>");
             h.Append("<li><b>Traffico del gioco</b>: eventi ETW Kernel-Network (solo dimensione e indirizzi dei pacchetti UDP, mai il contenuto).</li>");
-            h.Append("<li><b>Log di Fortnite</b>: lettura del file FortniteGame.log che il gioco scrive per l'utente; chat, party e amici esclusi.</li>");
+            h.Append("<li><b>Log di Fortnite</b>: lettura del file FortniteGame.log che il gioco scrive per l'utente; chat, party e amici esclusi. Gli orari del log sono in UTC: si considera il periodo della sessione ± 60 s, il resto è contesto.</li>");
             h.Append("<li>Le analisi indicano correlazioni e cause probabili, non certezze: patch del gioco, mappa e modalità cambiano molto i risultati.</li>");
             h.Append("</ul><p class=\"muted small\">FN Boost · report generato localmente, nessun dato è stato inviato a server esterni.</p></footer>\n");
 
@@ -837,11 +960,14 @@ namespace FNBoost.Report
                 var refs = new List<SvgChart.Ref>();
                 if (s!.FpsCap is > 0) refs.Add(new SvgChart.Ref(s.FpsCap.Value, $"cap {F0(s.FpsCap)}", Warn));
                 if (s.RefreshHz is > 0) refs.Add(new SvgChart.Ref(s.RefreshHz.Value, $"{s.RefreshHz} Hz", Accent2));
-                Chart(h, "FPS nel tempo", "FPS al secondo e 1% low di ogni secondo.", xs, new[]
+                // Secondi con il gioco fuori fuoco: buco nella linea degli FPS e banda grigia su tutti i grafici.
+                var bands = UnfocusedBands(secs);
+                string bandNote = bands.Count > 0 ? " Le bande grigie sono i secondi con il gioco fuori fuoco, esclusi dalle statistiche." : "";
+                Chart(h, "FPS nel tempo", "FPS al secondo e 1% low di ogni secondo." + bandNote, xs, new[]
                 {
-                    new SvgChart.Series("FPS", Accent, secs.Select(x => (double?)x.Fps).ToArray()),
-                    new SvgChart.Series("1% low", Bad, secs.Select(x => (double?)x.Low1Fps).ToArray(), 1.2)
-                }, refs, "FPS");
+                    new SvgChart.Series("FPS", Accent, secs.Select(x => x.Unfocused ? null : (double?)x.Fps).ToArray()),
+                    new SvgChart.Series("1% low", Bad, secs.Select(x => x.Unfocused ? null : (double?)x.Low1Fps).ToArray(), 1.2)
+                }, refs, "FPS", null, bands);
 
                 if (secs.Any(x => x.PingMs.HasValue || x.GatewayPingMs.HasValue))
                     Chart(h, "Ping e jitter", "Ping verso il server/regione, jitter e ping verso il router (ms).", xs, new[]
@@ -852,29 +978,51 @@ namespace FNBoost.Report
                     }, new List<SvgChart.Ref>(), "ms");
 
                 if (secs.Any(x => x.CpuPercent > 0 || x.GpuPercent.HasValue))
-                    Chart(h, "CPU e GPU", "Utilizzo medio di CPU (tutti i core) e GPU (%).", xs, new[]
+                    Chart(h, "CPU e GPU", "Utilizzo medio di CPU (tutti i core) e GPU (%)." + bandNote, xs, new[]
                     {
                         new SvgChart.Series("CPU", Accent2, secs.Select(x => (double?)x.CpuPercent).ToArray()),
                         new SvgChart.Series("GPU", Accent, secs.Select(x => x.GpuPercent).ToArray())
-                    }, new List<SvgChart.Ref>(), "%", 100);
+                    }, new List<SvgChart.Ref>(), "%", 100, bands);
             }
             if (d.Histogram is { Counts.Count: > 0 } hist)
             {
                 h.Append("<figure><figcaption><b>Distribuzione dei frametime</b><span class=\"muted small\"> · quanti frame per durata (ms); più la montagna è stretta, più il gioco è regolare. " +
-                         $"Mediana {F1(hist.MedianMs)} ms, 99° percentile {F1(hist.P99Ms)} ms.</span></figcaption>");
+                         $"Mediana {F1(hist.MedianMs)} ms, 99° percentile {F1(hist.P99Ms)} ms{(s?.ExcludedFrames > 0 ? "; solo frame con il gioco in primo piano" : "")}.</span></figcaption>");
                 h.Append(SvgChart.Bars(hist.EdgesMs, hist.Counts, Accent));
                 h.Append("</figure>");
             }
         }
 
-        private static void Chart(StringBuilder h, string title, string caption, double[] xs, IList<SvgChart.Series> series, IList<SvgChart.Ref> refs, string unit, double? yMax = null)
+        /// <summary>Tratti consecutivi di secondi Unfocused come intervalli [da, a] in secondi (per le bande dei grafici).</summary>
+        public static List<(double From, double To)> UnfocusedBands(IReadOnlyList<SecondSample> secs)
+        {
+            var bands = new List<(double, double)>();
+            int i = 0;
+            while (i < secs.Count)
+            {
+                if (!secs[i].Unfocused)
+                {
+                    i++;
+                    continue;
+                }
+                int start = i;
+                while (i < secs.Count && secs[i].Unfocused) i++;
+                // Il campione T copre il secondo che finisce in T+1: la banda va da T del primo a T+1 dell'ultimo.
+                bands.Add((secs[start].T, secs[i - 1].T + 1));
+            }
+            return bands;
+        }
+
+        private static void Chart(StringBuilder h, string title, string caption, double[] xs, IList<SvgChart.Series> series, IList<SvgChart.Ref> refs, string unit,
+            double? yMax = null, IList<(double From, double To)>? bands = null)
         {
             h.Append($"<figure><figcaption><b>{E(title)}</b><span class=\"muted small\"> · {E(caption)}</span></figcaption>");
-            h.Append(SvgChart.Line(xs, series, refs, yMax));
+            h.Append(SvgChart.Line(xs, series, refs, yMax, bands));
             h.Append("<div class=\"legend\">");
             foreach (var se in series.Where(x => x.Y.Any(v => v.HasValue)))
                 h.Append($"<span><i style=\"background:{se.Color}\"></i>{E(se.Name)}</span>");
             foreach (var r in refs) h.Append($"<span><i class=\"dash\" style=\"border-color:{r.Color}\"></i>{E(r.Label)}</span>");
+            if (bands is { Count: > 0 }) h.Append("<span><i class=\"band\"></i>gioco fuori fuoco</span>");
             h.Append($"<span class=\"muted\">asse Y: {E(unit)} · asse X: tempo</span></div></figure>");
         }
 
@@ -971,26 +1119,43 @@ namespace FNBoost.Report
             h.Append("</section>\n");
         }
 
-        private static void AppendFortnite(StringBuilder h, ReportFortnite f)
+        private static void AppendFortnite(StringBuilder h, ReportFortnite f, LogFindings? log)
         {
             h.Append("<section><h2>Fortnite</h2>");
             h.Append("<table class=\"kv\"><tbody>");
             Row(h, "Installazione", f.Installed ? $"trovata{(f.DiskType != null ? " · " + f.DiskType : "")}{(f.FreeGb is { } g ? $" · {F0(g)} GB liberi" : "")}" : "non trovata");
+            if (f.GameBuild != null) Row(h, "Versione del gioco (dal log)", f.GameBuild);
             if (f.Settings is { } s)
             {
                 Row(h, "Modalità di rendering", s.RenderMode);
-                Row(h, "Limite FPS", s.FpsCap > 0 ? F0(s.FpsCap) : "illimitato");
-                Row(h, "VSync", OnOff(s.VSync));
-                Row(h, "NVIDIA Reflex", ReflexText(s.Reflex));
-                Row(h, "Modalità finestra", WindowModeText(s.WindowMode));
-                Row(h, "Risoluzione", s.ResolutionX > 0 ? $"{s.ResolutionX}×{s.ResolutionY}" : "–");
-                Row(h, "Ray tracing", OnOff(s.RayTracing));
-                Row(h, "Nanite", OnOff(s.Nanite));
-                Row(h, "Motion blur", OnOff(s.MotionBlur));
-                foreach (var kv in s.Scalability) Row(h, "Qualità · " + ShortSg(kv.Key), kv.Value);
+                if (s.PreferredRhi.Length > 0 || s.PreferredFeatureLevel.Length > 0)
+                    Row(h, "Preferenza nel file ini", $"PreferredRHI={(s.PreferredRhi.Length > 0 ? s.PreferredRhi : "–")} · PreferredFeatureLevel={(s.PreferredFeatureLevel.Length > 0 ? s.PreferredFeatureLevel : "–")}");
+            }
+            if (f.RhiInUse != null) Row(h, "API grafica usata (dal log)", RhiText(f.RhiInUse));
+            else if (log is { Found: true }) Row(h, "API grafica usata (dal log)", "non trovata nel log");
+            if (f.Settings is { } st)
+            {
+                Row(h, "Limite FPS", st.FpsCap > 0 ? F0(st.FpsCap) : "illimitato");
+                Row(h, "VSync", OnOff(st.VSync));
+                Row(h, "NVIDIA Reflex", ReflexText(st.Reflex));
+                Row(h, "Modalità finestra", WindowModeText(st.WindowMode));
+                Row(h, "Risoluzione", st.ResolutionX > 0 ? $"{st.ResolutionX}×{st.ResolutionY}" : "–");
+                Row(h, "Ray tracing", OnOff(st.RayTracing));
+                Row(h, "Nanite", OnOff(st.Nanite));
+                Row(h, "Motion blur", OnOff(st.MotionBlur));
+                foreach (var kv in st.Scalability) Row(h, "Qualità · " + ShortSg(kv.Key), kv.Value);
             }
             else Row(h, "Impostazioni", f.ConfigFound ? "non leggibili" : "GameUserSettings.ini non trovato (avvia Fortnite almeno una volta)");
             h.Append("</tbody></table></section>\n");
+        }
+
+        /// <summary>"D3D11 · ES3_1" → con la spiegazione (modalità Prestazioni = Direct3D 11 a feature level ridotto).</summary>
+        public static string RhiText(string rhi)
+        {
+            if (rhi.Contains("ES3_1", StringComparison.OrdinalIgnoreCase))
+                return rhi + " (Direct3D 11 a feature level ridotto: è la modalità Prestazioni)";
+            if (rhi.StartsWith("D3D12", StringComparison.OrdinalIgnoreCase)) return rhi + " (DirectX 12)";
+            return rhi;
         }
 
         private static void AppendLog(StringBuilder h, LogFindings? log)
@@ -1001,20 +1166,40 @@ namespace FNBoost.Report
                 h.Append($"<p class=\"muted\">{E(log?.Note ?? "Log di Fortnite non analizzato.")}</p></section>\n");
                 return;
             }
+            h.Append("<p class=\"muted small\">Fortnite scrive migliaia di avvisi ed errori anche quando funziona tutto: sono rumore normale. " +
+                     "Contano i segnali specifici (crash, rete, hitch, memoria) e solo quelli del periodo della sessione diventano consigli; il resto del log è contesto.</p>");
             h.Append("<table class=\"kv\"><tbody>");
             Row(h, "File", string.Join(", ", log.Sources) + (log.Truncated ? " (solo la parte più recente)" : ""));
             if (log.FirstTime != null)
-                Row(h, "Periodo", $"{log.FirstTime.Value.ToString("dd/MM/yyyy HH:mm:ss", Inv)} → {log.LastTime?.ToString("dd/MM/yyyy HH:mm:ss", Inv)} (orario del log, di solito UTC)");
+                Row(h, "Periodo del log", $"{log.FirstTime.Value.ToString("dd/MM/yyyy HH:mm:ss", Inv)} → {log.LastTime?.ToString("dd/MM/yyyy HH:mm:ss", Inv)} UTC{LogSpanDuration(log)}");
+            if (log.WindowStart != null)
+                Row(h, "Periodo della sessione", $"{log.WindowStart.Value.ToString("dd/MM/yyyy HH:mm:ss", Inv)} → {log.WindowEnd?.ToString("HH:mm:ss", Inv)} UTC (inizio e fine della sessione ± 60 s; gli orari del log di Unreal sono in UTC)");
             if (log.GameBuild != null) Row(h, "Versione del gioco", log.GameBuild);
+            if (log.RhiInUse != null) Row(h, "API grafica usata", RhiText(log.RhiInUse));
             Row(h, "Righe", $"{log.TotalLines} lette · {log.ParsedLines} riconosciute · {log.SkippedPrivateLines} saltate per privacy (chat, party, amici)");
-            Row(h, "Avvisi / errori", $"{log.Warnings} / {log.Errors}");
-            Row(h, "Segnali di crash", log.CrashMarkers == 0 ? "nessuno" : string.Join(", ", log.CrashKinds.Select(k => $"{k.Key} ×{k.Value}")));
-            Row(h, "Problemi di rete", log.NetworkIssues == 0 ? "nessuno" : $"{log.NetworkIssues} ({string.Join(", ", log.NetworkKeywords.Select(k => $"{k.Key} ×{k.Value}"))})");
             Row(h, "Server visti", log.ServerAddresses.Count == 0 ? "–" : string.Join(", ", log.ServerAddresses));
-            Row(h, "Hitch", log.Hitches.ToString(Inv));
-            Row(h, "Messaggi shader/PSO", log.ShaderMessages.ToString(Inv));
-            Row(h, "Avvisi di memoria", log.MemoryWarnings.ToString(Inv));
             if (log.Note != null) Row(h, "Nota", log.Note);
+            h.Append("</tbody></table>");
+
+            var ses = log.Session;
+            h.Append("<table><thead><tr><th>Segnale</th>");
+            if (ses != null) h.Append("<th class=\"n\">Durante la sessione</th>");
+            h.Append("<th class=\"n\">Intero log (contesto)</th></tr></thead><tbody>");
+            void Cmp(string label, Func<LogCounts, string> sesVal, string all)
+            {
+                h.Append("<tr><td>").Append(E(label)).Append("</td>");
+                if (ses != null) h.Append("<td class=\"n\">").Append(E(sesVal(ses))).Append("</td>");
+                h.Append("<td class=\"n\">").Append(E(all)).Append("</td></tr>");
+            }
+            if (ses != null) Cmp("Righe nel periodo", c => c.Lines == 0 ? "0 (il log non copre la sessione)" : c.Lines.ToString(Inv), log.TotalLines.ToString(Inv));
+            Cmp("Segnali di crash", c => c.CrashMarkers == 0 ? "nessuno" : string.Join(", ", c.CrashKinds.Select(k => $"{k.Key} ×{k.Value}")),
+                log.CrashMarkers == 0 ? "nessuno" : string.Join(", ", log.CrashKinds.Select(k => $"{k.Key} ×{k.Value}")));
+            Cmp("Problemi di rete", c => c.NetworkIssues == 0 ? "nessuno" : $"{c.NetworkIssues} ({string.Join(", ", c.NetworkKeywords.Select(k => $"{k.Key} ×{k.Value}"))})",
+                log.NetworkIssues == 0 ? "nessuno" : $"{log.NetworkIssues} ({string.Join(", ", log.NetworkKeywords.Select(k => $"{k.Key} ×{k.Value}"))})");
+            Cmp("Hitch", c => c.Hitches.ToString(Inv), log.Hitches.ToString(Inv));
+            Cmp("Messaggi shader/PSO", c => c.ShaderMessages.ToString(Inv), log.ShaderMessages.ToString(Inv));
+            Cmp("Avvisi di memoria", c => c.MemoryWarnings.ToString(Inv), log.MemoryWarnings.ToString(Inv));
+            Cmp("Avvisi / errori (rumore normale)", c => $"{c.Warnings} / {c.Errors}", $"{log.Warnings} / {log.Errors}");
             h.Append("</tbody></table>");
 
             if (log.GpuInfo.Count > 0)
@@ -1025,16 +1210,17 @@ namespace FNBoost.Report
             }
             if (log.TopCategories.Count > 0)
             {
-                h.Append("<details><summary>Categorie con più avvisi ed errori</summary><table><thead><tr><th>Categoria</th><th class=\"n\">Avvisi</th><th class=\"n\">Errori</th></tr></thead><tbody>");
+                h.Append("<details><summary>Categorie con più avvisi ed errori (intero log)</summary><table><thead><tr><th>Categoria</th><th class=\"n\">Avvisi</th><th class=\"n\">Errori</th></tr></thead><tbody>");
                 foreach (var c in log.TopCategories)
                     h.Append($"<tr><td>{E(c.Category)}</td><td class=\"n\">{c.Warnings}</td><td class=\"n\">{c.Errors}</td></tr>");
                 h.Append("</tbody></table></details>");
             }
             if (log.Highlights.Count > 0)
             {
-                h.Append($"<details><summary>Righe più rilevanti ({log.Highlights.Count})</summary><pre>");
+                h.Append($"<details><summary>Righe più rilevanti ({log.Highlights.Count}{(ses != null ? ", prima quelle della sessione" : "")})</summary><pre>");
                 foreach (var hl in log.Highlights)
-                    h.Append('[').Append(E(hl.Kind)).Append(hl.Count > 1 ? $" ×{hl.Count}" : "").Append("] ").Append(E(hl.Text)).Append('\n');
+                    h.Append('[').Append(E(hl.Kind)).Append(hl.Count > 1 ? $" ×{hl.Count}" : "")
+                     .Append(ses != null ? (hl.InSession ? " · sessione" : " · fuori sessione") : "").Append("] ").Append(E(hl.Text)).Append('\n');
                 h.Append("</pre></details>");
             }
             h.Append("</section>\n");
@@ -1118,6 +1304,9 @@ svg .grid{stroke:var(--line);stroke-width:1}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;margin-top:6px}
 .legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
 .legend i.dash{height:0;border-top:2px dashed;background:none}
+.legend i.band{height:10px;width:14px;background:rgba(141,152,173,.28)}
+.verdict{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--surface2);border-left:3px solid var(--line)}
+.verdict.s-ok{border-left-color:var(--ok)}.verdict.s-warn{border-left-color:var(--warn)}
 details{margin:8px 0;background:var(--surface2);border-radius:10px;padding:8px 12px}
 summary{cursor:pointer;font-weight:600}
 pre{white-space:pre-wrap;word-break:break-word;font:12px/1.45 Consolas,'Cascadia Mono',monospace;margin:8px 0 0}
@@ -1154,6 +1343,9 @@ footer ul{padding-left:20px}
             CheckStatus.Info => "Info",
             _ => "OK"
         };
+
+        /// <summary>Come SevText, ma "Facoltativo" per i miglioramenti facoltativi.</summary>
+        public static string SevText(Recommendation r) => r.Optional ? "Facoltativo" : SevText(r.Severity);
 
         private static string SevClass(CheckStatus s) => s switch
         {
@@ -1197,8 +1389,9 @@ footer ul{padding-left:20px}
 
         private static string N(double v) => v.ToString("0.#", Inv);
 
-        /// <summary>Grafico a linee: xs in secondi; i null interrompono la linea.</summary>
-        public static string Line(IReadOnlyList<double> xs, IList<Series> series, IList<Ref>? refs = null, double? yMaxFixed = null)
+        /// <summary>Grafico a linee: xs in secondi; i null interrompono la linea; bands = tratti [da, a] (secondi) in grigio.</summary>
+        public static string Line(IReadOnlyList<double> xs, IList<Series> series, IList<Ref>? refs = null, double? yMaxFixed = null,
+            IList<(double From, double To)>? bands = null)
         {
             refs ??= new List<Ref>();
             var sb = new StringBuilder();
@@ -1232,6 +1425,13 @@ footer ul{padding-left:20px}
                 var y = Y(v);
                 sb.Append($"<line class=\"grid\" x1=\"{L}\" x2=\"{W - R}\" y1=\"{N(y)}\" y2=\"{N(y)}\"/>");
                 sb.Append($"<text x=\"{L - 6}\" y=\"{N(y + 4)}\" text-anchor=\"end\">{N(v)}</text>");
+            }
+            // bande (es. gioco fuori fuoco), sotto a tutto il resto
+            foreach (var (from, to) in bands ?? Array.Empty<(double, double)>())
+            {
+                double a = Math.Clamp(from, x0, x1), b = Math.Clamp(to, x0, x1);
+                if (!(b > a)) continue;
+                sb.Append($"<rect x=\"{N(X(a))}\" y=\"{T}\" width=\"{N(Math.Max(1, X(b) - X(a)))}\" height=\"{H - T - B}\" fill=\"#8D98AD\" opacity=\".18\"><title>gioco fuori fuoco</title></rect>");
             }
             // asse X (tempo)
             double span = x1 - x0;

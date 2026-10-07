@@ -95,6 +95,8 @@ namespace FNBoost.Report
             public ReportData Data = new();
             public SanitizeContext Context = new();
             public float[]? Frametimes;
+            /// <summary>Frame esclusi dalle statistiche (gioco fuori fuoco), per la colonna "focused" del CSV.</summary>
+            public bool[]? ExcludedMask;
             public string FnBoostLog = "";
             public string LogHighlights = "";
         }
@@ -179,6 +181,31 @@ namespace FNBoost.Report
                 }
             }
 
+            // ---- gioco fuori fuoco ----
+            // Sessioni registrate prima della misura del primo piano: se all'inizio/alla fine c'è un tratto a ~30 FPS con la
+            // GPU quasi ferma (Fortnite in secondo piano), statistiche, grafici e analisi usano una copia corretta.
+            if (session != null && ft != null)
+            {
+                try
+                {
+                    var repaired = FocusFilter.RepairLegacy(session, ft, input.StutterFactor > 1 ? input.StutterFactor : 2.5, Math.Max(0, input.StutterMinMs));
+                    if (repaired != null)
+                    {
+                        session = repaired;
+                        d.Notes.Add($"Sessione registrata prima che FN Boost controllasse il primo piano: {repaired.UnfocusedSec:0} s a ~30 FPS con la GPU quasi ferma " +
+                                    "all'inizio/alla fine (probabile gioco in secondo piano) sono stati esclusi dalle statistiche. È una stima.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn("Report: correzione del tratto in secondo piano non riuscita: " + ex.Message);
+                }
+            }
+            if (session is { UnfocusedSec: >= 1, UnfocusedEstimated: false })
+                d.Notes.Add($"{session.UnfocusedSec:0} s con il gioco non in primo piano (Fortnite in secondo piano scende da solo a ~30 FPS) " +
+                            "sono esclusi da statistiche, stutter e grafici; nel file frametimes.csv quei frame hanno focused = 0.");
+            var excludedMask = ft != null ? FocusFilter.MaskFromRanges(ft.Length, session?.ExcludedRanges) : null;
+
             // ---- contesto privacy ----
             var ctx = new SanitizeContext(Environment.UserName, Environment.MachineName);
             try
@@ -245,7 +272,7 @@ namespace FNBoost.Report
                 {
                     Log.Warn("Report: analisi della sessione non riuscita: " + ex.Message);
                 }
-                if (ft != null) d.Histogram = ReportBuilder.BuildHistogram(ft);
+                if (ft != null) d.Histogram = ReportBuilder.BuildHistogram(FocusFilter.Keep(ft, excludedMask));
             }
             try
             {
@@ -255,7 +282,8 @@ namespace FNBoost.Report
             {
                 Log.Warn("Report: andamento non calcolabile: " + ex.Message);
             }
-            var recent = history.Take(10).ToList();
+            // La sessione analizzata compare con i suoi numeri effettivi (anche se corretta per il tratto in secondo piano).
+            var recent = history.Take(10).Select(h => session != null && h.Id == session.Id ? session : h).ToList();
             if (session != null && recent.All(h => h.Id != session.Id)) recent.Insert(0, session);
             d.PreviousSessions = recent.Select(h => ReportBuilder.Summarize(h, session != null && h.Id == session.Id)).ToList();
 
@@ -264,13 +292,21 @@ namespace FNBoost.Report
                 d.Notes.Add("Nessun dato di rete: la misura di rete è disattivata o la sessione è stata registrata prima di questa funzione.");
 
             // ---- log di Fortnite ----
-            d.Log = FortniteLogAnalyzer.AnalyzeDirectory(Path.Combine(FortniteLocator.SavedDir, "Logs"), ctx);
+            // Solo le righe del periodo della sessione (± 60 s) diventano consigli; il resto del log è contesto.
+            // Gli orari del log di Unreal sono in UTC, StartedAt è l'ora locale: SessionWindowUtc converte.
+            DateTime? wStart = null, wEnd = null;
+            if (session != null && session.StartedAt != default)
+                (wStart, wEnd) = FortniteLogAnalyzer.SessionWindowUtc(session.StartedAt, session.DurationSec);
+            d.Log = FortniteLogAnalyzer.AnalyzeDirectory(Path.Combine(FortniteLocator.SavedDir, "Logs"), ctx, true, wStart, wEnd);
+            d.Fortnite.RhiInUse = d.Log?.RhiInUse;
+            d.Fortnite.GameBuild = d.Log?.GameBuild;
 
             // ---- privacy e raccomandazioni ----
             ReportBuilder.SanitizeInPlace(d, ctx);
             d.Recommendations = ReportBuilder.BuildRecommendations(d);
 
             b.Frametimes = loadFrametimes ? ft : null;
+            b.ExcludedMask = loadFrametimes ? excludedMask : null;
             b.LogHighlights = BuildLogHighlightsText(d.Log);
             b.FnBoostLog = string.Join(Environment.NewLine, Log.Tail(300).Select(l => Sanitizer.Sanitize(l, ctx)));
             return b;
@@ -354,7 +390,9 @@ namespace FNBoost.Report
             Scalability = new Dictionary<string, string>(s.Scalability),
             RayTracing = s.RayTracing,
             Nanite = s.Nanite,
-            MotionBlur = s.MotionBlur
+            MotionBlur = s.MotionBlur,
+            PreferredRhi = s.PreferredRhi,
+            PreferredFeatureLevel = s.PreferredFeatureLevel
         };
 
         // ================= ZIP =================
@@ -381,7 +419,7 @@ namespace FNBoost.Report
                         // Solo numeri: nessun dato personale possibile.
                         var entry = zip.CreateEntry("frametimes.csv", CompressionLevel.Optimal);
                         using var w = new StreamWriter(entry.Open(), Utf8, 1 << 16);
-                        ReportBuilder.WriteFrametimesCsv(w, ft);
+                        ReportBuilder.WriteFrametimesCsv(w, ft, b.ExcludedMask);
                     }
                     AddText(zip, "fortnite-log-highlights.txt", Guard(b.LogHighlights, ctx, "fortnite-log-highlights.txt"));
                     AddText(zip, "fnboost-log.txt", Guard(b.FnBoostLog, ctx, "fnboost-log.txt"));
@@ -427,15 +465,23 @@ namespace FNBoost.Report
                 return sb.ToString();
             }
             sb.AppendLine($"File: {string.Join(", ", log.Sources)}{(log.Truncated ? " (solo la parte più recente)" : "")}");
-            if (log.FirstTime != null) sb.AppendLine($"Periodo (orario del log): {log.FirstTime:yyyy-MM-dd HH:mm:ss} → {log.LastTime:yyyy-MM-dd HH:mm:ss}");
+            if (log.FirstTime != null) sb.AppendLine($"Periodo del log (UTC): {log.FirstTime:yyyy-MM-dd HH:mm:ss} → {log.LastTime:yyyy-MM-dd HH:mm:ss}");
             if (log.GameBuild != null) sb.AppendLine("Versione del gioco: " + log.GameBuild);
-            sb.AppendLine($"Righe: {log.TotalLines} · avvisi {log.Warnings} · errori {log.Errors} · crash {log.CrashMarkers} · rete {log.NetworkIssues} · hitch {log.Hitches} · shader/PSO {log.ShaderMessages} · memoria {log.MemoryWarnings} · saltate per privacy {log.SkippedPrivateLines}");
+            if (log.RhiInUse != null) sb.AppendLine("API grafica usata dal gioco: " + log.RhiInUse);
+            if (log.Session is { } ses && log.WindowStart != null)
+            {
+                sb.AppendLine($"Sessione analizzata (UTC, ±60 s): {log.WindowStart:yyyy-MM-dd HH:mm:ss} → {log.WindowEnd:HH:mm:ss}");
+                sb.AppendLine($"Durante la sessione: righe {ses.Lines} · avvisi {ses.Warnings} · errori {ses.Errors} · crash {ses.CrashMarkers} · rete {ses.NetworkIssues} · hitch {ses.Hitches} · shader/PSO {ses.ShaderMessages} · memoria {ses.MemoryWarnings}");
+                if (ses.Lines == 0) sb.AppendLine("  (il log letto non contiene righe di quel periodo: la sessione è più vecchia del log o il gioco è stato riavviato)");
+            }
+            sb.AppendLine($"Intero log (contesto): righe {log.TotalLines} · avvisi {log.Warnings} · errori {log.Errors} · crash {log.CrashMarkers} · rete {log.NetworkIssues} · hitch {log.Hitches} · shader/PSO {log.ShaderMessages} · memoria {log.MemoryWarnings} · saltate per privacy {log.SkippedPrivateLines}");
+            sb.AppendLine("Nota: Fortnite scrive migliaia di avvisi ed errori anche quando funziona tutto: contano solo i segnali specifici (crash, rete, hitch) del periodo della sessione.");
             if (log.ServerAddresses.Count > 0) sb.AppendLine("Server visti: " + string.Join(", ", log.ServerAddresses));
             if (log.Note != null) sb.AppendLine("Nota: " + log.Note);
             if (log.TopCategories.Count > 0)
             {
                 sb.AppendLine();
-                sb.AppendLine("Categorie con più avvisi/errori:");
+                sb.AppendLine("Categorie con più avvisi/errori (intero log):");
                 foreach (var c in log.TopCategories) sb.AppendLine($"  {c.Category}: {c.Warnings} avvisi, {c.Errors} errori");
             }
             if (log.GpuInfo.Count > 0)
@@ -445,7 +491,9 @@ namespace FNBoost.Report
                 foreach (var g in log.GpuInfo) sb.AppendLine("  " + g);
             }
             sb.AppendLine();
-            sb.AppendLine("Righe più rilevanti (dalla più importante):");
+            sb.AppendLine(log.Session != null
+                ? "Righe più rilevanti (prima quelle della sessione, poi il resto del log come contesto):"
+                : "Righe più rilevanti (dalla più importante):");
             sb.Append(FortniteLogAnalyzer.FormatHighlights(log));
             return sb.ToString();
         }
@@ -460,7 +508,8 @@ namespace FNBoost.Report
             sb.AppendLine("  report.json                  Gli stessi dati in formato strutturato (schema " + d.SchemaVersion + "), comodo per un assistente AI o per il supporto.");
             sb.AppendLine("  summary.txt                  Riassunto breve da incollare direttamente in una chat.");
             if (hasFrametimes)
-                sb.AppendLine("  frametimes.csv               Tutti i frametime della sessione (index, time_ms, frametime_ms, fps) per analisi dettagliate.");
+                sb.AppendLine("  frametimes.csv               Tutti i frametime della sessione (index, time_ms, frametime_ms, fps, focused) per analisi dettagliate.\n" +
+                              "                               focused = 0: gioco non in primo piano (Fortnite scende da solo a ~30 FPS), escluso dalle statistiche.");
             sb.AppendLine("  fortnite-log-highlights.txt  Le righe più significative del log di Fortnite (errori, rete, hitch, shader, crash).");
             sb.AppendLine("  fnboost-log.txt              Le ultime righe del registro di FN Boost (tweak applicati, errori dell'app).");
             sb.AppendLine();
@@ -479,6 +528,9 @@ namespace FNBoost.Report
             sb.AppendLine();
             sb.AppendLine("COME SONO MISURATI I DATI");
             sb.AppendLine("  FPS e frametime arrivano dagli eventi ETW Present di Windows (come PresentMon e Xbox Game Bar), senza toccare il gioco.");
+            sb.AppendLine("  I frame presentati mentre il gioco non era la finestra in primo piano (più ~0,5 s di assestamento al ritorno)");
+            sb.AppendLine("  non contano nelle statistiche: in secondo piano Fortnite si limita da solo a ~30 FPS.");
+            sb.AppendLine("  Il log di Fortnite è analizzato per il periodo della sessione (±60 s, orari UTC); il resto del log è solo contesto.");
             sb.AppendLine("  Il ping è un ping ICMP inviato da FN Boost: può differire di qualche ms da quello mostrato in Fortnite.");
             return sb.ToString();
         }

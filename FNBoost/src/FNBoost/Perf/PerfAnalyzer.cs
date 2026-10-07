@@ -16,13 +16,23 @@ namespace FNBoost.Perf
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
+        /// <summary>
+        /// Analizza una sessione. I frame con il gioco fuori fuoco (ExcludedRanges, secondi Unfocused) non contano.
+        /// Le sessioni vecchie, registrate prima della misura del primo piano, con un tratto iniziale/finale a ~30 FPS
+        /// e GPU quasi ferma vengono analizzate sul gioco vero (FocusFilter.RepairLegacy) se ci sono i frametime;
+        /// senza frametime l'analisi lo dice invece di dare la colpa al PC.
+        /// </summary>
         public static List<PerfInsight> Analyze(PerfSession session, IReadOnlyList<PerfSession> history, IReadOnlyList<float>? frametimes = null)
         {
             var list = new List<PerfInsight>();
             if (session == null) return list;
+            var original = session;
+            var repaired = FocusFilter.RepairLegacy(session, frametimes);
+            if (repaired != null) session = repaired;
+            var focusedFt = frametimes != null ? FocusFilter.FocusedFrametimes(frametimes, session) : null;
             var st = session.Stats;
-            if ((st == null || !st.HasData) && frametimes != null && frametimes.Count >= 2)
-                st = FrameStats.Compute(frametimes);
+            if ((st == null || !st.HasData) && focusedFt != null && focusedFt.Length >= 2)
+                st = FrameStats.Compute(focusedFt);
             if (st == null || !st.HasData)
             {
                 list.Add(new PerfInsight
@@ -36,14 +46,30 @@ namespace FNBoost.Perf
             }
 
             var seconds = session.Seconds ?? new List<SecondSample>();
-            var active = seconds.Where(s => s.Fps > 0).ToList();
+            var active = seconds.Where(s => s.Fps > 0 && !s.Unfocused).ToList();
 
-            AddOverall(list, st);
-            AddStutterRate(list, st);
-            AddShaderCompilation(list, session, st, seconds, frametimes);
+            // Sessione vecchia con tratto in secondo piano ma senza frametime per ricalcolare: statistiche falsate.
+            var legacy = !session.FocusTracked && !session.UnfocusedEstimated ? FocusFilter.DetectBackground(seconds) : null;
+            double avg = st.AvgFps;
+            if (legacy != null)
+            {
+                active = seconds.Skip(legacy.LeadSeconds).Take(seconds.Count - legacy.LeadSeconds - legacy.TrailSeconds)
+                    .Where(s => s.Fps > 0 && !s.Unfocused).ToList();
+                if (active.Count > 0) avg = active.Average(s => s.Fps);
+            }
+
+            // Statistiche "grezze" (con il tratto in secondo piano) solo per confronto nel messaggio.
+            var raw = repaired != null ? original.Stats
+                : session.UnfocusedEstimated && frametimes != null && frametimes.Count >= 2 ? FrameStats.Compute(frametimes) : null;
+            AddFocus(list, original, session, legacy, raw);
+            if (legacy == null)
+            {
+                AddOverall(list, st);
+                AddStutterRate(list, st);
+            }
+            AddShaderCompilation(list, session, st, seconds, focusedFt);
 
             // ---- Limite FPS: cap, VSync/refresh, sotto il refresh ----
-            double avg = st.AvgFps;
             double cap = session.FpsCap ?? 0;
             int hz = session.RefreshHz ?? 0;
             bool capped = cap > 0 && avg >= 0.97 * cap;
@@ -202,6 +228,65 @@ namespace FNBoost.Perf
         }
 
         // ---- sezioni dell'analisi ----
+
+        /// <summary>Quanto tempo con il gioco fuori fuoco è stato escluso (misurato o stimato), o perché i numeri sono falsati.</summary>
+        private static void AddFocus(List<PerfInsight> list, PerfSession original, PerfSession session, BackgroundSegments? legacy, FrameStatsResult? raw)
+        {
+            if (legacy != null)
+            {
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Info,
+                    Title = "Probabile gioco in secondo piano",
+                    Message = $"{SegmentText(legacy)} la sessione è a ~30 FPS con la GPU sotto il 10%, mentre il resto va a circa {N0(legacy.CoreMedianFps)} FPS. " +
+                              "È la firma di Fortnite in secondo piano (per esempio mentre avvii o fermi la registrazione dalla finestra di FN Boost): " +
+                              $"1% low ({N0(original.Stats?.Low1Fps ?? 0)} FPS), stutter e regolarità della sessione sono falsati da quel tratto e non indicano un problema del PC.",
+                    Hint = "I frametime di questa sessione non sono disponibili, quindi non è stato possibile ricalcolare le statistiche sul gioco vero. " +
+                           "Le sessioni nuove escludono da sole il tempo fuori fuoco."
+                });
+                return;
+            }
+            if (session.UnfocusedEstimated)
+            {
+                // Tratti già marcati nei campioni al secondo (secondi Unfocused all'inizio e alla fine).
+                var secs = session.Seconds ?? new List<SecondSample>();
+                int lead = 0, trail = 0;
+                while (lead < secs.Count && secs[lead].Unfocused) lead++;
+                while (trail < secs.Count - lead && secs[secs.Count - 1 - trail].Unfocused) trail++;
+                var seg = new BackgroundSegments { LeadSeconds = lead, TrailSeconds = trail, TotalSeconds = secs.Count };
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Info,
+                    Title = "Gioco in secondo piano escluso",
+                    Message = $"{(seg.Any ? SegmentText(seg) : "In una parte")} la sessione era a ~30 FPS con la GPU sotto il 10%: probabile gioco in secondo piano " +
+                              "(per esempio mentre avviavi o fermavi la registrazione da FN Boost). " +
+                              $"Escluso dalle statistiche ({N0(session.UnfocusedSec)} s, {session.ExcludedFrames} frame): sul gioco vero media {N0(session.Stats.AvgFps)} FPS e 1% low {N0(session.Stats.Low1Fps)} FPS" +
+                              (raw is { HasData: true } ? $", contro {N0(raw.AvgFps)} e {N0(raw.Low1Fps)} contando anche quel tratto." : "."),
+                    Hint = "È una stima su una sessione registrata prima che FN Boost controllasse il primo piano; le sessioni nuove lo misurano direttamente."
+                });
+                return;
+            }
+            if (session.FocusTracked && session.UnfocusedSec >= 1)
+            {
+                double inFocus = Math.Max(0, session.DurationSec - session.UnfocusedSec);
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Info,
+                    Title = "Tempo fuori fuoco escluso",
+                    Message = $"{N0(session.UnfocusedSec)} s ({session.ExcludedFrames} frame) con il gioco non in primo piano non sono stati contati: " +
+                              "in secondo piano Fortnite si limita da solo a ~30 FPS, quindi non sono prestazioni del PC.",
+                    Hint = $"Le statistiche si riferiscono a {DurationText(inFocus)} di gioco in primo piano (esclusi anche ~0,5 s di assestamento a ogni ritorno nel gioco)."
+                });
+            }
+        }
+
+        /// <summary>"I primi 7 s e gli ultimi 8 s del" / "I primi 7 s della" / "Gli ultimi 8 s della".</summary>
+        private static string SegmentText(BackgroundSegments seg)
+        {
+            if (seg.LeadSeconds > 0 && seg.TrailSeconds > 0) return $"Nei primi {seg.LeadSeconds} s e negli ultimi {seg.TrailSeconds} s";
+            if (seg.LeadSeconds > 0) return $"Nei primi {seg.LeadSeconds} s";
+            return $"Negli ultimi {seg.TrailSeconds} s";
+        }
 
         private static void AddOverall(List<PerfInsight> list, FrameStatsResult st)
         {
@@ -446,7 +531,7 @@ namespace FNBoost.Perf
             bool wifi = string.Equals(net.ConnectionType, "Wi-Fi", StringComparison.OrdinalIgnoreCase);
             var game = net.Game;
             var gw = net.Gateway;
-            string target = server ? "server di gioco" : "regione Epic" + (string.IsNullOrEmpty(net.RegionName) ? "" : " " + net.RegionName);
+            string target = server ? "il server di gioco" : "la regione Epic" + (string.IsNullOrEmpty(net.RegionName) ? "" : " " + net.RegionName);
             bool gwSlow = gw != null && gw.Received >= 10 && gw.AvgMs is > 10;
             bool gwJitter = gw != null && gw.Received >= 10 && gw.JitterMs is > 5;
             bool gwLoss = gw != null && gw.Sent >= 10 && gw.Sent - gw.Received >= 2 && gw.LossPct > 0;
@@ -455,7 +540,7 @@ namespace FNBoost.Perf
             // ---- ping ----
             if (game != null && game.Received >= 10 && game.AvgMs is { } ping)
             {
-                var msg = $"Ping medio {N0(ping)} ms verso il {target} (minimo {N0(game.MinMs ?? ping)}, 95° percentile {N0(game.P95Ms ?? ping)}), " +
+                var msg = $"Ping medio {N0(ping)} ms verso {target} (minimo {N0(game.MinMs ?? ping)}, 95° percentile {N0(game.P95Ms ?? ping)}), " +
                           $"jitter {N1(game.JitterMs ?? 0)} ms, perdita {N1(game.LossPct)}%.";
                 if (!server)
                     msg += " Il server della partita non risponde al ping (o non è stato rilevato): il valore è quello della regione Epic, indicativo del ping reale.";
@@ -505,7 +590,7 @@ namespace FNBoost.Perf
                     {
                         Severity = jit > 25 ? CheckStatus.Bad : CheckStatus.Warn,
                         Title = "Ping instabile (jitter)",
-                        Message = $"Il ping varia in media di {N1(jit)} ms da un secondo all'altro verso il {target}.",
+                        Message = $"Il ping varia in media di {N1(jit)} ms da un secondo all'altro verso {target}.",
                         Hint = gwJitter || gwSlow
                             ? "L'instabilità c'è già verso il router: la causa è nella rete di casa (Wi-Fi, router, altri dispositivi che scaricano)."
                             : "Il router è stabile: la variabilità nasce fuori casa (linea, provider o percorso verso il server). " +
@@ -526,7 +611,7 @@ namespace FNBoost.Perf
                     {
                         Severity = game.LossPct > 3 ? CheckStatus.Bad : CheckStatus.Warn,
                         Title = "Perdita di pacchetti",
-                        Message = $"{N1(game.LossPct)}% dei ping verso il {target} senza risposta ({game.Sent - game.Received} su {game.Sent}).",
+                        Message = $"{N1(game.LossPct)}% dei ping verso {target} senza risposta ({game.Sent - game.Received} su {game.Sent}).",
                         Hint = hint
                     });
                 }

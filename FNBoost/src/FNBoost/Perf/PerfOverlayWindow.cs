@@ -95,7 +95,7 @@ namespace FNBoost.Perf
         public void Update(LiveSnapshot snap)
         {
             // Passando da "in attesa" ai numeri (o viceversa) la larghezza riparte da zero.
-            if (_snap == null || _snap.HasData != snap.HasData) _growW = 0;
+            if (_snap == null || _snap.HasData != snap.HasData || _snap.GameFocused != snap.GameFocused) _growW = 0;
             _snap = snap;
             RefreshLayout(refreshMonitor: false);
         }
@@ -249,6 +249,14 @@ namespace FNBoost.Perf
                     _ => "FPS: in attesa del gioco…"
                 };
                 var ft = Ft(msg, Math.Max(9, fs * 0.8), _text, false, ppd);
+                Add(ft, new Point(pad, pad * 0.7));
+                return Finish(new Size(ft.Width + pad * 2, ft.Height + pad * 1.4), minWidth);
+            }
+            if (!snap.GameFocused)
+            {
+                // Gioco in secondo piano (es. mentre configuri FN Boost): Fortnite scende da solo a ~30 FPS,
+                // mostrarli sembrerebbe un problema del PC. Le statistiche riprendono al ritorno nel gioco.
+                var ft = Ft("FPS: gioco fuori fuoco", Math.Max(9, fs * 0.8), _text, false, ppd);
                 Add(ft, new Point(pad, pad * 0.7));
                 return Finish(new Size(ft.Width + pad * 2, ft.Height + pad * 1.4), minWidth);
             }

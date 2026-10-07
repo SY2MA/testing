@@ -17,6 +17,8 @@ namespace FNBoost.Perf
     public sealed class PerfService : IDisposable
     {
         private const int TickMs = 250;
+        /// <summary>Ogni quanto si controlla se il gioco è la finestra in primo piano (solo GetForegroundWindow, nessun handle).</summary>
+        private const int FocusPollMs = 100;
         private const int RecentCount = 600;
         private const int HistorySeconds = 120;
         /// <summary>Senza frame da così tanto (tempo di ricezione) il bersaglio non è più "attivo".</summary>
@@ -36,6 +38,7 @@ namespace FNBoost.Perf
         private FrameCapture? _capture;
         private SystemSampler? _sampler;
         private Timer? _timer;
+        private Timer? _focusTimer;
         private bool _running;
         private PerfTarget _runningTarget;
         private volatile bool _disposed;
@@ -59,6 +62,11 @@ namespace FNBoost.Perf
         private double _continuousSinceTs;
         private SystemSample _sys;
         private FrameStatsResult _lastWindowStats = new();
+        /// <summary>Primo piano del gioco nel tempo (orologio interno): i frame fuori fuoco non entrano nelle statistiche.</summary>
+        private readonly FocusTimeline _focus = new();
+        /// <summary>Stima di (orologio interno − timestamp ETW) dal ritardo minimo di ricezione dei frame; NaN senza frame.</summary>
+        private double _liveClockOffsetMs = double.NaN;
+        private bool _focusErrorLogged;
 
         // Registrazione (sotto _lock).
         private Recording? _rec;
@@ -163,6 +171,7 @@ namespace FNBoost.Perf
             var timer = new Timer(OnTimer, null, Timeout.Infinite, Timeout.Infinite);
             _timer = timer;
             timer.Change(0, Timeout.Infinite);
+            _focusTimer = new Timer(OnFocusPoll, null, 0, FocusPollMs);
 
             PublishNow(new LiveSnapshot
             {
@@ -183,9 +192,12 @@ namespace FNBoost.Perf
             _running = false;
             var timer = _timer;
             _timer = null;
+            var focusTimer = _focusTimer;
+            _focusTimer = null;
             try
             {
                 timer?.Dispose();
+                focusTimer?.Dispose();
             }
             catch (Exception ex)
             {
@@ -345,6 +357,7 @@ namespace FNBoost.Perf
         private PerfSession? FinishRecording(bool manual, string? reason)
         {
             Recording? rec;
+            ExclusionInterval[]? focus;
             lock (_lock)
             {
                 rec = _rec;
@@ -353,6 +366,8 @@ namespace FNBoost.Perf
                 if (rec == null) return null;
                 // Dopo uno stop manuale non si riparte da soli finché quel gioco continua a renderizzare.
                 if (manual && rec.Pid != 0) _autoSuppressPid = rec.Pid;
+                // Il primo piano conta solo se è stato davvero controllato (altrimenti nessuna esclusione).
+                focus = _focus.HasData ? _focus.Snapshot() : null;
             }
 
             try
@@ -362,19 +377,25 @@ namespace FNBoost.Perf
                 if (!rec.FortniteConfigRead && IsFortnite(rec.ProcessName)) ReadFortniteConfig(rec);
 
                 var ft = rec.Ft.ToArray();
-                var session = BuildSession(rec, ft);
+                var session = BuildSession(rec, ft, focus);
                 int min = Math.Max(0, Settings.MinSessionSeconds);
                 var why = reason == null ? "" : $" ({reason})";
-                if (!session.Stats.HasData || session.DurationSec < min)
+                // Il tempo con il gioco in secondo piano non conta per la durata minima.
+                double focusedSec = Math.Max(0, session.DurationSec - session.UnfocusedSec);
+                if (!session.Stats.HasData || focusedSec < min)
                 {
-                    Log.Info($"Registrazione terminata{why}: {session.DurationSec:0} s, troppo breve per essere salvata (minimo {min} s)");
+                    Log.Info($"Registrazione terminata{why}: {focusedSec:0} s con il gioco in primo piano" +
+                             (session.UnfocusedSec >= 1 ? $" (più {session.UnfocusedSec:0} s fuori fuoco)" : "") +
+                             $", troppo breve per essere salvata (minimo {min} s)");
                     QueuePublish(BuildSnapshotSafe());
                     return null;
                 }
 
+                // Si salvano tutti i frametime (anche quelli esclusi, indicati da ExcludedRanges) per non perdere dati.
                 Store.Save(session, ft);
                 Log.Info($"Sessione salvata{why}: {DisplayName(session.ProcessName)} · {session.DurationText} · " +
-                         $"media {session.Stats.AvgFps:0} FPS · 1% low {session.Stats.Low1Fps:0} FPS");
+                         $"media {session.Stats.AvgFps:0} FPS · 1% low {session.Stats.Low1Fps:0} FPS" +
+                         (session.UnfocusedSec >= 1 ? $" · {session.UnfocusedSec:0} s fuori fuoco esclusi" : ""));
                 RaiseOnUi(() => SessionSaved?.Invoke(session));
                 QueuePublish(BuildSnapshotSafe());
                 return session;
@@ -386,10 +407,16 @@ namespace FNBoost.Perf
             }
         }
 
-        private PerfSession BuildSession(Recording rec, float[] ft)
+        private PerfSession BuildSession(Recording rec, float[] ft, ExclusionInterval[]? focus)
         {
             double factor = Settings.StutterFactor > 1 ? Settings.StutterFactor : 2.5;
             double minMs = Math.Max(0, Settings.StutterMinMs);
+            var ts = rec.Ts;
+            // Frame presentati con il gioco fuori fuoco (più assestamento e frame a cavallo del cambio): esclusi.
+            bool[]? excluded = focus != null && ft.Length > 0
+                ? FocusFilter.ExcludedMask(ts, ft, focus, double.IsNaN(rec.FrameClockOffsetMs) ? 0 : rec.FrameClockOffsetMs)
+                : null;
+            var frames = FocusFilter.BuildSession(ft, ts, excluded, factor, minMs);
             var session = new PerfSession
             {
                 Id = rec.Id,
@@ -402,7 +429,11 @@ namespace FNBoost.Perf
                 FpsCap = rec.FpsCap,
                 RefreshHz = rec.RefreshHz,
                 VramTotalGb = rec.VramTotalGb,
-                Stats = FrameStats.Compute(ft, factor, minMs)
+                Stats = frames.Stats,
+                FocusTracked = focus != null,
+                UnfocusedSec = Math.Round(frames.UnfocusedSec, 2),
+                ExcludedFrames = frames.ExcludedFrames,
+                ExcludedRanges = frames.ExcludedRanges.Count > 0 ? frames.ExcludedRanges : null
             };
             try
             {
@@ -416,27 +447,10 @@ namespace FNBoost.Perf
             if (ft.Length < 2) return session;
 
             // Tempo della sessione basato sui timestamp ETW (comprende le pause brevi tra i frame).
-            double baseTs = rec.Ts[0] - ft[0];
-            double span = rec.Ts[rec.Ts.Count - 1] - baseTs;
-            session.DurationSec = span / 1000.0;
-
-            int full = (int)(span / 1000.0);
-            double rest = span - full * 1000.0;
-            int nSec = full + (rest >= 500 ? 1 : 0);
+            session.DurationSec = frames.DurationSec;
+            int nSec = frames.Seconds.Count;
             if (nSec == 0) return session;
-
-            var flags = FrameStats.StutterFlags(ft, factor, minMs);
-            var buckets = new List<float>?[nSec];
-            var stutters = new int[nSec];
-            for (int i = 0; i < ft.Length; i++)
-            {
-                // Un frame appartiene al secondo in cui termina: (k·1000, (k+1)·1000] → k.
-                int sec = (int)Math.Ceiling((rec.Ts[i] - baseTs) / 1000.0) - 1;
-                if (sec < 0) sec = 0;
-                if (sec >= nSec) continue; // ultimo secondo parziale troppo corto
-                (buckets[sec] ??= new List<float>()).Add(ft[i]);
-                if (flags[i]) stutters[sec]++;
-            }
+            double baseTs = frames.BaseTs;
 
             // Campioni di sistema/rete allineati per istante (non per indice): il timer a 1 Hz deriva
             // (250 ms + durata del tick) e può partire prima del primo frame; il traffico arriva ~2 s dopo.
@@ -457,15 +471,8 @@ namespace FNBoost.Perf
 
             for (int s = 0; s < nSec; s++)
             {
-                var b = buckets[s];
-                var sample = new SecondSample { T = s, Stutters = stutters[s] };
-                if (b != null && b.Count > 0)
-                {
-                    bool partial = s == full; // solo l'ultimo, se incluso
-                    sample.Fps = partial ? b.Count * 1000.0 / rest : b.Count;
-                    sample.Low1Fps = FrameStats.LowFps(b, 0.01);
-                    sample.MaxFrametimeMs = b.Max();
-                }
+                // FPS, 1% low, frame più lungo e stutter del secondo (solo frame in primo piano) arrivano da FocusFilter.
+                var sample = frames.Seconds[s];
                 if (sysIdx[s] >= 0)
                 {
                     var sys = rec.Sys[sysIdx[s]];
@@ -543,6 +550,8 @@ namespace FNBoost.Perf
 
                 if (double.IsNaN(_lastTs) || ts - _lastTs > FrameCapture.PauseMs + 1)
                     _continuousSinceTs = ts - ft;
+                double liveOff = now - ts;
+                if (double.IsNaN(_liveClockOffsetMs) || liveOff < _liveClockOffsetMs) _liveClockOffsetMs = liveOff;
                 _window.Add(ts, ft);
                 _lastTs = ts;
                 _lastFt = ft;
@@ -577,6 +586,35 @@ namespace FNBoost.Perf
                 {
                     // Stop in corso.
                 }
+            }
+        }
+
+        /// <summary>
+        /// Controllo del primo piano (~10 volte al secondo): solo GetForegroundWindow + GetWindowThreadProcessId,
+        /// confrontati con il PID del gioco misurato. Nessun handle verso il processo del gioco.
+        /// </summary>
+        private void OnFocusPoll(object? state)
+        {
+            if (_disposed || !_running) return;
+            try
+            {
+                int fgPid = 0;
+                var hwnd = Native.GetForegroundWindow();
+                if (hwnd != IntPtr.Zero && Native.GetWindowThreadProcessId(hwnd, out var p) != 0) fgPid = (int)p;
+                double now = _clock.Elapsed.TotalMilliseconds;
+                lock (_lock)
+                {
+                    int gamePid = _rec?.Pid ?? 0;
+                    if (gamePid == 0) gamePid = _livePid;
+                    bool focused = fgPid != 0 && (gamePid != 0 ? fgPid == gamePid : Array.IndexOf(_targetPids, fgPid) >= 0);
+                    _focus.Add(now, focused);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (_focusErrorLogged) return;
+                _focusErrorLogged = true;
+                Log.Warn("Controllo del primo piano non riuscito: " + ex.Message);
             }
         }
 
@@ -632,6 +670,8 @@ namespace FNBoost.Perf
             }
 
             // ---- 4. statistiche dal vivo ----
+            if (_tick % 240 == 0)
+                lock (_lock) _focus.TrimBefore(now - MaxRecordingMs - 60000); // gli intervalli servono solo alle registrazioni in corso
             var snap = BuildSnapshot(now, secondTick);
 
             // ---- 5. registrazione automatica ----
@@ -741,11 +781,13 @@ namespace FNBoost.Perf
             double factor = Settings.StutterFactor > 1 ? Settings.StutterFactor : 2.5;
             double minMs = Math.Max(0, Settings.StutterMinMs);
 
-            float[] windowFt, recent;
+            float[] allFt;
+            double[] allTs;
             int livePid;
-            double lastTs, lastReceipt, currentFps, recSeconds = 0;
+            double lastTs, lastReceipt, currentFps, recSeconds = 0, offset;
             float lastFt;
-            bool recording;
+            bool recording, focusedNow, settled;
+            ExclusionInterval[] focus;
             SystemSample sys;
             double[] history;
             lock (_lock)
@@ -760,13 +802,17 @@ namespace FNBoost.Perf
                 if (!fresh && now - lastReceipt > 5000 && _window.Count > 0) _window.Clear();
                 if (!double.IsNaN(lastTs)) _window.TrimBefore(lastTs - windowSec * 1000.0);
 
-                windowFt = _window.CopyFrametimes(_window.Count);
-                recent = _window.CopyFrametimes(RecentCount);
+                _window.CopyAll(out allTs, out allFt);
                 currentFps = fresh && !double.IsNaN(lastTs) ? _window.CountSince(lastTs - 1000.0) : 0;
+                focusedNow = _focus.Focused;
+                settled = focusedNow && (!_focus.HasData || now - _focus.FocusedSinceMs >= FocusTimeline.SettleMs);
+                focus = _focus.Snapshot();
+                offset = _liveClockOffsetMs;
 
                 if (secondTick)
                 {
-                    _fpsHistory.Enqueue(currentFps);
+                    // Secondi fuori fuoco (o appena tornati in primo piano) = buco nel grafico, non ~30 FPS.
+                    _fpsHistory.Enqueue(settled ? currentFps : double.NaN);
                     while (_fpsHistory.Count > HistorySeconds) _fpsHistory.Dequeue();
                 }
                 history = _fpsHistory.ToArray();
@@ -774,6 +820,12 @@ namespace FNBoost.Perf
                 if (_rec != null) recSeconds = Math.Max(0, (now - _rec.StartReceiptMs) / 1000.0);
                 sys = _sys;
             }
+
+            // Solo i frame presentati con il gioco in primo piano entrano nella finestra mobile.
+            var excluded = FocusFilter.ExcludedMask(allTs, allFt, focus, offset);
+            var windowFt = FocusFilter.Keep(allFt, excluded);
+            int excludedCount = allFt.Length - windowFt.Length;
+            var recent = windowFt.Length <= RecentCount ? windowFt : windowFt.AsSpan(windowFt.Length - RecentCount).ToArray();
 
             // Con finestre enormi si ricalcola a 2 Hz per non sprecare CPU.
             FrameStatsResult stats;
@@ -785,7 +837,7 @@ namespace FNBoost.Perf
             var name = livePid != 0 ? NameOf(livePid) : null;
             if (name == null && livePid != 0 && Settings.Target == PerfTarget.Fortnite) name = FortniteLocator.ClientProcessName;
 
-            var (status, text) = ComputeStatus(now, active, name);
+            var (status, text) = ComputeStatus(now, active, name, focusedNow);
             string? shownName = active ? name : null;
             int? shownPid = active ? livePid : null;
             if (!active && Settings.Target == PerfTarget.Fortnite)
@@ -800,7 +852,8 @@ namespace FNBoost.Perf
             }
             return new LiveSnapshot
             {
-                HasData = active && stats.HasData,
+                // Con il gioco fuori fuoco i dati "ci sono" (la UI mostra "fuori fuoco"), anche se la finestra è vuota.
+                HasData = active && (stats.HasData || !focusedNow),
                 ProcessName = shownName,
                 ProcessId = shownPid,
                 CurrentFps = currentFps,
@@ -817,16 +870,20 @@ namespace FNBoost.Perf
                 RecordingSeconds = recSeconds,
                 Status = status,
                 StatusText = text,
-                Net = _netActive ? _netSnap : null
+                Net = _netActive ? _netSnap : null,
+                GameFocused = focusedNow,
+                WindowExcludedFrames = excludedCount
             };
         }
 
-        private (CaptureStatus, string) ComputeStatus(double now, bool active, string? name)
+        private (CaptureStatus, string) ComputeStatus(double now, bool active, string? name, bool focused)
         {
             var err = _captureError;
             if (err != null) return (CaptureStatus.Error, err);
             if (now < _lossUntilMs)
                 return (CaptureStatus.Error, "Alcuni eventi ETW sono andati persi: le misure di questi secondi potrebbero essere imprecise.");
+            if (active && !focused)
+                return (CaptureStatus.Capturing, $"{DisplayName(name)} fuori fuoco: in secondo piano il gioco rallenta da solo, questi frame non contano nelle statistiche");
             if (active) return (CaptureStatus.Capturing, "Misurazione attiva · " + DisplayName(name));
             if (Settings.Target == PerfTarget.Fortnite)
             {
@@ -853,7 +910,9 @@ namespace FNBoost.Perf
 
                 if (rec == null)
                 {
-                    if (Settings.AutoRecord && Settings.CaptureEnabled && fresh && _livePid != 0 &&
+                    // Mai partire con il gioco in secondo piano: serve il gioco in primo piano da almeno 5 s.
+                    bool focusOk = !_focus.HasData || (_focus.Focused && now - _focus.FocusedSinceMs >= AutoStartAfterMs);
+                    if (Settings.AutoRecord && Settings.CaptureEnabled && fresh && _livePid != 0 && focusOk &&
                         _livePid != _autoSuppressPid && !_autoStartPending && !double.IsNaN(_lastTs) &&
                         _lastTs - _continuousSinceTs >= AutoStartAfterMs)
                     {
@@ -1455,6 +1514,8 @@ namespace FNBoost.Perf
                 _continuousSinceTs = 0;
                 _sys = default;
                 _lastWindowStats = new FrameStatsResult();
+                _focus.Reset();
+                _liveClockOffsetMs = double.NaN;
                 _autoStartPending = false;
                 _stopPending = false;
                 _autoSuppressPid = 0;
@@ -1552,14 +1613,17 @@ namespace FNBoost.Perf
                 return c;
             }
 
-            /// <summary>Ultimi n frametime, dal più vecchio al più recente.</summary>
-            public float[] CopyFrametimes(int n)
+            /// <summary>Tutti gli istanti e i frametime, dal più vecchio al più recente.</summary>
+            public void CopyAll(out double[] ts, out float[] ft)
             {
-                n = Math.Min(n, _count);
-                var result = new float[n];
-                int first = _count - n;
-                for (int k = 0; k < n; k++) result[k] = _ft[(_start + first + k) % _ft.Length];
-                return result;
+                ts = new double[_count];
+                ft = new float[_count];
+                for (int k = 0; k < _count; k++)
+                {
+                    int i = (_start + k) % _ts.Length;
+                    ts[k] = _ts[i];
+                    ft[k] = _ft[i];
+                }
             }
 
             public void Clear()

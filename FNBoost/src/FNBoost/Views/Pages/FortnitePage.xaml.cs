@@ -89,7 +89,9 @@ namespace FNBoost.Views.Pages
             };
             RenderNote.Text = s.RenderMode == RenderMode.Unknown
                 ? $"Valore attuale non standard ({s.RawRhi}): non verrà modificato se non scegli una modalità."
-                : "DirectX 11 è stato rimosso da Epic: la modalità Performance oggi gira su DirectX 12 a feature level ridotto.";
+                : s.RenderMode == RenderMode.Performance
+                    ? $"Performance usa Direct3D 11 a feature level ridotto (ES3_1), come scrive il gioco nel suo log. Valore nel file: {s.RawRhi}."
+                    : $"DirectX 12 a pieno feature level (SM6): necessario per ray tracing e Nanite. Valore nel file: {s.RawRhi}.";
             FpsCombo.Text = s.FrameRateLimit <= 0 ? "Illimitato" : s.FrameRateLimit.ToString("0", CultureInfo.InvariantCulture);
             ReflexCombo.SelectedIndex = Math.Clamp(s.Reflex, 0, 2);
             WindowCombo.SelectedIndex = Math.Clamp(s.WindowMode, 0, 2);
