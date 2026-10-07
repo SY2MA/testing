@@ -279,7 +279,7 @@ namespace FNBoost
             {
                 var session = perf.StopRecording();
                 NotifyTray(session != null
-                    ? $"Registrazione salvata: {session.DurationText} · media {session.Stats.AvgFps:0} FPS · 1% low {session.Stats.Low1Fps:0} FPS."
+                    ? $"Registrazione salvata: {session.DurationText} · {(session.HeadlineIsMatch ? "solo partita: " : "")}media {session.HeadlineStats.AvgFps:0} FPS · 1% low {session.HeadlineStats.Low1Fps:0} FPS."
                     : $"Registrazione fermata: troppo breve per essere salvata (minimo {Settings.Perf.MinSessionSeconds} s).");
                 return;
             }

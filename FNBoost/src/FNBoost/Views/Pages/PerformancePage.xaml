@@ -754,6 +754,8 @@
                     <TextBlock Text="ANALISI SESSIONE" Style="{StaticResource Small}" FontWeight="SemiBold" />
                     <TextBlock x:Name="AnalysisTitle" FontSize="19" FontWeight="SemiBold" Margin="0,4,0,0" TextWrapping="Wrap" />
                     <TextBlock x:Name="AnalysisMeta" Style="{StaticResource Small}" Margin="0,4,0,0" />
+                    <TextBlock x:Name="PhaseText" Style="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed"
+                               ToolTip="Fasi riconosciute dal traffico del server di gioco (in lobby il server non manda dati) e dai frame dei caricamenti (oltre 250 ms). Media, low e stutter qui sotto contano solo la partita." />
 
                     <ItemsControl x:Name="StatsGrid" Margin="0,14,-8,0" ItemTemplate="{StaticResource StatTemplate}">
                         <ItemsControl.ItemsPanel>
@@ -847,6 +849,92 @@
                                                 <TextBlock Grid.Column="2" Text="{Binding MaxCpu}" TextAlignment="Right"
                                                            FontFamily="{StaticResource MonoFont}" />
                                                 <TextBlock Grid.Column="3" Text="{Binding Ram}" TextAlignment="Right"
+                                                           FontFamily="{StaticResource MonoFont}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Scatti più lunghi della partita -->
+                    <StackPanel x:Name="HitchPanel" Margin="0,14,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Scatti più lunghi della partita" Style="{StaticResource CardTitle}"
+                                   ToolTip="Frame della partita lunghi almeno 25 ms (lobby e caricamenti esclusi), con quello che succedeva in quel secondo. Sono coincidenze, non prove." />
+                        <TextBlock x:Name="HitchImpactText" Style="{StaticResource Small}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                        <Border Background="{StaticResource Surface2Brush}" CornerRadius="8" Padding="12,8" Margin="0,10,0,0">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Sessione" Style="{StaticResource Small}" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="1" Text="Partita" Style="{StaticResource Small}" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="2" Text="Durata" Style="{StaticResource Small}" FontWeight="SemiBold" TextAlignment="Right" Margin="0,0,14,0" />
+                                    <TextBlock Grid.Column="3" Text="In quel secondo" Style="{StaticResource Small}" FontWeight="SemiBold" />
+                                </Grid>
+                                <ItemsControl x:Name="HitchList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80" />
+                                                    <ColumnDefinition Width="90" />
+                                                    <ColumnDefinition Width="90" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding SessionTime}" FontFamily="{StaticResource MonoFont}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding MatchTime}" FontFamily="{StaticResource MonoFont}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Duration}" TextAlignment="Right" Margin="0,0,14,0"
+                                                           Foreground="{Binding DurationBrush}" FontFamily="{StaticResource MonoFont}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Context}" Style="{StaticResource Small}" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding Context}" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Traffico per programma della sessione -->
+                    <StackPanel x:Name="NetProcPanel" Margin="0,14,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Traffico per programma" Style="{StaticResource CardTitle}"
+                                   ToolTip="Byte TCP e UDP di ogni programma dalla traccia di rete di Windows (solo PID e dimensione, mai il contenuto). Il traffico TCP di Fortnite è separato da quello della partita: sono i contenuti scaricati durante il gioco." />
+                        <TextBlock Style="{StaticResource Small}" Margin="0,2,0,0" TextWrapping="Wrap"
+                                   Text="Chi ha scaricato di più durante la sessione. «Fortnite (download contenuti)» è il gioco stesso che scarica cosmetici e contenuti in streaming." />
+                        <Border Background="{StaticResource Surface2Brush}" CornerRadius="8" Padding="12,8" Margin="0,10,0,0">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="150" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Programma" Style="{StaticResource Small}" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="1" Text="Scaricati" Style="{StaticResource Small}" FontWeight="SemiBold" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="2" Text="Picco" Style="{StaticResource Small}" FontWeight="SemiBold" TextAlignment="Right" />
+                                    <TextBlock Grid.Column="3" Text="In partita ≥ 1 Mbit/s" Style="{StaticResource Small}" FontWeight="SemiBold" TextAlignment="Right" />
+                                </Grid>
+                                <ItemsControl x:Name="NetProcList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="110" />
+                                                    <ColumnDefinition Width="120" />
+                                                    <ColumnDefinition Width="150" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Down}" TextAlignment="Right" FontFamily="{StaticResource MonoFont}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Peak}" TextAlignment="Right" FontFamily="{StaticResource MonoFont}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Match}" TextAlignment="Right" Foreground="{Binding MatchBrush}"
                                                            FontFamily="{StaticResource MonoFont}" />
                                             </Grid>
                                         </DataTemplate>

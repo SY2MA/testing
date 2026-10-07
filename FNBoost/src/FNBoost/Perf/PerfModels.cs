@@ -98,6 +98,147 @@ namespace FNBoost.Perf
         /// a ~30 FPS, quindi Fps, Low1Fps, MaxFrametimeMs e Stutters restano a 0 e i grafici lo mostrano come un buco.
         /// </summary>
         public bool Unfocused { get; set; }
+
+        // ---- Aggiunti dopo (null nelle sessioni registrate prima; i null non vengono salvati: file più piccoli) ----
+        /// <summary>
+        /// Frazione (0-1) dei controlli del primo piano in cui il cursore del mouse era visibile con il gioco in primo piano:
+        /// in lobby e nei menu il cursore c'è, in partita di solito no. È solo un indizio per le fasi della sessione.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public double? CursorVisible { get; set; }
+        /// <summary>Indice del server di gioco di questo secondo in <see cref="NetworkSummary.ServerEndpoints"/> (null = nessuno).</summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? ServerIdx { get; set; }
+        /// <summary>
+        /// I programmi che scaricavano di più in questo secondo (al massimo 3, solo sopra ~100 kbit/s), dalla traccia
+        /// Kernel-Network (TCP + UDP per processo). Il traffico TCP di Fortnite compare come "Fortnite (download contenuti)".
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<NetProcRate>? TopDownloaders { get; set; }
+    }
+
+    /// <summary>Fase di un secondo della sessione.</summary>
+    public enum SessionPhase
+    {
+        /// <summary>Gioco non in primo piano (escluso già prima).</summary>
+        Unfocused,
+        /// <summary>Lobby e menu (nessun server di gioco collegato).</summary>
+        Lobby,
+        /// <summary>Schermate di caricamento e ingresso in partita.</summary>
+        Loading,
+        /// <summary>Partita vera e propria.</summary>
+        Match
+    }
+
+    /// <summary>Un tratto consecutivo di secondi con la stessa fase: [StartSec, EndSec).</summary>
+    public sealed class PhaseSegment
+    {
+        public SessionPhase Phase { get; set; }
+        public int StartSec { get; set; }
+        public int EndSec { get; set; }
+    }
+
+    /// <summary>Quanto tempo la sessione ha passato in ogni fase (secondi).</summary>
+    public sealed class PhaseDurations
+    {
+        public double LobbySec { get; set; }
+        public double LoadingSec { get; set; }
+        public double MatchSec { get; set; }
+        public double UnfocusedSec { get; set; }
+        /// <summary>Secondi di lobby a ~30 FPS con la GPU quasi ferma (Fortnite limita gli FPS quando sei inattivo in lobby).</summary>
+        public double LobbyIdleSec { get; set; }
+        /// <summary>true se le fasi vengono dal traffico del server di gioco (affidabili), false se stimate da FPS/GPU/cursore.</summary>
+        public bool FromNetwork { get; set; }
+    }
+
+    /// <summary>Una partita: secondi [StartSec, EndSec) della sessione (eventuali secondi fuori fuoco nel mezzo restano dentro).</summary>
+    public sealed class MatchSegment
+    {
+        public int StartSec { get; set; }
+        public int EndSec { get; set; }
+        /// <summary>Secondi in partita con il gioco in primo piano.</summary>
+        public double DurationSec { get; set; }
+        /// <summary>Server di gioco (IP:porta pubblico) se misurato.</summary>
+        public string? Server { get; set; }
+        /// <summary>true se prima c'erano lobby o caricamento (ingresso in partita misurato), false se la registrazione è partita a partita iniziata.</summary>
+        public bool Joined { get; set; }
+    }
+
+    /// <summary>Uno scatto (frame lungo) durante la partita, con il contesto di quel secondo.</summary>
+    public sealed class HitchInfo
+    {
+        /// <summary>Indice del frame nel file dei frametime.</summary>
+        public int Frame { get; set; }
+        /// <summary>Fine del frame, in secondi dall'inizio della sessione.</summary>
+        public double SessionSec { get; set; }
+        /// <summary>Secondi dall'inizio della partita.</summary>
+        public double MatchSec { get; set; }
+        /// <summary>Numero della partita (1 = la prima).</summary>
+        public int Match { get; set; }
+        public double Ms { get; set; }
+        public double? OtherAppsKbps { get; set; }
+        public double? PingMs { get; set; }
+        /// <summary>Freeze di rete nello stesso secondo o in quelli vicini (±1 s).</summary>
+        public bool NetFreezeNear { get; set; }
+        public double CpuPercent { get; set; }
+        public double? GpuPercent { get; set; }
+        /// <summary>Il programma che scaricava di più in quel secondo (se misurato).</summary>
+        public string? TopDownloader { get; set; }
+    }
+
+    /// <summary>Scatti della partita e quanto pesano su 1% e 0,1% low.</summary>
+    public sealed class HitchSummary
+    {
+        /// <summary>Soglia usata per gli scatti (25 ms, o 2 × il frametime mediano se il gioco va sotto i 80 FPS).</summary>
+        public double ThresholdMs { get; set; }
+        /// <summary>Soglia degli scatti "grandi" (50 ms, o 2 × mediana se più alta).</summary>
+        public double BigThresholdMs { get; set; }
+        public int Count { get; set; }
+        public int CountBig { get; set; }
+        /// <summary>Scatti da almeno 100 ms.</summary>
+        public int CountHuge { get; set; }
+        public double PerMin { get; set; }
+        public double MatchMinutes { get; set; }
+        public double Low1Fps { get; set; }
+        public double Low01Fps { get; set; }
+        /// <summary>1% / 0,1% low della partita togliendo gli scatti ≥ ThresholdMs.</summary>
+        public double Low1WithoutFps { get; set; }
+        public double Low01WithoutFps { get; set; }
+        /// <summary>1% / 0,1% low della partita togliendo solo gli scatti ≥ BigThresholdMs.</summary>
+        public double Low1WithoutBigFps { get; set; }
+        public double Low01WithoutBigFps { get; set; }
+        /// <summary>Gli scatti più lunghi (al massimo 30), in ordine di tempo.</summary>
+        public List<HitchInfo> Top { get; set; } = new();
+        /// <summary>Secondo della sessione di ogni scatto (tutti, fino a 5000): serve per le correlazioni.</summary>
+        public List<int> SpikeSeconds { get; set; } = new();
+    }
+
+    /// <summary>Velocità di download di un programma (kbit/s) in un secondo o dal vivo.</summary>
+    public sealed class NetProcRate
+    {
+        public string Name { get; set; } = "";
+        public double Kbps { get; set; }
+    }
+
+    /// <summary>Traffico di un programma durante la sessione (TCP + UDP dalla traccia Kernel-Network, senza aprire i processi).</summary>
+    public sealed class ProcessNetUsage
+    {
+        public string Name { get; set; } = "";
+        public double MbDown { get; set; }
+        public double MbUp { get; set; }
+        public double PeakMbps { get; set; }
+        /// <summary>Secondi di partita in cui scaricava almeno 1 Mbit/s.</summary>
+        public int MatchSecondsActive { get; set; }
+        /// <summary>true per il traffico TCP di Fortnite stesso (download di contenuti), separato dal traffico UDP della partita.</summary>
+        public bool GameContent { get; set; }
+    }
+
+    /// <summary>Pausa tra due frame salvati (gioco ridotto a icona, processo fermo oltre 5 s): serve a ricostruire gli istanti dei frame.</summary>
+    public sealed class FrameGap
+    {
+        /// <summary>Il frame che segue la pausa.</summary>
+        public int Index { get; set; }
+        public double Ms { get; set; }
     }
 
     /// <summary>Intervallo di frame consecutivi [Start, Start + Count) dentro i frametime di una sessione.</summary>
@@ -164,6 +305,8 @@ namespace FNBoost.Perf
         public string AdapterName { get; set; } = "";
         public double? LinkSpeedMbps { get; set; }
         public int? WifiSignalPct { get; set; }
+        /// <summary>Programmi che scaricano di più adesso (al massimo 3; vuoto se il traffico per programma non è misurato).</summary>
+        public List<NetProcRate> TopDownloaders { get; set; } = new();
     }
 
     /// <summary>Riepilogo di rete di una sessione registrata.</summary>
@@ -192,6 +335,8 @@ namespace FNBoost.Perf
         public double MaxOtherAppsKbps { get; set; }
         public int Freezes { get; set; }
         public double LongestFreezeMs { get; set; }
+        /// <summary>true se è stato misurato anche il traffico per programma (TCP + UDP di tutte le app).</summary>
+        public bool ProcessTrafficMeasured { get; set; }
     }
 
     /// <summary>Un processo che ha usato CPU/RAM durante la sessione (letto dai contatori PDH, senza aprire i processi).</summary>
@@ -244,6 +389,33 @@ namespace FNBoost.Perf
         /// a ~30 FPS e GPU quasi ferma: vedi FocusFilter.RepairLegacy).
         /// </summary>
         public bool UnfocusedEstimated { get; set; }
+
+        // ---- Fasi della sessione (null/0 nelle sessioni registrate prima: si ricalcolano con SessionPhases.Ensure) ----
+        /// <summary>Versione del calcolo delle fasi (0 = mai calcolate, vedi SessionPhases.Version).</summary>
+        public int PhaseVersion { get; set; }
+        /// <summary>Statistiche dei soli frame in partita (senza lobby, menu e caricamenti). Null se non calcolate.</summary>
+        public FrameStatsResult? MatchStats { get; set; }
+        public PhaseDurations? PhaseSeconds { get; set; }
+        public List<MatchSegment>? Matches { get; set; }
+        /// <summary>Fasi come tratti consecutivi (per grafici e testi).</summary>
+        public List<PhaseSegment>? Phases { get; set; }
+        /// <summary>Scatti della partita e il loro peso su 1%/0,1% low (null senza frametime).</summary>
+        public HitchSummary? Hitches { get; set; }
+        /// <summary>Programmi che hanno usato di più la rete durante la sessione (MB scaricati decrescenti).</summary>
+        public List<ProcessNetUsage>? TopNetworkProcesses { get; set; }
+        /// <summary>Pause oltre 5 s tra i frame salvati (null = nessuna o non registrate).</summary>
+        public List<FrameGap>? FrameGaps { get; set; }
+
+        /// <summary>
+        /// true se i numeri principali sono "solo partita": almeno <see cref="MinHeadlineMatchSec"/> secondi di partita misurati.
+        /// Altrimenti si usano le statistiche dell'intera sessione.
+        /// </summary>
+        [JsonIgnore] public bool HeadlineIsMatch => MatchStats is { HasData: true } m && m.DurationSec >= MinHeadlineMatchSec;
+        /// <summary>Statistiche da mostrare per prime: solo partita se disponibili, altrimenti l'intera sessione.</summary>
+        [JsonIgnore] public FrameStatsResult HeadlineStats => HeadlineIsMatch ? MatchStats! : Stats ?? new FrameStatsResult();
+
+        /// <summary>Partita minima per usare le statistiche "solo partita" come numeri principali.</summary>
+        public const double MinHeadlineMatchSec = 60;
 
         [JsonIgnore] public string Title => string.IsNullOrWhiteSpace(Label) ? $"{StartedAt:dd/MM HH:mm}" : $"{StartedAt:dd/MM HH:mm} · {Label}";
         [JsonIgnore] public string DurationText => TimeSpan.FromSeconds(DurationSec).ToString(DurationSec >= 3600 ? @"h\:mm\:ss" : @"m\:ss");

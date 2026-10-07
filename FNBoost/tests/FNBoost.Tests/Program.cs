@@ -43,6 +43,7 @@ namespace FNBoost.Tests
             FocusTests.RunAll();
             CrosshairTests.RunAll();
             NetTests.RunAll();
+            PhaseTests.RunAll();
             ReportTests.RunAll();
 
             Console.WriteLine();

@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 // Questo file non dipende da WPF né da API di Windows: viene compilato anche dal progetto di test su Linux.
@@ -348,6 +349,294 @@ namespace FNBoost.Perf
         }
 
         private static IPAddress Unmap(IPAddress ip) => ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip;
+
+        /// <summary>
+        /// PID e dimensione dai primi 8 byte di un evento TCP o UDP di Kernel-Network (TCP IPv4 10/11, IPv6 26/27;
+        /// UDP 42/43, 58/59): stessa famiglia di template, PID (UInt32) e size (UInt32) in testa.
+        /// </summary>
+        public static bool TryReadPidSize(ReadOnlySpan<byte> data, out int pid, out int size)
+        {
+            pid = 0;
+            size = 0;
+            if (data.Length < 8) return false;
+            uint p = BinaryPrimitives.ReadUInt32LittleEndian(data);
+            uint s = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(4));
+            if (p > int.MaxValue || s > MaxEventBytes) return false;
+            pid = (int)p;
+            size = (int)s;
+            return true;
+        }
+
+        /// <summary>Un evento TCP può riassumere molti segmenti: oltre questa dimensione il valore è considerato corrotto.</summary>
+        public const int MaxEventBytes = 64 << 20;
+    }
+
+    /// <summary>Byte di un processo in un secondo, divisi per protocollo e direzione.</summary>
+    public struct PidCounters
+    {
+        public long TcpIn, TcpOut, UdpIn, UdpOut;
+    }
+
+    /// <summary>Traffico di tutti i processi in un secondo della traccia (PID → byte).</summary>
+    public sealed class ProcessSecond
+    {
+        public double StartMs { get; init; }
+        public (int Pid, PidCounters Bytes)[] Pids { get; init; } = Array.Empty<(int, PidCounters)>();
+    }
+
+    /// <summary>
+    /// Somma i byte TCP/UDP per PID e per secondo della traccia (eventi Kernel-Network di tutto il sistema), con memoria
+    /// limitata: al massimo <see cref="MaxPids"/> processi per secondo (gli altri finiscono nel PID −1, "altri processi")
+    /// e <see cref="MaxOpenSeconds"/> secondi aperti. I dizionari dei secondi chiusi vengono riusati: nessuna allocazione
+    /// per evento. Gli eventi arrivati dopo la chiusura del loro secondo vanno nel primo secondo ancora aperto (i totali
+    /// restano giusti). Non thread-safe: va protetto dal chiamante.
+    /// </summary>
+    public sealed class ProcessTrafficAggregator
+    {
+        public const int MaxPids = 512;
+        public const int MaxOpenSeconds = 16;
+        public const int OtherPid = -1;
+
+        private readonly Dictionary<long, Dictionary<int, PidCounters>> _open = new();
+        private readonly Stack<Dictionary<int, PidCounters>> _pool = new();
+        private long _cursor = long.MinValue;
+
+        /// <summary>Eventi arrivati dopo la chiusura del loro secondo (contati comunque).</summary>
+        public long Late { get; private set; }
+        /// <summary>Eventi scartati perché troppi secondi erano aperti (timestamp anomali).</summary>
+        public long Dropped { get; private set; }
+        /// <summary>Visto almeno un evento TCP.</summary>
+        public bool TcpSeen { get; private set; }
+
+        public void Add(double tMs, int pid, bool received, long bytes, bool tcp)
+        {
+            if (!double.IsFinite(tMs) || bytes <= 0) return;
+            if (tcp) TcpSeen = true;
+            long k = (long)Math.Floor(tMs / 1000.0);
+            if (k < _cursor)
+            {
+                Late++;
+                k = _cursor;
+            }
+            if (!_open.TryGetValue(k, out var d))
+            {
+                if (_open.Count >= MaxOpenSeconds)
+                {
+                    Dropped++;
+                    return;
+                }
+                d = _pool.Count > 0 ? _pool.Pop() : new Dictionary<int, PidCounters>();
+                _open[k] = d;
+            }
+            if (d.Count >= MaxPids && !d.ContainsKey(pid)) pid = OtherPid;
+            ref var c = ref CollectionsMarshal.GetValueRefOrAddDefault(d, pid, out _);
+            if (tcp)
+            {
+                if (received) c.TcpIn += bytes;
+                else c.TcpOut += bytes;
+            }
+            else
+            {
+                if (received) c.UdpIn += bytes;
+                else c.UdpOut += bytes;
+            }
+        }
+
+        /// <summary>Chiude e restituisce (in ordine) i secondi che finiscono entro horizonMs. I secondi senza eventi non compaiono.</summary>
+        public List<ProcessSecond> Advance(double horizonMs)
+        {
+            var result = new List<ProcessSecond>();
+            if (!double.IsFinite(horizonMs)) return result;
+            long end = (long)Math.Floor(horizonMs / 1000.0);
+            if (_open.Count > 0)
+            {
+                var keys = new List<long>();
+                foreach (var k in _open.Keys)
+                    if (k < end) keys.Add(k);
+                keys.Sort();
+                foreach (var k in keys)
+                {
+                    var d = _open[k];
+                    var arr = new (int, PidCounters)[d.Count];
+                    int i = 0;
+                    foreach (var kv in d) arr[i++] = (kv.Key, kv.Value);
+                    result.Add(new ProcessSecond { StartMs = k * 1000.0, Pids = arr });
+                    _open.Remove(k);
+                    d.Clear();
+                    if (_pool.Count < MaxOpenSeconds) _pool.Push(d);
+                }
+            }
+            if (end > _cursor) _cursor = end;
+            return result;
+        }
+    }
+
+    /// <summary>Traffico di un programma (per nome) in un secondo: velocità medie e byte.</summary>
+    public sealed class ProcessNetSecond
+    {
+        public string Name { get; init; } = "";
+        public double KbpsIn { get; init; }
+        public double KbpsOut { get; init; }
+        public long BytesIn { get; init; }
+        public long BytesOut { get; init; }
+        /// <summary>Traffico TCP del gioco misurato (download di contenuti di Fortnite).</summary>
+        public bool GameContent { get; init; }
+    }
+
+    /// <summary>Da PID a programmi: nomi, traffico del gioco separato, esclusioni.</summary>
+    public static class NetProcessAttribution
+    {
+        /// <summary>Nome usato per il traffico TCP di Fortnite (il traffico UDP è la partita, misurato a parte).</summary>
+        public const string FortniteContentName = "Fortnite (download contenuti)";
+        public const string OthersName = "altri processi";
+        public const string UnknownName = "processo non identificato";
+        /// <summary>Sotto questa velocità un programma non entra tra i "download" di un secondo.</summary>
+        public const double MinListedKbps = 100;
+        /// <summary>Nome del processo del client di Fortnite (come FortniteLocator.ClientProcessName).</summary>
+        private const string FortniteLocatorName = "FortniteClient-Win64-Shipping";
+
+        /// <summary>
+        /// Raggruppa per nome uno o più secondi della traccia (velocità = media sui secondi). Il PID del gioco conta solo
+        /// per il TCP, come <see cref="FortniteContentName"/>; il suo UDP è il traffico della partita, già misurato.
+        /// Gli altri processi contano TCP + UDP (anche QUIC dei browser). Anti-cheat e FN Boost non vengono nominati.
+        /// </summary>
+        public static List<ProcessNetSecond> Attribute(IReadOnlyList<ProcessSecond>? seconds, int gamePid,
+            Func<int, string?> nameOf, string? ownName = null)
+        {
+            var list = new List<ProcessNetSecond>();
+            if (seconds == null || seconds.Count == 0) return list;
+            var acc = new Dictionary<string, (long In, long Out, bool Game)>(StringComparer.OrdinalIgnoreCase);
+            foreach (var sec in seconds)
+            {
+                if (sec?.Pids == null) continue;
+                foreach (var (pid, c) in sec.Pids)
+                {
+                    string name = pid == ProcessTrafficAggregator.OtherPid ? OthersName : nameOf(pid) ?? UnknownName;
+                    long bin, bout;
+                    // Il gioco misurato (o un altro client di Fortnite, se il PID del gioco non è ancora noto).
+                    bool game = (gamePid > 0 && pid == gamePid) ||
+                                name.Equals(FortniteLocatorName, StringComparison.OrdinalIgnoreCase);
+                    if (game)
+                    {
+                        name = FortniteContentName;
+                        bin = c.TcpIn;
+                        bout = c.TcpOut;
+                    }
+                    else
+                    {
+                        if (ProcessNames.IsExcluded(name, ownName, null) && !IsSystemName(name)) continue;
+                        bin = c.TcpIn + c.UdpIn;
+                        bout = c.TcpOut + c.UdpOut;
+                    }
+                    if (bin <= 0 && bout <= 0) continue;
+                    var cur = acc.TryGetValue(name, out var v) ? v : (0, 0, game);
+                    acc[name] = (cur.In + bin, cur.Out + bout, cur.Game || game);
+                }
+            }
+            double n = seconds.Count;
+            foreach (var kv in acc)
+                list.Add(new ProcessNetSecond
+                {
+                    Name = kv.Key,
+                    BytesIn = kv.Value.In,
+                    BytesOut = kv.Value.Out,
+                    KbpsIn = Math.Round(kv.Value.In * 8 / 1000.0 / n, 1),
+                    KbpsOut = Math.Round(kv.Value.Out * 8 / 1000.0 / n, 1),
+                    GameContent = kv.Value.Game
+                });
+            list.Sort((a, b) => b.KbpsIn.CompareTo(a.KbpsIn));
+            return list;
+        }
+
+        // "Idle" (PID 0) non trasmette; "System" (PID 4) sì (es. SMB): va tenuto anche se IsExcluded scarta "Idle".
+        private static bool IsSystemName(string name) => name.Equals("System", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>I primi <paramref name="count"/> programmi per download sopra <see cref="MinListedKbps"/>.</summary>
+        public static List<NetProcRate> TopDownloaders(IEnumerable<ProcessNetSecond>? list, int count = 3) =>
+            (list ?? Array.Empty<ProcessNetSecond>())
+                .Where(p => p.KbpsIn >= MinListedKbps)
+                .OrderByDescending(p => p.KbpsIn)
+                .Take(count)
+                .Select(p => new NetProcRate { Name = p.Name, Kbps = Math.Round(p.KbpsIn) })
+                .ToList();
+
+        /// <summary>"svchost" → "svchost (servizi di Windows: Windows Update, Ottimizzazione recapito…)", altrimenti il nome.</summary>
+        public static string Describe(string? name)
+        {
+            if (string.IsNullOrEmpty(name)) return UnknownName;
+            if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
+                return "svchost (servizi di Windows: Windows Update, Ottimizzazione recapito, BITS…)";
+            if (name.Equals("System", StringComparison.OrdinalIgnoreCase)) return "System (Windows)";
+            return name;
+        }
+    }
+
+    /// <summary>Totali per programma durante una registrazione (MB, picco, secondi attivi in partita).</summary>
+    public sealed class ProcessNetTotals
+    {
+        private sealed class Acc
+        {
+            public long In, Out;
+            public double PeakKbps;
+            public int MatchSeconds;
+            public bool Game;
+        }
+
+        private readonly Dictionary<string, Acc> _map = new(StringComparer.OrdinalIgnoreCase);
+
+        public bool Any => _map.Count > 0;
+
+        /// <summary>Un gruppo di secondi della traccia (byte e velocità medie).</summary>
+        public void Add(IEnumerable<ProcessNetSecond>? list)
+        {
+            if (list == null) return;
+            foreach (var p in list)
+            {
+                var a = Get(p.Name, p.GameContent);
+                if (a == null) continue;
+                a.In += Math.Max(0, p.BytesIn);
+                a.Out += Math.Max(0, p.BytesOut);
+                a.PeakKbps = Math.Max(a.PeakKbps, p.KbpsIn);
+            }
+        }
+
+        /// <summary>Un secondo di partita: conta chi scaricava almeno 1 Mbit/s.</summary>
+        public void AddMatchSecond(IEnumerable<ProcessNetSecond>? list, double minKbps = 1000)
+        {
+            if (list == null) return;
+            foreach (var p in list)
+                if (p.KbpsIn >= minKbps && Get(p.Name, p.GameContent) is { } a) a.MatchSeconds++;
+        }
+
+        private Acc? Get(string name, bool game)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            if (!_map.TryGetValue(name, out var a))
+            {
+                if (_map.Count >= 2000) return null;
+                a = new Acc();
+                _map[name] = a;
+            }
+            a.Game |= game;
+            return a;
+        }
+
+        /// <summary>I primi per MB scaricati, almeno minMb tra download e upload.</summary>
+        public List<ProcessNetUsage> Top(int count = 8, double minMb = 1) =>
+            _map.Select(kv => new ProcessNetUsage
+                {
+                    Name = kv.Key,
+                    MbDown = Math.Round(kv.Value.In / 1e6, 1),
+                    MbUp = Math.Round(kv.Value.Out / 1e6, 1),
+                    PeakMbps = Math.Round(kv.Value.PeakKbps / 1000.0, 1),
+                    MatchSecondsActive = kv.Value.MatchSeconds,
+                    GameContent = kv.Value.Game
+                })
+                .Where(p => p.MbDown + p.MbUp >= minMb)
+                .OrderByDescending(p => p.MbDown)
+                .ThenByDescending(p => p.MbUp)
+                .Take(Math.Max(0, count))
+                .ToList();
     }
 
     /// <summary>

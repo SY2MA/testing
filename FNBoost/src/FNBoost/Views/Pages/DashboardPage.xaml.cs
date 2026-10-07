@@ -96,13 +96,18 @@ namespace FNBoost.Views.Pages
                     return;
                 }
                 var c = CultureInfo.CurrentCulture;
-                var st = last.Stats;
+                // Solo partita se la sessione ce l'ha: lobby e caricamenti abbassano media e low senza dire nulla del PC.
+                var st = last.HeadlineStats;
                 var game = string.Equals(last.ProcessName, FortniteLocator.ClientProcessName, StringComparison.OrdinalIgnoreCase)
                     ? "Fortnite"
                     : string.IsNullOrEmpty(last.ProcessName) ? "gioco" : last.ProcessName;
                 LastSessionTitle.Text = $"Ultima sessione registrata · {game} · {last.Title}";
-                LastSessionText.Text = $"Media {st.AvgFps.ToString("0", c)} FPS · 1% low {st.Low1Fps.ToString("0", c)} FPS · " +
-                                       $"{st.StuttersPerMin.ToString("0.0", c)} stutter/min · durata {last.DurationText}";
+                LastSessionText.Text = (last.HeadlineIsMatch ? "Solo partita: media " : "Media ") +
+                                       $"{st.AvgFps.ToString("0", c)} FPS · 1% low {st.Low1Fps.ToString("0", c)} FPS · " +
+                                       $"{st.StuttersPerMin.ToString("0.0", c)} stutter/min · durata {last.DurationText}" +
+                                       (last.HeadlineIsMatch && last.Stats is { HasData: true } whole
+                                           ? $" (sessione intera, incluse lobby e caricamenti: {whole.AvgFps.ToString("0", c)} / {whole.Low1Fps.ToString("0", c)})"
+                                           : "");
                 var prev = list.FirstOrDefault(x => !ReferenceEquals(x, last) && x.Stats != null && x.Stats.HasData &&
                                                     string.Equals(x.ProcessName, last.ProcessName, StringComparison.OrdinalIgnoreCase));
                 var cmp = prev != null ? PerfAnalyzer.Compare(last, prev) : "";

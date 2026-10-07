@@ -16,6 +16,8 @@ namespace FNBoost.Perf
     /// registra ogni pacchetto inviato/ricevuto con il PID del processo e noi leggiamo quella traccia.
     /// Si contano solo pacchetti e byte (nessun contenuto): pacchetti/s, banda, pause tra i pacchetti del
     /// server (freeze) e indirizzo del server di gioco.
+    /// In più somma i byte TCP e UDP di OGNI processo (solo PID e dimensione, come la scheda Rete di Monitoraggio
+    /// risorse), per dire chi scarica durante la partita: Fortnite stesso (contenuti in streaming) o un'altra app.
     /// </summary>
     internal sealed class NetworkMonitor : IDisposable
     {
@@ -26,6 +28,8 @@ namespace FNBoost.Perf
         /// <summary>Keyword IPv4 (0x10) | IPv6 (0x20).</summary>
         private const ulong NetKeywords = 0x10 | 0x20;
         private const int UdpSendV4 = 42, UdpRecvV4 = 43, UdpSendV6 = 58, UdpRecvV6 = 59;
+        /// <summary>TCP: invio/ricezione IPv4 (10/11) e IPv6 (26/27). Payload: PID (UInt32), size (UInt32), …</summary>
+        private const int TcpSendV4 = 10, TcpRecvV4 = 11, TcpSendV6 = 26, TcpRecvV6 = 27;
         /// <summary>Intestazioni IP + UDP aggiunte alla dimensione del payload per stimare la banda reale.</summary>
         private const int HeaderV4 = 28, HeaderV6 = 48;
         /// <summary>
@@ -36,6 +40,7 @@ namespace FNBoost.Perf
 
         private readonly object _gate = new(); // sessione e thread
         private readonly object _data = new(); // aggregatore
+        private readonly object _procData = new(); // traffico per processo
         private readonly Stopwatch _clock = Stopwatch.StartNew();
         private TraceEventSession? _session;
         private Thread? _thread;
@@ -52,6 +57,9 @@ namespace FNBoost.Perf
             /// <summary>Stima di (orologio interno − tempo della traccia), in ms. NaN finché la sessione non parte.</summary>
             public double OffsetMs = double.NaN;
             public readonly NetTrafficAggregator Agg = new();
+            /// <summary>Byte per PID e per secondo di tutti i processi (protetto da _procData).</summary>
+            public readonly ProcessTrafficAggregator Procs = new();
+            public bool ProcDropLogged;
             public int StatePid;
             public bool DropLogged;
             /// <summary>Buffer riusato dal thread ETW per copiare il payload.</summary>
@@ -93,6 +101,9 @@ namespace FNBoost.Perf
 
         /// <summary>Server di gioco attuale (aggiornato da <see cref="TakeCompleted"/>).</summary>
         public NetEndpoint? Server { get; private set; }
+
+        /// <summary>true se sono arrivati eventi TCP (traffico per programma completo: senza, solo UDP).</summary>
+        public bool TcpAvailable { get; private set; }
 
         /// <summary>Freeze di rete negli ultimi 60 s (aggiornato da <see cref="TakeCompleted"/>).</summary>
         public int RecentFreezes { get; private set; }
@@ -146,6 +157,7 @@ namespace FNBoost.Perf
                 Log.Warn("Il thread ETW di rete non si è chiuso entro 3 secondi");
             Server = null;
             RecentFreezes = 0;
+            TcpAvailable = false;
         }
 
         public void Dispose()
@@ -174,6 +186,30 @@ namespace FNBoost.Perf
                 {
                     run.DropLogged = true;
                     Log.Warn("Rete: troppi pacchetti in coda, alcuni sono stati ignorati");
+                }
+                return list;
+            }
+        }
+
+        /// <summary>
+        /// Traffico per processo dei secondi completati dall'ultima chiamata (stesso ritardo di <see cref="TakeCompleted"/>).
+        /// Da chiamare circa una volta al secondo dallo stesso thread di TakeCompleted.
+        /// </summary>
+        public List<ProcessSecond> TakeProcessSeconds()
+        {
+            var run = _run;
+            if (run == null || !run.Started || run.Stopping) return new List<ProcessSecond>();
+            double offset = Volatile.Read(ref run.OffsetMs);
+            if (double.IsNaN(offset)) return new List<ProcessSecond>();
+            double traceNow = _clock.Elapsed.TotalMilliseconds - offset;
+            lock (_procData)
+            {
+                var list = run.Procs.Advance(traceNow - LagMs);
+                TcpAvailable = run.Procs.TcpSeen;
+                if (run.Procs.Dropped > 0 && !run.ProcDropLogged)
+                {
+                    run.ProcDropLogged = true;
+                    Log.Warn("Rete: istanti degli eventi anomali, parte del traffico per programma ignorata");
                 }
                 return list;
             }
@@ -209,10 +245,14 @@ namespace FNBoost.Perf
                     // session.Source ricreerebbe la sessione ETW (StartTrace) senza più nessuno che la chiuda.
                     source = session.Source;
                     source.AllEvents += e => OnEvent(e, run);
-                    // Solo gli eventi UDP (42/43/58/59): il TCP di browser e download non arriva nemmeno alla sessione.
+                    // Solo invio/ricezione UDP (42/43/58/59) e TCP (10/11/26/27): connessioni, ritrasmissioni e
+                    // gli altri eventi del provider non arrivano nemmeno alla sessione.
                     var options = new TraceEventProviderOptions
                     {
-                        EventIDsToEnable = new List<int> { UdpSendV4, UdpRecvV4, UdpSendV6, UdpRecvV6 }
+                        EventIDsToEnable = new List<int>
+                        {
+                            UdpSendV4, UdpRecvV4, UdpSendV6, UdpRecvV6, TcpSendV4, TcpRecvV4, TcpSendV6, TcpRecvV6
+                        }
                     };
                     session.EnableProvider(KernelNetworkProvider, TraceEventLevel.Verbose, NetKeywords, options);
                 }
@@ -223,7 +263,7 @@ namespace FNBoost.Perf
                     Volatile.Write(ref run.OffsetMs, _clock.Elapsed.TotalMilliseconds);
                 }
                 run.Started = true;
-                Log.Info("Sessione ETW di rete avviata (UDP di Kernel-Network)");
+                Log.Info("Sessione ETW di rete avviata (TCP e UDP di Kernel-Network)");
 
                 source.Process(); // blocca finché la sessione non viene chiusa
 
@@ -272,20 +312,28 @@ namespace FNBoost.Perf
             }
         }
 
-        /// <summary>Thread ETW: arriva il traffico UDP di tutto il sistema, quindi il filtro sul PID va fatto subito.</summary>
+        /// <summary>
+        /// Thread ETW: arriva il traffico TCP e UDP di tutto il sistema, quindi deve essere velocissimo. Per ogni evento si
+        /// leggono solo PID e dimensione (nessuna allocazione) per il traffico per processo; il resto del payload si
+        /// decodifica solo per l'UDP del gioco.
+        /// </summary>
         private void OnEvent(TraceEvent data, RunState run)
         {
             try
             {
                 if (run.Stopping) return;
                 int id = (int)data.ID;
-                bool v6, recv;
+                bool v6, recv, tcp = false;
                 switch (id)
                 {
                     case UdpSendV4: v6 = false; recv = false; break;
                     case UdpRecvV4: v6 = false; recv = true; break;
                     case UdpSendV6: v6 = true; recv = false; break;
                     case UdpRecvV6: v6 = true; recv = true; break;
+                    case TcpSendV4: v6 = false; recv = false; tcp = true; break;
+                    case TcpRecvV4: v6 = false; recv = true; tcp = true; break;
+                    case TcpSendV6: v6 = true; recv = false; tcp = true; break;
+                    case TcpRecvV6: v6 = true; recv = true; tcp = true; break;
                     default: return;
                 }
                 if (data.ProviderGuid != KernelNetworkProvider) return;
@@ -298,13 +346,18 @@ namespace FNBoost.Perf
                 double cur = Volatile.Read(ref run.OffsetMs);
                 if (double.IsNaN(cur) || off < cur) Volatile.Write(ref run.OffsetMs, off);
 
-                int target = _targetPid;
-                if (target <= 0) return;
                 int len = data.EventDataLength;
                 IntPtr ptr = data.DataStart;
-                if (len < 4 || ptr == IntPtr.Zero) return;
+                if (len < 8 || ptr == IntPtr.Zero) return;
                 // PID nel payload: per le ricezioni il PID dell'intestazione può essere quello di System.
-                if (Marshal.ReadInt32(ptr) != target) return;
+                int pid = Marshal.ReadInt32(ptr);
+                int size = Marshal.ReadInt32(ptr, 4);
+                if (pid >= 0 && size > 0 && size <= KernelNetPayload.MaxEventBytes)
+                    lock (_procData) run.Procs.Add(ts, pid, recv, size, tcp);
+                if (tcp) return;
+
+                int target = _targetPid;
+                if (target <= 0 || pid != target) return;
                 if (len < (v6 ? KernelNetPayload.MinLengthV6 : KernelNetPayload.MinLengthV4)) return;
 
                 int n = Math.Min(len, run.Buffer.Length);

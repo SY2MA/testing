@@ -21,6 +21,8 @@ namespace FNBoost.Perf
         /// Le sessioni vecchie, registrate prima della misura del primo piano, con un tratto iniziale/finale a ~30 FPS
         /// e GPU quasi ferma vengono analizzate sul gioco vero (FocusFilter.RepairLegacy) se ci sono i frametime;
         /// senza frametime l'analisi lo dice invece di dare la colpa al PC.
+        /// Con almeno un minuto di partita i giudizi su FPS, low, stutter e collo di bottiglia usano SOLO la partita
+        /// (lobby, menu e caricamenti esclusi: vedi SessionPhases); le sessioni vecchie vengono classificate al volo.
         /// </summary>
         public static List<PerfInsight> Analyze(PerfSession session, IReadOnlyList<PerfSession> history, IReadOnlyList<float>? frametimes = null)
         {
@@ -29,8 +31,11 @@ namespace FNBoost.Perf
             var original = session;
             var repaired = FocusFilter.RepairLegacy(session, frametimes);
             if (repaired != null) session = repaired;
+            var phased = SessionPhases.Ensure(session, frametimes);
+            if (phased != null) session = phased;
             var focusedFt = frametimes != null ? FocusFilter.FocusedFrametimes(frametimes, session) : null;
-            var st = session.Stats;
+            bool matchOnly = session.HeadlineIsMatch;
+            var st = matchOnly ? session.MatchStats : session.Stats;
             if ((st == null || !st.HasData) && focusedFt != null && focusedFt.Length >= 2)
                 st = FrameStats.Compute(focusedFt);
             if (st == null || !st.HasData)
@@ -46,7 +51,9 @@ namespace FNBoost.Perf
             }
 
             var seconds = session.Seconds ?? new List<SecondSample>();
-            var active = seconds.Where(s => s.Fps > 0 && !s.Unfocused).ToList();
+            var phases = SessionPhases.PhasesOf(session);
+            // Secondi "di gioco": solo la partita se c'è abbastanza partita, altrimenti tutti quelli in primo piano.
+            var active = seconds.Where((s, i) => s.Fps > 0 && !s.Unfocused && (!matchOnly || (i < phases.Length && phases[i] == SessionPhase.Match))).ToList();
 
             // Sessione vecchia con tratto in secondo piano ma senza frametime per ricalcolare: statistiche falsate.
             var legacy = !session.FocusTracked && !session.UnfocusedEstimated ? FocusFilter.DetectBackground(seconds) : null;
@@ -64,10 +71,12 @@ namespace FNBoost.Perf
             AddFocus(list, original, session, legacy, raw);
             if (legacy == null)
             {
-                AddOverall(list, st);
-                AddStutterRate(list, st);
+                AddPhases(list, session);
+                AddOverall(list, st, matchOnly, matchOnly ? session.Hitches : null);
+                AddStutterRate(list, st, matchOnly, matchOnly && IsolatedHitches(st, session.Hitches), matchOnly ? session.Hitches : null);
+                if (matchOnly) AddHitchImpact(list, session);
             }
-            AddShaderCompilation(list, session, st, seconds, focusedFt);
+            AddShaderCompilation(list, session, st, seconds, focusedFt, matchOnly ? phases : null);
 
             // ---- Limite FPS: cap, VSync/refresh, sotto il refresh ----
             double cap = session.FpsCap ?? 0;
@@ -123,7 +132,7 @@ namespace FNBoost.Perf
             AddBottleneck(list, active, avg, hz, capped, vsyncLike, belowRefresh);
             AddMemory(list, session, active);
             AddBackgroundActivity(list, active);
-            AddNetwork(list, session, st, seconds);
+            AddNetwork(list, session, st, seconds, phases);
             AddProcesses(list, session);
             AddComparison(list, session, history);
             return list;
@@ -133,9 +142,12 @@ namespace FNBoost.Perf
         {
             var list = new List<PerfInsight>();
             var groups = (history ?? Array.Empty<PerfSession>())
-                .Where(s => s?.Stats != null && s.Stats.HasData)
+                .Where(s => s?.Stats != null && s.HeadlineStats.HasData)
                 .GroupBy(s => s.ProcessName ?? "", StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.OrderByDescending(s => s.StartedAt).ToList())
+                // Si confronta l'uguale con l'uguale: sessioni "solo partita" con sessioni "solo partita" (quelle vecchie,
+                // con lobby e caricamenti dentro, hanno low molto più bassi e falserebbero l'andamento).
+                .Select(g => g.Where(s => s.HeadlineIsMatch == g[0].HeadlineIsMatch).ToList())
                 .OrderByDescending(g => g[0].StartedAt)
                 .ToList();
 
@@ -147,10 +159,10 @@ namespace FNBoost.Perf
                     int recentCount = Math.Min(3, g.Count - 1);
                     var recent = g.Take(recentCount).ToList();
                     var older = g.Skip(recentCount).Take(3).ToList();
-                    double rAvg = recent.Average(s => s.Stats.AvgFps), oAvg = older.Average(s => s.Stats.AvgFps);
-                    double rLow = recent.Average(s => s.Stats.Low1Fps), oLow = older.Average(s => s.Stats.Low1Fps);
+                    double rAvg = recent.Average(s => s.HeadlineStats.AvgFps), oAvg = older.Average(s => s.HeadlineStats.AvgFps);
+                    double rLow = recent.Average(s => s.HeadlineStats.Low1Fps), oLow = older.Average(s => s.HeadlineStats.Low1Fps);
                     double dAvg = Rel(rAvg, oAvg), dLow = Rel(rLow, oLow);
-                    var msg = $"{name}: ultime {recent.Count} sessioni {N0(rAvg)} FPS medi / {N0(rLow)} 1% low, " +
+                    var msg = $"{name}{(g[0].HeadlineIsMatch ? " (solo partita)" : "")}: ultime {recent.Count} sessioni {N0(rAvg)} FPS medi / {N0(rLow)} 1% low, " +
                               $"contro {N0(oAvg)} / {N0(oLow)} delle {older.Count} precedenti (media {Pct(dAvg)}, 1% low {Pct(dLow)}).";
 
                     if (dAvg < -0.10 || dLow < -0.10)
@@ -188,12 +200,13 @@ namespace FNBoost.Perf
 
                 if (g.Count >= 2)
                 {
-                    var best = g.OrderByDescending(s => s.Stats.Low1Fps).First();
+                    var best = g.OrderByDescending(s => s.HeadlineStats.Low1Fps).First();
                     list.Add(new PerfInsight
                     {
                         Severity = CheckStatus.Info,
                         Title = "Sessione migliore",
-                        Message = $"{name}: {best.Title} con {N0(best.Stats.Low1Fps)} FPS di 1% low ({N0(best.Stats.AvgFps)} medi), su {g.Count} sessioni.",
+                        Message = $"{name}: {best.Title} con {N0(best.HeadlineStats.Low1Fps)} FPS di 1% low ({N0(best.HeadlineStats.AvgFps)} medi" +
+                                  $"{(best.HeadlineIsMatch ? ", solo partita" : "")}), su {g.Count} sessioni.",
                         Hint = best.ActiveTweaks != null && best.ActiveTweaks.Count > 0
                             ? $"In quella sessione erano attivi {best.ActiveTweaks.Count} tweak{(string.IsNullOrEmpty(best.RenderMode) ? "" : $" con rendering {best.RenderMode}")}: usala come riferimento."
                             : "Usala come riferimento per i confronti futuri."
@@ -217,14 +230,17 @@ namespace FNBoost.Perf
         public static string Compare(PerfSession current, PerfSession baseline)
         {
             if (current?.Stats == null || baseline?.Stats == null) return "";
-            var c = current.Stats;
-            var b = baseline.Stats;
+            // Solo partita se entrambe le sessioni ce l'hanno: confrontare partita con sessione intera sarebbe ingiusto.
+            bool both = current.HeadlineIsMatch && baseline.HeadlineIsMatch;
+            var c = both ? current.MatchStats! : current.Stats;
+            var b = both ? baseline.MatchStats! : baseline.Stats;
             string stutter;
             if (b.StuttersPerMin <= 0.0001)
                 stutter = c.StuttersPerMin <= 0.0001 ? "stutter =" : $"stutter da 0 a {N1(c.StuttersPerMin)}/min";
             else
                 stutter = "stutter " + Pct(Rel(c.StuttersPerMin, b.StuttersPerMin));
-            return $"Media {Pct(Rel(c.AvgFps, b.AvgFps))} · 1% low {Pct(Rel(c.Low1Fps, b.Low1Fps))} · {stutter} rispetto a {baseline.Title}";
+            return $"Media {Pct(Rel(c.AvgFps, b.AvgFps))} · 1% low {Pct(Rel(c.Low1Fps, b.Low1Fps))} · {stutter} rispetto a {baseline.Title}" +
+                   (both ? " (solo partita)" : "");
         }
 
         // ---- sezioni dell'analisi ----
@@ -288,11 +304,14 @@ namespace FNBoost.Perf
             return $"Negli ultimi {seg.TrailSeconds} s";
         }
 
-        private static void AddOverall(List<PerfInsight> list, FrameStatsResult st)
+        private static void AddOverall(List<PerfInsight> list, FrameStatsResult st, bool matchOnly, HitchSummary? hitches)
         {
             double ratio = st.AvgFps > 0 ? st.Low1Fps / st.AvgFps : 0;
-            var msg = $"Media {N0(st.AvgFps)} FPS · 1% low {N0(st.Low1Fps)} FPS · 0,1% low {N0(st.Low01Fps)} FPS · " +
+            var msg = (matchOnly ? "Solo partita: media " : "Media ") + $"{N0(st.AvgFps)} FPS · 1% low {N0(st.Low1Fps)} FPS · 0,1% low {N0(st.Low01Fps)} FPS · " +
                       $"regolarità {N0(st.ConsistencyScore)}/100 (1% low = {N0(ratio * 100)}% della media).";
+            // Il 99% dei frame è vicino alla media e senza gli scatti l'1% low tornerebbe buono: sono scatti isolati,
+            // non un PC che fatica in generale (con la stessa media un PC al limite ha anche il P1 basso).
+            bool isolated = IsolatedHitches(st, hitches);
             if (ratio >= 0.75)
                 list.Add(new PerfInsight
                 {
@@ -308,6 +327,15 @@ namespace FNBoost.Perf
                     Title = "Fluidità buona",
                     Message = msg,
                     Hint = "Qualche calo occasionale: se lo noti in gioco, guarda i suggerimenti qui sotto."
+                });
+            else if (isolated)
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Warn,
+                    Title = "Fluida, ma con scatti isolati",
+                    Message = msg + $" Il 99% dei frame dura meno di {N1(st.P99FrametimeMs)} ms (P1 {N0(st.P1Fps)} FPS): 1% e 0,1% low bassi vengono da " +
+                              $"{hitches!.Count} scatti isolati, non da FPS bassi in generale.",
+                    Hint = "Guarda «Cosa abbassa 1% e 0,1% low» qui sotto: quando succedono gli scatti e cosa coincide (download, rete, CPU)."
                 });
             else if (ratio >= 0.45)
                 list.Add(new PerfInsight
@@ -329,10 +357,35 @@ namespace FNBoost.Perf
                 });
         }
 
-        private static void AddStutterRate(List<PerfInsight> list, FrameStatsResult st)
+        /// <summary>
+        /// Il 99% dei frame è vicino alla media (P1 ≥ 60% della media) e togliendo gli scatti l'1% low tornerebbe ad almeno
+        /// metà della media: 1% e 0,1% low bassi vengono da scatti isolati, non da un PC che fatica in generale.
+        /// </summary>
+        public static bool IsolatedHitches(FrameStatsResult? st, HitchSummary? h) =>
+            st != null && h is { Count: > 0 } && st.AvgFps > 0 && st.P1Fps / st.AvgFps >= 0.6 && h.Low1WithoutFps / st.AvgFps >= 0.5;
+
+        private static void AddStutterRate(List<PerfInsight> list, FrameStatsResult st, bool matchOnly, bool isolatedHitches = false,
+            HitchSummary? hitches = null)
         {
             var rate = st.StuttersPerMin;
-            var msg = $"{st.Stutters} stutter in {DurationText(st.DurationSec)} ({N1(rate)} al minuto); frame più lungo {N1(st.MaxFrametimeMs)} ms.";
+            var msg = $"{st.Stutters} stutter in {DurationText(st.DurationSec)}{(matchOnly ? " di partita" : "")} ({N1(rate)} al minuto); frame più lungo {N1(st.MaxFrametimeMs)} ms.";
+            // Stutter (frame ≥ 2,5 × i vicini) e scatti (≥ 25 ms) si sovrappongono: si dice quanti sono gli uni e gli altri.
+            if (hitches is { Count: > 0 } h && st.Stutters > h.Count)
+                msg += $" Di questi, circa {h.Count} sono gli scatti ≥ {N0(h.ThresholdMs)} ms (vedi «Cosa abbassa 1% e 0,1% low»); " +
+                       $"gli altri {st.Stutters - h.Count} sono frame più brevi, sotto i {N0(h.ThresholdMs)} ms ma lunghi rispetto ai vicini.";
+            if (isolatedHitches && rate > 2 && rate <= 10)
+            {
+                // Sono gli stessi frame degli scatti isolati: un solo consiglio (quello con orari e coincidenze), non due.
+                // Oltre 10 al minuto restano un problema a sé ("Molti stutter").
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Info,
+                    Title = "Stutter = scatti isolati",
+                    Message = msg + " Sono in gran parte gli stessi frame descritti in «Cosa abbassa 1% e 0,1% low».",
+                    Hint = "Nelle prime partite dopo un aggiornamento è normale (compilazione shader e contenuti scaricati in streaming)."
+                });
+                return;
+            }
             if (rate <= 2)
                 list.Add(new PerfInsight
                 {
@@ -353,13 +406,121 @@ namespace FNBoost.Perf
                 });
         }
 
-        private static void AddShaderCompilation(List<PerfInsight> list, PerfSession session, FrameStatsResult st,
-            List<SecondSample> seconds, IReadOnlyList<float>? frametimes)
+        /// <summary>Quanto tempo in lobby, caricamenti e partita, e perché i numeri principali sono "solo partita".</summary>
+        private static void AddPhases(List<PerfInsight> list, PerfSession s)
         {
-            if (st.Stutters < 3 || session.DurationSec < 120) return;
+            var ph = s.PhaseSeconds;
+            if (ph == null) return;
+            bool fortnite = IsFortnite(s.ProcessName);
+            if (!s.HeadlineIsMatch)
+            {
+                if (ph.LobbySec + ph.LoadingSec >= 30 && ph.MatchSec < PerfSession.MinHeadlineMatchSec && (ph.FromNetwork || ph.LobbySec >= 30))
+                    list.Add(new PerfInsight
+                    {
+                        Severity = CheckStatus.Info,
+                        Title = ph.MatchSec > 0 ? "Partita troppo breve" : "Nessuna partita riconosciuta",
+                        Message = $"In questa sessione ci sono {DurationText(ph.LobbySec)} di lobby/menu e {N0(ph.LoadingSec)} s di caricamenti" +
+                                  (ph.MatchSec > 0 ? $", ma solo {N0(ph.MatchSec)} s di partita" : " e nessuna partita") +
+                                  ": i numeri sono dell'intera sessione e in lobby e caricamenti gli FPS sono diversi da quelli in partita.",
+                        Hint = "Registra almeno una partita intera per avere statistiche affidabili."
+                    });
+                return;
+            }
+            var m = s.MatchStats!;
+            var whole = s.Stats ?? new FrameStatsResult();
+            int matches = s.Matches?.Count ?? 0;
+            var parts = new List<string> { $"{DurationText(ph.MatchSec)} di partita ({(matches == 1 ? "1 partita" : $"{matches} partite")})" };
+            if (ph.LobbySec >= 1) parts.Add($"{DurationText(ph.LobbySec)} di lobby e menu");
+            if (ph.LoadingSec >= 1) parts.Add($"{N0(ph.LoadingSec)} s di caricamenti");
+            if (ph.UnfocusedSec >= 1) parts.Add($"{N0(ph.UnfocusedSec)} s fuori fuoco");
+            bool other = ph.LobbySec + ph.LoadingSec >= 1;
+            list.Add(new PerfInsight
+            {
+                Severity = CheckStatus.Info,
+                Title = "Statistiche solo partita",
+                Message = $"Su {DurationText(s.DurationSec)} di sessione: {string.Join(", ", parts)}. " +
+                          $"I numeri principali sono solo della partita: media {N0(m.AvgFps)} FPS, 1% low {N0(m.Low1Fps)}, 0,1% low {N0(m.Low01Fps)}" +
+                          (other && whole.HasData
+                              ? $"; sull'intera sessione, incluse lobby e caricamenti, sarebbero {N0(whole.AvgFps)} / {N0(whole.Low1Fps)} / {N0(whole.Low01Fps)}."
+                              : "."),
+                Hint = ph.FromNetwork
+                    ? "Le fasi sono riconosciute dal traffico del server di gioco: in lobby il server non manda dati, nei caricamenti i frame durano oltre 250 ms o la GPU è quasi ferma. " +
+                      "I frame di lobby e caricamenti (anche di più secondi) non sono prestazioni del PC in partita."
+                    : "Questa sessione non ha i dati di rete: le fasi sono stimate da FPS, GPU e cursore e possono sbagliare di qualche secondo."
+            });
+
+            if (ph.LobbyIdleSec >= SessionPhases.MinSegmentSec)
+                list.Add(new PerfInsight
+                {
+                    Severity = CheckStatus.Info,
+                    Title = "Lobby a ~30 FPS (inattività)",
+                    Message = $"Per {N0(ph.LobbyIdleSec)} s in lobby il gioco andava a ~30 FPS con la GPU quasi ferma" +
+                              (fortnite ? ": in lobby Fortnite limita gli FPS quando sei inattivo (risparmio energetico)." : ": tipico di un limite FPS del menu quando sei inattivo.") +
+                              " Escluso dalle statistiche: non è un problema del PC.",
+                    Hint = "Nessun intervento necessario."
+                });
+        }
+
+        /// <summary>Quanto pesano gli scatti della partita su 1% e 0,1% low, e cosa coincide con loro.</summary>
+        private static void AddHitchImpact(List<PerfInsight> list, PerfSession s)
+        {
+            var h = s.Hitches;
+            if (h == null || h.Count == 0) return;
+            var secs = s.Seconds ?? new List<SecondSample>();
+            int withDownload = 0, withFreeze = 0;
+            foreach (int sec in h.SpikeSeconds)
+            {
+                if (sec >= 0 && sec < secs.Count && secs[sec]?.OtherAppsKbps is >= DownloadKbps) withDownload++;
+                bool fr = false;
+                for (int j = Math.Max(0, sec - 1); j <= Math.Min(secs.Count - 1, sec + 1); j++)
+                    if (secs[j]?.NetFreezes > 0) fr = true;
+                if (fr) withFreeze++;
+            }
+            string thr = N0(h.ThresholdMs), big = N0(h.BigThresholdMs);
+            var msg = $"Nella partita ci sono stati {h.Count} scatti ≥ {thr} ms ({N1(h.PerMin)} al minuto; {h.CountBig} ≥ {big} ms, {h.CountHuge} ≥ 100 ms). " +
+                      $"Se togliamo questi {h.Count} scatti l'1% low passa da {N0(h.Low1Fps)} a {N0(h.Low1WithoutFps)} FPS e lo 0,1% low da {N0(h.Low01Fps)} a {N0(h.Low01WithoutFps)} FPS";
+            msg += h.CountBig > 0 && h.CountBig < h.Count
+                ? $"; togliendo solo i {h.CountBig} ≥ {big} ms: {N0(h.Low1WithoutBigFps)} e {N0(h.Low01WithoutBigFps)}."
+                : ".";
+            var worst = h.Top.OrderByDescending(x => x.Ms).Take(3).ToList();
+            if (worst.Count > 0)
+                msg += " I più lunghi: " + string.Join(", ", worst.Select(x => $"{N0(x.Ms)} ms a {SessionPhases.Clock(x.SessionSec)}")) + " (minuti:secondi della sessione).";
+            bool anyNet = secs.Any(x => x?.OtherAppsKbps != null);
+            if (anyNet)
+                msg += $" {withDownload} di questi scatti sono avvenuti durante un download sul PC (≥ 5 Mbit/s), {withFreeze} vicino a un freeze di rete.";
+            double gain = h.Low1Fps > 0 ? (h.Low1WithoutFps - h.Low1Fps) / h.Low1Fps : 0;
+            var hint = "Scatti isolati da 25-200 ms raramente dipendono dalla potenza del PC (abbassare la grafica serve poco): di solito sono caricamenti di dati " +
+                       "o shader del gioco, download in background, attività di Windows o del driver. Dopo un aggiornamento le prime partite ne hanno di più.";
+            if (withDownload * 3 >= h.Count && withDownload >= 3) hint += " Qui una buona parte coincide con download in corso: vedi «Download durante la partita».";
+            list.Add(new PerfInsight
+            {
+                Severity = h.PerMin >= 2 && gain >= 0.15 ? CheckStatus.Warn : CheckStatus.Info,
+                Title = "Cosa abbassa 1% e 0,1% low",
+                Message = msg,
+                Hint = hint
+            });
+        }
+
+        private static void AddShaderCompilation(List<PerfInsight> list, PerfSession session, FrameStatsResult st,
+            List<SecondSample> seconds, IReadOnlyList<float>? frametimes, SessionPhase[]? matchPhases)
+        {
+            if (st.Stutters < 3 || st.DurationSec < 120) return;
             int early;
             int total;
-            if (seconds.Count > 0 && seconds.Sum(s => s.Stutters) > 0)
+            if (matchPhases != null && session.Matches is { Count: > 0 } matches)
+            {
+                // Solo partita: il "primo minuto" è quello della prima partita (la lobby non conta).
+                int start = matches[0].StartSec;
+                early = 0;
+                total = 0;
+                for (int i = 0; i < seconds.Count && i < matchPhases.Length; i++)
+                {
+                    if (matchPhases[i] != SessionPhase.Match) continue;
+                    total += seconds[i].Stutters;
+                    if (i - start < 60) early += seconds[i].Stutters;
+                }
+            }
+            else if (seconds.Count > 0 && seconds.Sum(s => s.Stutters) > 0)
             {
                 early = seconds.Where(s => s.T < 60).Sum(s => s.Stutters);
                 total = seconds.Sum(s => s.Stutters);
@@ -385,7 +546,7 @@ namespace FNBoost.Perf
                 {
                     Severity = CheckStatus.Info,
                     Title = "Stutter concentrati all'inizio",
-                    Message = $"{early} stutter su {total} nel primo minuto della sessione.",
+                    Message = $"{early} stutter su {total} nel primo minuto {(matchPhases != null ? "della prima partita" : "della sessione")}.",
                     Hint = "È tipico della compilazione degli shader (dopo aggiornamenti del gioco o dei driver): " +
                            "di solito sparisce dopo qualche partita. Non cancellare la cache shader senza motivo."
                 });
@@ -485,8 +646,11 @@ namespace FNBoost.Perf
                 .FirstOrDefault();
             if (prev == null) return;
 
-            double dAvg = Rel(session.Stats.AvgFps, prev.Stats.AvgFps);
-            double dLow = Rel(session.Stats.Low1Fps, prev.Stats.Low1Fps);
+            bool both = session.HeadlineIsMatch && prev.HeadlineIsMatch;
+            var cs = both ? session.MatchStats! : session.Stats;
+            var ps = both ? prev.MatchStats! : prev.Stats;
+            double dAvg = Rel(cs.AvgFps, ps.AvgFps);
+            double dLow = Rel(cs.Low1Fps, ps.Low1Fps);
 
             var changes = new List<string>();
             var cur = session.ActiveTweaks ?? new List<string>();
@@ -523,7 +687,8 @@ namespace FNBoost.Perf
         // ---- rete ----
 
         /// <summary>Ping, jitter, perdita, rete di casa, Wi-Fi, banda delle altre app e freeze. Niente se la sessione non ha dati di rete.</summary>
-        private static void AddNetwork(List<PerfInsight> list, PerfSession session, FrameStatsResult st, List<SecondSample> seconds)
+        private static void AddNetwork(List<PerfInsight> list, PerfSession session, FrameStatsResult st, List<SecondSample> seconds,
+            SessionPhase[] phases)
         {
             var net = session.Network;
             if (net == null) return;
@@ -645,8 +810,11 @@ namespace FNBoost.Perf
                            "passa alla banda 5 GHz o valuta un ripetitore/sistema mesh."
                 });
 
-            // ---- banda delle altre app ----
-            if (net.AvgOtherAppsKbps > 2000 || net.MaxOtherAppsKbps > 10000)
+            // ---- download durante la partita (chi, quanto, quando e cosa coincide) ----
+            bool downloads = AddDownloads(list, session, seconds, phases);
+
+            // ---- banda delle altre app (sessioni senza partite riconosciute) ----
+            if (!downloads && (net.AvgOtherAppsKbps > 2000 || net.MaxOtherAppsKbps > 10000))
                 list.Add(new PerfInsight
                 {
                     Severity = CheckStatus.Warn,
@@ -660,7 +828,11 @@ namespace FNBoost.Perf
 
             // ---- freeze di rete e confronto con gli stutter ----
             var corr = NetStats.Correlate(seconds);
-            if (net.Freezes > 0)
+            if (net.Freezes > 0 && AddMatchFreezes(list, session, seconds, homeProblem))
+            {
+                // Con le partite riconosciute dal traffico: solo i freeze a partita in corso (vedi sopra).
+            }
+            else if (net.Freezes > 0)
             {
                 double minutes = Math.Max(1, session.DurationSec / 60.0);
                 double perMin = net.Freezes / minutes;
@@ -700,7 +872,10 @@ namespace FNBoost.Perf
             }
 
             // ---- pacchetti dal server ----
-            var inPkts = seconds.Where(s => s.PacketsInPerSec is >= 1).Select(s => s.PacketsInPerSec!.Value).ToList();
+            // Solo la partita, se riconosciuta: in lobby e caricamenti il server manda pochi pacchetti per natura.
+            bool matchOnly = session.HeadlineIsMatch;
+            var inPkts = seconds.Where((s, i) => s.PacketsInPerSec is >= 1 && (!matchOnly || (i < phases.Length && phases[i] == SessionPhase.Match)))
+                .Select(s => s.PacketsInPerSec!.Value).ToList();
             if (inPkts.Count >= 60)
             {
                 double med = NetStats.Median(inPkts);
@@ -714,6 +889,163 @@ namespace FNBoost.Perf
                                "ma se coincidono con lag possono indicare una connessione congestionata."
                     });
             }
+        }
+
+        /// <summary>Altro traffico sul PC sopra questa soglia = download in corso (kbit/s).</summary>
+        private const double DownloadKbps = 5000;
+        /// <summary>Sotto questa soglia la connessione è "tranquilla" (kbit/s).</summary>
+        private const double QuietKbps = 1000;
+
+        /// <summary>
+        /// Download sul PC durante la partita: quanto, quando, chi (se misurato: Fortnite stesso o un'altra app) e cosa
+        /// coincide (scatti ≥ 25 ms, ping). true se l'osservazione è stata aggiunta.
+        /// </summary>
+        private static bool AddDownloads(List<PerfInsight> list, PerfSession session, List<SecondSample> seconds, SessionPhase[] phases)
+        {
+            if (!session.HeadlineIsMatch || phases.Length == 0) return false;
+            var match = new List<int>();
+            for (int i = 0; i < seconds.Count && i < phases.Length; i++)
+                if (phases[i] == SessionPhase.Match && seconds[i]?.OtherAppsKbps != null) match.Add(i);
+            if (match.Count < 60) return false;
+            var dl = match.Where(i => seconds[i].OtherAppsKbps >= DownloadKbps).ToList();
+            var quiet = match.Where(i => seconds[i].OtherAppsKbps < QuietKbps).ToList();
+            if (dl.Count < 15) return false;
+
+            double avgMbps = dl.Average(i => seconds[i].OtherAppsKbps!.Value) / 1000.0;
+            double mb = dl.Sum(i => seconds[i].OtherAppsKbps!.Value) / 8.0 / 1000.0;
+
+            // Finestre di download (secondi vicini uniti) e se partono subito dopo l'inizio di una partita.
+            var windows = new List<(int From, int To)>();
+            foreach (int i in dl)
+            {
+                if (windows.Count > 0 && i - windows[^1].To <= 3) windows[^1] = (windows[^1].From, i);
+                else windows.Add((i, i));
+            }
+            var matches = session.Matches ?? new List<MatchSegment>();
+            int atStart = windows.Count(w => matches.Any(m => w.From >= m.StartSec && w.From - m.StartSec <= 30));
+            string when = string.Join(", ", windows.OrderByDescending(w => w.To - w.From).Take(3).OrderBy(w => w.From)
+                .Select(w => $"{SessionPhases.Clock(w.From)}–{SessionPhases.Clock(w.To + 1)}"));
+            if (windows.Count > 3) when += $" e altri {windows.Count - 3} tratti";
+
+            // ---- chi scaricava ----
+            var who = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            foreach (int i in dl)
+                foreach (var r in seconds[i].TopDownloaders ?? new List<NetProcRate>())
+                    if (!string.IsNullOrEmpty(r.Name)) who[r.Name] = (who.TryGetValue(r.Name, out var v) ? v : 0) + r.Kbps;
+            string? top = who.Count > 0 ? who.OrderByDescending(kv => kv.Value).First().Key : null;
+            double attributed = who.Values.Sum();
+            double share = top != null && attributed > 0 ? who[top] / attributed : 0;
+            // Quanta parte dell'altro traffico è stata attribuita a un programma (il resto: processi brevi, traffico di sistema).
+            double coverage = attributed / dl.Count / (avgMbps * 1000.0);
+            bool partial = top != null && coverage < 0.4;
+            bool fortnite = top != null && !partial && share >= 0.5 && top.Equals(NetProcessAttribution.FortniteContentName, StringComparison.OrdinalIgnoreCase);
+            string? topMb = top == null ? null
+                : session.TopNetworkProcesses?.FirstOrDefault(p => p.Name.Equals(top, StringComparison.OrdinalIgnoreCase)) is { } tp
+                    ? $"{N0(tp.MbDown)} MB in tutta la sessione"
+                    : null;
+
+            // ---- cosa coincide: scatti e ping ----
+            var spikeCount = new Dictionary<int, int>();
+            foreach (int sec in session.Hitches?.SpikeSeconds ?? new List<int>())
+                spikeCount[sec] = spikeCount.TryGetValue(sec, out var c) ? c + 1 : 1;
+            double Rate(List<int> secs) => secs.Count == 0 ? 0 : secs.Sum(i => spikeCount.TryGetValue(i, out var c) ? c : 0) / (secs.Count / 60.0);
+            bool spikesKnown = session.Hitches != null && quiet.Count >= 30;
+            double rateDl = Rate(dl), rateQuiet = Rate(quiet);
+            double? PingAvg(List<int> secs)
+            {
+                var v = secs.Where(i => seconds[i].PingMs.HasValue).Select(i => seconds[i].PingMs!.Value).ToList();
+                return v.Count >= 10 ? v.Average() : null;
+            }
+            double? pingDl = PingAvg(dl), pingQuiet = PingAvg(quiet);
+            double rise = pingDl is { } pd && pingQuiet is { } pq ? pd - pq : 0;
+            bool bufferbloat = rise >= 8;
+            bool spikesUp = spikesKnown && rateDl >= 1.5 * rateQuiet && rateDl - rateQuiet >= 2;
+
+            var msg = $"Durante la partita è passato altro traffico sul PC per {N0(dl.Count)} s ({when}" +
+                      (atStart > 0 ? (atStart == windows.Count ? ", sempre subito dopo l'inizio della partita" : ", spesso subito dopo l'inizio della partita") : "") +
+                      $"): in media {N1(avgMbps)} Mbit/s, circa {N0(mb)} MB.";
+            if (fortnite)
+                msg += $" Lo scaricava Fortnite stesso (traffico TCP del gioco, separato da quello della partita{(topMb != null ? ", " + topMb : "")}).";
+            else if (top != null)
+                msg += $" Il programma che scaricava di più: {NetProcessAttribution.Describe(top)}{(topMb != null ? $" ({topMb})" : "")}" +
+                       (partial ? $" (ma solo il {N0(coverage * 100)}% di quel traffico è stato attribuito a un programma)." : ".");
+            else
+                msg += " Non sappiamo quale programma: in questa sessione il traffico per programma non è stato misurato.";
+            if (spikesKnown)
+                msg += $" Nei secondi con download gli scatti ≥ {N0(session.Hitches!.ThresholdMs)} ms sono stati {N1(rateDl)} al minuto, contro {N1(rateQuiet)} al minuto senza download.";
+            if (pingDl is { } p1 && pingQuiet is { } p2)
+                msg += $" Il ping di gioco è stato in media {N0(p1)} ms durante i download e {N0(p2)} ms senza" +
+                       (bufferbloat ? " (bufferbloat: il download riempie la coda del router e i pacchetti del gioco aspettano)." : ".");
+            if (spikesUp || bufferbloat) msg += " È una correlazione: indica che le due cose avvengono insieme, non prova che il download sia la causa.";
+
+            string qos = bufferbloat
+                ? " Per il ping che sale: attiva la QoS/SQM del router (es. Smart Queue, CAKE, «gaming priority») così il download non ritarda i pacchetti del gioco."
+                : "";
+            string hint;
+            if (fortnite)
+                hint = "Durante le partite Fortnite scarica in streaming cosmetici e contenuti (soprattutto nelle prime partite dopo un aggiornamento, poi cala). " +
+                       "Epic ha rimosso dal launcher l'opzione «Pre-download Streamed Assets», quindi non si può scaricare tutto prima: di solito basta giocare " +
+                       "qualche partita dopo una patch perché diminuisca." + qos;
+            else if (top != null)
+                hint = $"Metti in pausa {NetProcessAttribution.Describe(top)} (o limitane la banda) mentre giochi." + qos;
+            else
+                hint = "Può essere anche Fortnite stesso (scarica contenuti in streaming durante le partite, soprattutto dopo un aggiornamento) oppure " +
+                       "Windows Update, Steam, launcher o cloud. Le sessioni registrate da ora in poi indicano anche quale programma scarica." + qos;
+            list.Add(new PerfInsight
+            {
+                Severity = spikesUp || bufferbloat ? CheckStatus.Warn : CheckStatus.Info,
+                Title = "Download durante la partita",
+                Message = msg,
+                Hint = hint
+            });
+            return true;
+        }
+
+        /// <summary>
+        /// Freeze di rete a partita in corso (esclusi i primi secondi dopo l'ingresso, dove sono normali). Solo se le fasi
+        /// vengono dal traffico del server; false = usa l'analisi generica dei freeze.
+        /// </summary>
+        private static bool AddMatchFreezes(List<PerfInsight> list, PerfSession session, List<SecondSample> seconds, bool homeProblem)
+        {
+            if (session.PhaseSeconds?.FromNetwork != true || !session.HeadlineIsMatch) return false;
+            var mid = SessionPhases.MidMatchFreezes(session, out int joinFreezes);
+            if (mid.Count == 0)
+            {
+                if (joinFreezes > 0)
+                    list.Add(new PerfInsight
+                    {
+                        Severity = CheckStatus.Info,
+                        Title = "Freeze di rete solo all'ingresso in partita",
+                        Message = $"{joinFreezes} pause nella ricezione dei dati dal server, tutte nei primi {SessionPhases.JoinFreezeGraceSec} s dopo l'ingresso in partita: " +
+                                  "lì sono normali (il server sta ancora caricando giocatori e mappa). A partita in corso nessun freeze.",
+                        Hint = "Nessun intervento necessario."
+                    });
+                return true;
+            }
+            double minutes = Math.Max(1, (session.PhaseSeconds?.MatchSec ?? session.DurationSec) / 60.0);
+            double longest = mid.Max(f => f.GapMs ?? 0);
+            int withDl = mid.Count(f => Enumerable.Range(f.Sec - 2, 5).Any(j => j >= 0 && j < seconds.Count && seconds[j]?.OtherAppsKbps is >= DownloadKbps));
+            var msg = $"{mid.Count} {(mid.Count == 1 ? "pausa" : "pause")} oltre 250 ms nella ricezione dei dati dal server a partita in corso: " +
+                      string.Join(", ", mid.Take(8).Select(f => $"{SessionPhases.Clock(f.Sec)}{(f.GapMs is { } g ? $" ({N0(g)} ms)" : "")}")) +
+                      (mid.Count > 8 ? $" e altre {mid.Count - 8}" : "") + " (minuti:secondi della sessione). In gioco si sentono come lag o rubber-banding.";
+            if (joinFreezes > 0) msg += $" Altre {joinFreezes} subito dopo l'ingresso in partita non contano: lì sono normali.";
+            if (withDl > 0) msg += $" {withDl} su {mid.Count} coincidono con un download in corso sul PC.";
+            var sev = mid.Count / minutes >= 1 || longest >= 2000 ? CheckStatus.Bad
+                : mid.Count >= 3 || longest >= 1000 ? CheckStatus.Warn
+                : CheckStatus.Info;
+            list.Add(new PerfInsight
+            {
+                Severity = sev,
+                Title = "Freeze di rete a metà partita",
+                Message = msg,
+                Hint = homeProblem
+                    ? "Il router stesso risponde in modo irregolare: inizia dalla rete di casa (cavo, Wi-Fi a 5 GHz, altri dispositivi)."
+                    : withDl > 0
+                        ? "Metti in pausa i download durante le partite (o attiva la QoS/SQM del router). Se continuano senza download, la causa è il percorso verso il server o il server stesso."
+                        : "Pochi freeze isolati possono dipendere dal server. Se diventano frequenti chiudi i download in background e prova il cavo; " +
+                          "se router e Internet restano stabili la causa è il percorso verso il server o il server stesso."
+            });
+            return true;
         }
 
         private static void AddProcesses(List<PerfInsight> list, PerfSession session)

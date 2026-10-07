@@ -158,6 +158,8 @@ namespace FNBoost.Report
         public double Low01Fps { get; set; }
         public double StuttersPerMin { get; set; }
         public double? PingAvgMs { get; set; }
+        /// <summary>true se media, low e stutter sono "solo partita" (lobby e caricamenti esclusi).</summary>
+        public bool MatchOnly { get; set; }
         /// <summary>È la sessione analizzata nel report.</summary>
         public bool Selected { get; set; }
     }

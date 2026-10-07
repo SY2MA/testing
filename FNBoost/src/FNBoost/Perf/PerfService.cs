@@ -26,6 +26,8 @@ namespace FNBoost.Perf
         private const double AutoStartAfterMs = 5000;
         private const double AutoStopAfterMs = 10000;
         private const double MaxRecordingMs = 4 * 3600 * 1000.0;
+        /// <summary>Controlli del cursore conservati per una registrazione (10 al secondo per 4 ore).</summary>
+        private const int MaxCursorPolls = 4 * 3600 * 10 + 100;
 
         private readonly Func<IReadOnlyList<string>> _activeTweakIds;
         private readonly object _lock = new();     // buffer condivisi tra thread ETW, timer e UI
@@ -88,6 +90,22 @@ namespace FNBoost.Perf
         private int _procSeq;
         private NicState? _lastNicState;
         private NetSecondTraffic? _lastTraffic;
+        /// <summary>Ultimo traffico per programma (ripetuto per la UI quando in un tick non si chiude nessun secondo).</summary>
+        private List<ProcessNetSecond>? _lastProcs;
+        /// <summary>PID → nome dei processi visti in rete: un processo appena chiuso sparisce dall'elenco ma il suo traffico arriva dopo.</summary>
+        private readonly Dictionary<int, string> _netNames = new();
+        private static readonly Lazy<string?> OwnProcessName = new(() =>
+        {
+            try
+            {
+                using var me = Process.GetCurrentProcess();
+                return me.ProcessName;
+            }
+            catch
+            {
+                return null;
+            }
+        });
         private readonly List<(double In, double Out)?> _totalKbps = new();
         private volatile NetworkSnapshot? _netSnap;
 
@@ -395,8 +413,11 @@ namespace FNBoost.Perf
 
                 // Si salvano tutti i frametime (anche quelli esclusi, indicati da ExcludedRanges) per non perdere dati.
                 Store.Save(session, ft);
+                var head = session.HeadlineStats;
                 Log.Info($"Sessione salvata{why}: {DisplayName(session.ProcessName)} · {session.DurationText} · " +
-                         $"media {session.Stats.AvgFps:0} FPS · 1% low {session.Stats.Low1Fps:0} FPS" +
+                         (session.HeadlineIsMatch ? $"solo partita ({SessionPhases.Clock(session.PhaseSeconds?.MatchSec ?? 0)}): " : "") +
+                         $"media {head.AvgFps:0} FPS · 1% low {head.Low1Fps:0} FPS" +
+                         (session.HeadlineIsMatch ? $" · sessione intera {session.Stats.AvgFps:0} / {session.Stats.Low1Fps:0}" : "") +
                          (session.UnfocusedSec >= 1 ? $" · {session.UnfocusedSec:0} s fuori fuoco esclusi" : ""));
                 RaiseOnUi(() => SessionSaved?.Invoke(session));
                 QueuePublish(BuildSnapshotSafe());
@@ -487,9 +508,70 @@ namespace FNBoost.Perf
                 if (trafficIdx[s] >= 0 && rec.Net[trafficIdx[s]] is { } tn) ApplyTraffic(sample, tn);
                 // I freeze sono eventi: ognuno conta in un solo secondo (quello in cui è finito il secondo di traffico).
                 sample.NetFreezes = freezes[s];
+                if (trafficIdx[s] >= 0 && rec.Net[trafficIdx[s]] is { } pn)
+                {
+                    if (pn.Procs is { Count: > 0 } pl && NetProcessAttribution.TopDownloaders(pl) is { Count: > 0 } top)
+                        sample.TopDownloaders = top;
+                    if (pn.Server != null && session.Network?.ServerEndpoints is { } eps)
+                    {
+                        int si = eps.IndexOf(pn.Server);
+                        if (si >= 0) sample.ServerIdx = si;
+                    }
+                }
                 session.Seconds.Add(sample);
             }
+            ApplyCursor(session.Seconds, rec, firstEndMs);
+
+            // ---- fasi (lobby / caricamento / partita), statistiche della sola partita e scatti ----
+            try
+            {
+                var gaps = SessionPhases.FindGaps(ft, ts);
+                session.FrameGaps = gaps.Count > 0 ? gaps : null;
+                var frameSec = SessionPhases.FrameSeconds(ts, baseTs);
+                SessionPhases.Apply(session, ft, excluded, frameSec, factor, minMs);
+                session.TopNetworkProcesses = BuildProcessTotals(rec, session, trafficIdx);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("Fasi della sessione: " + ex.Message);
+            }
             return session;
+        }
+
+        /// <summary>Frazione dei controlli del primo piano con il cursore visibile, per ogni secondo della sessione.</summary>
+        private static void ApplyCursor(List<SecondSample> seconds, Recording rec, double firstEndMs)
+        {
+            int n = Math.Min(rec.CursorMs.Count, rec.CursorVisible.Count);
+            if (n == 0) return;
+            int j = 0;
+            for (int s = 0; s < seconds.Count; s++)
+            {
+                // Il secondo s finisce (orologio interno) a firstEndMs + s·1000.
+                double from = firstEndMs + (s - 1) * 1000.0, to = firstEndMs + s * 1000.0;
+                while (j < n && rec.CursorMs[j] <= from) j++;
+                int vis = 0, tot = 0;
+                for (int k = j; k < n && rec.CursorMs[k] <= to; k++)
+                {
+                    tot++;
+                    if (rec.CursorVisible[k]) vis++;
+                }
+                if (tot > 0) seconds[s].CursorVisible = Math.Round((double)vis / tot, 2);
+            }
+        }
+
+        /// <summary>Programmi che hanno usato di più la rete (MB totali, picco, secondi di partita con almeno 1 Mbit/s).</summary>
+        private static List<ProcessNetUsage>? BuildProcessTotals(Recording rec, PerfSession session, int[] trafficIdx)
+        {
+            var totals = new ProcessNetTotals();
+            foreach (var t in rec.Net)
+                if (t is { ProcsFresh: true, Procs: { } pl }) totals.Add(pl);
+            if (!totals.Any) return null;
+            var phases = SessionPhases.PhasesOf(session);
+            for (int s = 0; s < phases.Length && s < trafficIdx.Length; s++)
+                if (phases[s] == SessionPhase.Match && trafficIdx[s] >= 0 && rec.Net[trafficIdx[s]] is { Procs: { } mp })
+                    totals.AddMatchSecond(mp);
+            var top = totals.Top();
+            return top.Count > 0 ? top : null;
         }
 
         private static void ReadFortniteConfig(Recording rec)
@@ -606,6 +688,8 @@ namespace FNBoost.Perf
                 int fgPid = 0;
                 var hwnd = Native.GetForegroundWindow();
                 if (hwnd != IntPtr.Zero && Native.GetWindowThreadProcessId(hwnd, out var p) != 0) fgPid = (int)p;
+                // Cursore del mouse visibile (GetCursorInfo, nessun accesso al gioco): solo un indizio lobby/partita.
+                bool cursor = Native.IsCursorVisible();
                 double now = _clock.Elapsed.TotalMilliseconds;
                 lock (_lock)
                 {
@@ -613,6 +697,11 @@ namespace FNBoost.Perf
                     if (gamePid == 0) gamePid = _livePid;
                     bool focused = fgPid != 0 && (gamePid != 0 ? fgPid == gamePid : Array.IndexOf(_targetPids, fgPid) >= 0);
                     _focus.Add(now, focused);
+                    if (focused && _rec != null && _rec.CursorMs.Count < MaxCursorPolls)
+                    {
+                        _rec.CursorMs.Add(now);
+                        _rec.CursorVisible.Add(cursor);
+                    }
                 }
             }
             catch (Exception ex)
@@ -960,6 +1049,7 @@ namespace FNBoost.Perf
             _netRegion = Settings.Region;
             _netGateway = Settings.PingGateway;
             _lastTraffic = null;
+            _lastProcs = null;
             _lastNicState = null;
             _totalKbps.Clear();
             _netSnap = new NetworkSnapshot { Available = false, StatusText = "Avvio della misura di rete…" };
@@ -1035,6 +1125,8 @@ namespace FNBoost.Perf
             }
             _lastTraffic = null;
             _lastNicState = null;
+            _lastProcs = null;
+            _netNames.Clear();
             _totalKbps.Clear();
         }
 
@@ -1163,6 +1255,20 @@ namespace FNBoost.Perf
 
             var tick = new NetTick { Server = server?.ToString(), Nic = nicState, TrafficEndMs = trafficEndMs };
 
+            // ---- traffico per programma (chi scarica: il gioco stesso o un'altra app) ----
+            if (net != null && netOk)
+            {
+                var procSecs = net.TakeProcessSeconds();
+                // Senza eventi TCP (traccia parziale) il "chi scarica" sarebbe sbagliato: meglio dire che non è misurato.
+                if (procSecs.Count > 0 && net.TcpAvailable)
+                {
+                    tick.Procs = NetProcessAttribution.Attribute(procSecs, pid, NetName, OwnProcessName.Value);
+                    tick.ProcsFresh = true;
+                    _lastProcs = tick.Procs;
+                }
+                else tick.Procs = _lastProcs;
+            }
+
             // ---- ping ----
             bool useServer = false;
             if (pinger != null)
@@ -1283,8 +1389,22 @@ namespace FNBoost.Perf
                 ConnectionType = nic?.ConnectionType ?? "",
                 AdapterName = nic?.AdapterName ?? "",
                 LinkSpeedMbps = nic?.LinkSpeedMbps,
-                WifiSignalPct = nic?.WifiSignalPct
+                WifiSignalPct = nic?.WifiSignalPct,
+                TopDownloaders = NetProcessAttribution.TopDownloaders(tick.Procs)
             };
+        }
+
+        /// <summary>Nome di un PID per il traffico per programma (elenco processi di sistema, più quelli già visti in rete).</summary>
+        private string? NetName(int pid)
+        {
+            var name = NameOf(pid);
+            if (name != null)
+            {
+                if (_netNames.Count >= 4096) _netNames.Clear();
+                _netNames[pid] = name;
+                return name;
+            }
+            return _netNames.TryGetValue(pid, out var old) ? old : null;
         }
 
         /// <summary>Ping del tick (raccolti dal vivo nell'ultimo secondo).</summary>
@@ -1374,6 +1494,7 @@ namespace FNBoost.Perf
             }
             summary.Freezes = ticks.Sum(t => t.Freezes);
             summary.LongestFreezeMs = Math.Round(ticks.Max(t => t.LongestFreezeMs), 1);
+            summary.ProcessTrafficMeasured = ticks.Any(t => t.ProcsFresh);
             return summary;
         }
 
@@ -1393,6 +1514,10 @@ namespace FNBoost.Perf
             public string? RegionName, RegionHost, BestRegionName;
             public double? BestRegionMs;
             public NicState? Nic;
+            /// <summary>Traffico per programma del secondo chiuso (o l'ultimo, ripetuto per la UI se ProcsFresh = false).</summary>
+            public List<ProcessNetSecond>? Procs;
+            /// <summary>true se Procs è nuovo in questo tick (solo allora i byte entrano nei totali).</summary>
+            public bool ProcsFresh;
         }
 
         // ================= Pubblicazione sulla UI =================
@@ -1582,6 +1707,9 @@ namespace FNBoost.Perf
             public bool FortniteConfigRead;
             public readonly List<NetTick?> Net = new();
             public readonly ProcessUsageAccumulator Procs = new();
+            /// <summary>Istante (orologio interno) e cursore visibile di ogni controllo del primo piano con il gioco in primo piano.</summary>
+            public readonly List<double> CursorMs = new();
+            public readonly List<bool> CursorVisible = new();
         }
 
         /// <summary>Buffer circolare (istante, frametime) che cresce quando serve.</summary>

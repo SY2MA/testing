@@ -73,6 +73,26 @@ namespace FNBoost.Views.Pages
         public Brush CpuBrush { get; init; } = Brushes.White;
     }
 
+    /// <summary>Riga della lista "Scatti più lunghi della partita" di una sessione.</summary>
+    public sealed class HitchRow
+    {
+        public string SessionTime { get; init; } = "";
+        public string MatchTime { get; init; } = "";
+        public string Duration { get; init; } = "";
+        public string Context { get; init; } = "";
+        public Brush DurationBrush { get; init; } = Brushes.White;
+    }
+
+    /// <summary>Riga della tabella "Traffico per programma" di una sessione.</summary>
+    public sealed class NetProcRow
+    {
+        public string Name { get; init; } = "";
+        public string Down { get; init; } = "";
+        public string Peak { get; init; } = "";
+        public string Match { get; init; } = "";
+        public Brush MatchBrush { get; init; } = Brushes.White;
+    }
+
     public partial class PerformancePage : UserControl
     {
         private static readonly string[] Palette =
@@ -554,22 +574,25 @@ namespace FNBoost.Views.Pages
 
         private static SessionRow ToRow(PerfSession s)
         {
-            var st = s.Stats ?? new FrameStatsResult();
+            // Solo partita se la sessione ce l'ha (sessioni nuove): lobby e caricamenti falsano media e low.
+            var st = s.HeadlineStats;
+            bool match = s.HeadlineIsMatch;
             return new SessionRow
             {
                 Session = s,
                 Title = s.Title,
                 Detail = $"{s.DurationText} · {DisplayName(s.ProcessName)}" +
+                         (match && s.PhaseSeconds is { } ph ? $" · partita {SessionPhases.Clock(ph.MatchSec)}" : "") +
                          (string.IsNullOrEmpty(s.RenderMode) ? "" : $" · {s.RenderMode}") +
                          (st.HasData ? $" · consistenza {N0(st.ConsistencyScore)}" : ""),
                 AvgText = st.HasData ? $"{N0(st.AvgFps)} FPS" : "–",
-                LowText = st.HasData ? $"1% low {N0(st.Low1Fps)}" : ""
+                LowText = st.HasData ? $"1% low {N0(st.Low1Fps)}{(match ? " · solo partita" : "")}" : ""
             };
         }
 
         private void UpdateTrend()
         {
-            var valid = _sessions.Where(s => s.Stats != null && s.Stats.HasData).ToList();
+            var valid = _sessions.Where(s => s.Stats != null && s.HeadlineStats.HasData).ToList();
             var newest = valid.OrderByDescending(s => s.StartedAt).FirstOrDefault();
             if (newest == null)
             {
@@ -580,14 +603,17 @@ namespace FNBoost.Views.Pages
             else
             {
                 // Solo il gioco dell'ultima sessione: mescolare giochi diversi non avrebbe senso.
+                // Stesso tipo di numeri dell'ultima: "solo partita" con "solo partita", sessioni intere con sessioni intere.
                 var group = valid
-                    .Where(s => string.Equals(s.ProcessName, newest.ProcessName, StringComparison.OrdinalIgnoreCase))
+                    .Where(s => string.Equals(s.ProcessName, newest.ProcessName, StringComparison.OrdinalIgnoreCase) &&
+                                s.HeadlineIsMatch == newest.HeadlineIsMatch)
                     .OrderBy(s => s.StartedAt)
                     .ToList();
                 if (group.Count > 40) group = group.Skip(group.Count - 40).ToList();
-                TrendChart.Values = group.Select(s => s.Stats.AvgFps).ToArray();
-                TrendChart.Values2 = group.Select(s => s.Stats.Low1Fps).ToArray();
-                TrendSub.Text = $"{DisplayName(newest.ProcessName)} · {group.Count} sessioni" +
+                // Solo partita dove disponibile (sessioni nuove), intera sessione per le vecchie.
+                TrendChart.Values = group.Select(s => s.HeadlineStats.AvgFps).ToArray();
+                TrendChart.Values2 = group.Select(s => s.HeadlineStats.Low1Fps).ToArray();
+                TrendSub.Text = $"{DisplayName(newest.ProcessName)}{(newest.HeadlineIsMatch ? " · solo partita" : "")} · {group.Count} sessioni" +
                                 (group.Count > 1 ? $", dal {group[0].StartedAt.ToString("d MMM", C)} al {group[^1].StartedAt.ToString("d MMM", C)}" : "");
             }
             try
@@ -727,8 +753,10 @@ namespace FNBoost.Views.Pages
             var ft = store.LoadFrametimes(session.Id) ?? throw new InvalidOperationException("frametime della sessione non trovati");
             // Sessioni vecchie: si usa la stima del tratto in secondo piano, se c'è.
             var eff = FocusFilter.RepairLegacy(session, ft, factor, minMs) ?? session;
+            eff = SessionPhases.Ensure(eff, ft, factor, minMs) ?? eff;
             using var w = new StreamWriter(path, false, new UTF8Encoding(false), 1 << 16);
-            FNBoost.Report.ReportBuilder.WriteFrametimesCsv(w, ft, FocusFilter.MaskFromRanges(ft.Length, eff.ExcludedRanges));
+            FNBoost.Report.ReportBuilder.WriteFrametimesCsv(w, ft, FocusFilter.MaskFromRanges(ft.Length, eff.ExcludedRanges),
+                SessionPhases.MatchMask(eff, ft));
             return ft.Length;
         }
 
@@ -761,6 +789,8 @@ namespace FNBoost.Views.Pages
             SessionInsights.ItemsSource = null;
             CompareCombo.ItemsSource = null;
             CompareText.Text = "";
+            HitchList.ItemsSource = null;
+            NetProcList.ItemsSource = null;
         }
 
         private async void ShowAnalysis(PerfSession s, bool reload)
@@ -769,14 +799,16 @@ namespace FNBoost.Views.Pages
             AnalysisCard.Visibility = Visibility.Visible;
             AnalysisTitle.Text = s.Title;
             AnalysisMeta.Text = Meta(s);
-            var st = s.Stats ?? new FrameStatsResult();
-            StatsGrid.ItemsSource = BuildStats(st, s);
+            StatsGrid.ItemsSource = BuildStats(s);
+            ShowPhases(s);
 
             // Grafici dai campioni al secondo (già nei metadati: nessun caricamento).
             var secs = s.Seconds ?? new List<SecondSample>();
             ShowSessionCharts(s);
             ShowSessionNetwork(s, secs);
             ShowSessionProcesses(s);
+            ShowHitches(s);
+            ShowNetProcesses(s);
 
             // Confronto: proposta automatica = sessione precedente dello stesso gioco.
             var others = _sessions.Where(x => x.Id != s.Id).ToList();
@@ -808,22 +840,31 @@ namespace FNBoost.Views.Pages
                 {
                     var ft = store.LoadFrametimes(s.Id);
                     var e = FocusFilter.RepairLegacy(s, ft, factor, minMs) ?? s;
+                    // Sessioni registrate prima delle fasi: lobby/caricamenti/partita e statistiche "solo partita" calcolate ora.
+                    e = SessionPhases.Ensure(e, ft, factor, minMs) ?? e;
                     var ins = PerfAnalyzer.Analyze(e, history, ft);
-                    // Istogramma solo dei frame con il gioco in primo piano.
-                    var focused = ft == null ? null : FocusFilter.FocusedFrametimes(ft, e);
+                    // Istogramma solo dei frame della partita (o, senza partita, di quelli con il gioco in primo piano).
+                    var mask = SessionPhases.MatchMask(e, ft);
+                    var focused = ft == null ? null
+                        : mask != null ? ft.Where((_, i) => mask[i]).ToArray()
+                        : FocusFilter.FocusedFrametimes(ft, e);
                     return (focused, ins, e, ft?.Length ?? 0);
                 });
                 if (seq != _analysisSeq) return; // nel frattempo è stata scelta un'altra sessione
                 if (!ReferenceEquals(eff, s))
                 {
                     // Statistiche e grafici ricalcolati sul gioco vero (la sessione salvata resta com'è).
-                    StatsGrid.ItemsSource = BuildStats(eff.Stats, eff);
+                    StatsGrid.ItemsSource = BuildStats(eff);
+                    ShowPhases(eff);
                     ShowSessionCharts(eff);
+                    ShowHitches(eff);
                 }
                 SessionHistogram.Frametimes = frametimes;
                 int excluded = total - (frametimes?.Length ?? 0);
                 HistogramStatus.Text = frametimes == null
                     ? "Frametime non disponibili per questa sessione"
+                    : eff.HeadlineIsMatch
+                        ? $"{frametimes.Length.ToString("N0", C)} frame della partita (lobby, caricamenti e fuori fuoco esclusi: {excluded.ToString("N0", C)})"
                     : excluded > 0
                         ? $"{frametimes.Length.ToString("N0", C)} frame in primo piano ({excluded.ToString("N0", C)} fuori fuoco esclusi)"
                         : $"{frametimes.Length.ToString("N0", C)} frame";
@@ -846,9 +887,10 @@ namespace FNBoost.Views.Pages
             var secs = s.Seconds ?? new List<SecondSample>();
             SessionFpsChart.Values = secs.Select(x => x.Unfocused ? double.NaN : x.Fps).ToArray();
             SessionFpsChart.Values2 = secs.Select(x => !x.Unfocused && x.Low1Fps > 0 ? x.Low1Fps : double.NaN).ToArray();
-            SessionFpsChart.XLabel = s.UnfocusedSec >= 1
+            SessionFpsChart.XLabel = (s.UnfocusedSec >= 1
                 ? $"tempo · {s.DurationText} · buchi = gioco fuori fuoco ({N0(s.UnfocusedSec)} s esclusi{(s.UnfocusedEstimated ? ", stima" : "")})"
-                : $"tempo · {s.DurationText}";
+                : $"tempo · {s.DurationText}") +
+                (s.HeadlineIsMatch && s.PhaseSeconds is { } ph && ph.LobbySec + ph.LoadingSec >= 1 ? " · lobby e caricamenti nel grafico ma non nelle statistiche" : "");
             if (s.FpsCap is { } cap && cap > 0)
             {
                 SessionFpsChart.ReferenceValue = cap;
@@ -888,20 +930,28 @@ namespace FNBoost.Views.Pages
             return string.Join(" · ", parts);
         }
 
-        private static List<StatItem> BuildStats(FrameStatsResult st, PerfSession s)
+        /// <summary>
+        /// Statistiche della sessione: solo partita se c'è almeno un minuto di partita (etichetta «· partita»), altrimenti
+        /// l'intera sessione. In più la sessione intera come confronto e gli scatti con il loro peso sui low.
+        /// </summary>
+        private static List<StatItem> BuildStats(PerfSession s)
         {
+            var st = s.HeadlineStats;
+            bool match = s.HeadlineIsMatch;
+            string sfx = match ? " · partita" : "";
+            string scope = match ? " Solo partita: lobby, menu e caricamenti esclusi." : "";
             var text = Res("TextBrush");
             var accent = Res("Accent2Brush");
             string Ms(double v) => v > 0 ? v.ToString("0.00", C) + " ms" : "–";
             var cons = st.ConsistencyScore >= 80 ? Res("OkBrush") : st.ConsistencyScore >= 60 ? Res("WarnBrush") : Res("BadBrush");
-            return new List<StatItem>
+            var list = new List<StatItem>
             {
-                new() { Label = "FPS medi", Value = N0(st.AvgFps), Brush = accent,
-                        Tip = "Frame totali divisi per il tempo: la media reale (non la media degli FPS istantanei)." },
-                new() { Label = "1% low", Value = N0(st.Low1Fps), Brush = text,
-                        Tip = "Media dell'1% dei frame più lenti, convertita in FPS. Indica la fluidità nei momenti peggiori: più è vicino alla media, meglio è." },
-                new() { Label = "0,1% low", Value = N0(st.Low01Fps), Brush = text,
-                        Tip = "Come l'1% low ma sullo 0,1% dei frame più lenti: cattura gli scatti rari e più evidenti." },
+                new() { Label = "FPS medi" + sfx, Value = N0(st.AvgFps), Brush = accent,
+                        Tip = "Frame totali divisi per il tempo: la media reale (non la media degli FPS istantanei)." + scope },
+                new() { Label = "1% low" + sfx, Value = N0(st.Low1Fps), Brush = text,
+                        Tip = "Media dell'1% dei frame più lenti, convertita in FPS. Indica la fluidità nei momenti peggiori: più è vicino alla media, meglio è." + scope },
+                new() { Label = "0,1% low" + sfx, Value = N0(st.Low01Fps), Brush = text,
+                        Tip = "Come l'1% low ma sullo 0,1% dei frame più lenti: cattura gli scatti rari e più evidenti." + scope },
                 new() { Label = "P1 (99° percentile)", Value = N0(st.P1Fps), Brush = text,
                         Tip = "FPS corrispondenti al 99° percentile dei frametime: il 99% dei frame è stato più veloce di così. Simile all'1% low ma meno sensibile ai singoli picchi." },
                 new() { Label = "FPS minimi", Value = N0(st.MinFps), Brush = text,
@@ -934,6 +984,106 @@ namespace FNBoost.Views.Pages
                 new() { Label = "Gioco", Value = DisplayName(s.ProcessName), Brush = text,
                         Tip = "Processo misurato (dall'elenco processi di Windows)." },
             };
+            if (match && s.Stats is { HasData: true } whole)
+                list.Insert(3, new StatItem
+                {
+                    Label = "Sessione intera", Value = $"{N0(whole.AvgFps)} / {N0(whole.Low1Fps)} / {N0(whole.Low01Fps)}", Brush = Res("MutedBrush"),
+                    Tip = "Media / 1% low / 0,1% low dell'intera sessione, incluse lobby e caricamenti (frame fino a " +
+                          $"{whole.MaxFrametimeMs.ToString("0", C)} ms). Solo per confronto: lì gli FPS non dicono nulla sulle prestazioni in partita."
+                });
+            if (match && s.Hitches is { } h)
+                list.Insert(4, new StatItem
+                {
+                    Label = $"Scatti ≥ {N0(h.ThresholdMs)} ms",
+                    Value = $"{h.Count} ({h.PerMin.ToString("0.0", C)}/min)",
+                    Brush = h.PerMin >= 10 ? Res("BadBrush") : h.PerMin >= 2 ? Res("WarnBrush") : Res("OkBrush"),
+                    Tip = $"Frame della partita lunghi almeno {N0(h.ThresholdMs)} ms ({h.CountBig} ≥ {N0(h.BigThresholdMs)} ms, {h.CountHuge} ≥ 100 ms). " +
+                          $"Senza questi scatti l'1% low sarebbe {N0(h.Low1WithoutFps)} e lo 0,1% low {N0(h.Low01WithoutFps)}."
+                });
+            return list;
+        }
+
+        /// <summary>Riga sotto il titolo: quanto tempo in partita, lobby e caricamenti.</summary>
+        private void ShowPhases(PerfSession s)
+        {
+            var ph = s.PhaseSeconds;
+            if (ph == null)
+            {
+                PhaseText.Text = "";
+                PhaseText.Visibility = Visibility.Collapsed;
+                return;
+            }
+            var parts = new List<string>
+            {
+                $"Partita {SessionPhases.Clock(ph.MatchSec)} ({(s.Matches?.Count ?? 0) switch { 1 => "1 partita", var n => $"{n} partite" }})",
+                $"lobby e menu {SessionPhases.Clock(ph.LobbySec)}",
+                $"caricamenti {N0(ph.LoadingSec)} s"
+            };
+            if (ph.UnfocusedSec >= 1) parts.Add($"fuori fuoco {N0(ph.UnfocusedSec)} s");
+            string text = string.Join(" · ", parts) + ".";
+            text += s.HeadlineIsMatch
+                ? " Le statistiche qui sotto contano solo la partita."
+                : ph.MatchSec > 0 ? " Partita troppo breve: statistiche dell'intera sessione." : " Nessuna partita riconosciuta: statistiche dell'intera sessione.";
+            if (!ph.FromNetwork) text += " (Fasi stimate da FPS, GPU e cursore: la sessione non ha i dati di rete.)";
+            if (ph.LobbyIdleSec >= SessionPhases.MinSegmentSec)
+                text += $" In lobby {N0(ph.LobbyIdleSec)} s a ~30 FPS: Fortnite limita gli FPS quando sei inattivo, escluso dalle statistiche.";
+            PhaseText.Text = text;
+            PhaseText.Visibility = Visibility.Visible;
+        }
+
+        /// <summary>Gli scatti più lunghi della partita, con il contesto del secondo.</summary>
+        private void ShowHitches(PerfSession s)
+        {
+            var h = s.HeadlineIsMatch ? s.Hitches : null;
+            if (h == null || h.Count == 0)
+            {
+                HitchPanel.Visibility = h == null ? Visibility.Collapsed : Visibility.Visible;
+                HitchList.ItemsSource = null;
+                HitchImpactText.Text = h == null ? "" : $"Nessuno scatto ≥ {N0(h.ThresholdMs)} ms durante la partita.";
+                return;
+            }
+            HitchImpactText.Text = $"{h.Count} scatti ≥ {N0(h.ThresholdMs)} ms in partita ({h.PerMin.ToString("0.0", C)} al minuto; {h.CountBig} ≥ {N0(h.BigThresholdMs)} ms, {h.CountHuge} ≥ 100 ms): " +
+                                   $"se togliamo questi {h.Count} scatti l'1% low passa da {N0(h.Low1Fps)} a {N0(h.Low1WithoutFps)} FPS e lo 0,1% low da {N0(h.Low01Fps)} a {N0(h.Low01WithoutFps)} FPS.";
+            HitchList.ItemsSource = h.Top.Select(x =>
+            {
+                var ctx = new List<string>();
+                if (x.OtherAppsKbps is { } o) ctx.Add($"altre app {Kbps(o)}");
+                if (!string.IsNullOrEmpty(x.TopDownloader)) ctx.Add(x.TopDownloader!);
+                if (x.PingMs is { } pg) ctx.Add($"ping {pg.ToString("0", C)} ms");
+                if (x.NetFreezeNear) ctx.Add("freeze di rete");
+                ctx.Add($"CPU {x.CpuPercent.ToString("0", C)}%");
+                if (x.GpuPercent is { } g) ctx.Add($"GPU {g.ToString("0", C)}%");
+                return new HitchRow
+                {
+                    SessionTime = SessionPhases.Clock(x.SessionSec),
+                    MatchTime = x.Match > 0 ? $"{x.Match} · {SessionPhases.Clock(x.MatchSec)}" : "–",
+                    Duration = x.Ms.ToString("0.0", C) + " ms",
+                    Context = string.Join(" · ", ctx),
+                    DurationBrush = LevelBrush(x.Ms >= 100 ? 2 : x.Ms >= 50 ? 1 : 0)
+                };
+            }).ToList();
+            HitchPanel.Visibility = Visibility.Visible;
+        }
+
+        /// <summary>Programmi che hanno usato di più la rete durante la sessione (Fortnite stesso compreso, separato dalla partita).</summary>
+        private void ShowNetProcesses(PerfSession s)
+        {
+            var list = s.TopNetworkProcesses ?? new List<ProcessNetUsage>();
+            if (list.Count == 0)
+            {
+                NetProcPanel.Visibility = Visibility.Collapsed;
+                NetProcList.ItemsSource = null;
+                return;
+            }
+            NetProcList.ItemsSource = list.Select(p => new NetProcRow
+            {
+                Name = NetProcessAttribution.Describe(p.Name),
+                Down = p.MbDown >= 1000 ? (p.MbDown / 1000).ToString("0.0", C) + " GB" : p.MbDown.ToString("0", C) + " MB",
+                Peak = p.PeakMbps.ToString("0.0", C) + " Mbit/s",
+                Match = p.MatchSecondsActive > 0 ? $"{p.MatchSecondsActive} s" : "–",
+                MatchBrush = LevelBrush(p.MatchSecondsActive >= 60 ? 1 : 0)
+            }).ToList();
+            NetProcPanel.Visibility = Visibility.Visible;
         }
 
         private void CompareCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateCompare();
@@ -1107,7 +1257,12 @@ namespace FNBoost.Views.Pages
             {
                 NetOtherText.Text = Kbps(net.OtherAppsKbps);
                 NetOtherText.Foreground = LevelBrush(net.OtherAppsKbps > 10000 ? 2 : net.OtherAppsKbps > 2000 ? 1 : 0);
-                NetOtherSub.Text = $"totale PC {Kbps(net.TotalKbpsIn + net.TotalKbpsOut)}";
+                NetOtherSub.Text = net.TopDownloaders is { Count: > 0 } td
+                    ? $"{td[0].Name} {Kbps(td[0].Kbps)} · totale PC {Kbps(net.TotalKbpsIn + net.TotalKbpsOut)}"
+                    : $"totale PC {Kbps(net.TotalKbpsIn + net.TotalKbpsOut)}";
+                NetOtherSub.ToolTip = net.TopDownloaders is { Count: > 0 } all
+                    ? "Chi scarica adesso: " + string.Join(", ", all.Select(x => $"{NetProcessAttribution.Describe(x.Name)} {Kbps(x.Kbps)}"))
+                    : null;
                 NetFreezeText.Text = net.RecentFreezes.ToString(C);
                 NetFreezeText.Foreground = LevelBrush(net.RecentFreezes >= 3 ? 2 : net.RecentFreezes >= 1 ? 1 : 0);
                 NetFreezeSub.Text = server && net.MaxRecvGapMs > 0
