@@ -30,6 +30,11 @@ namespace FNBoost.Tests
             T.Run("senza dati di rete: lobby da 30 FPS inattivi e cursore, caricamenti dai frame lunghi", FallbackPhases);
             T.Run("sfarfallii: tratti di partita/lobby sotto i 5 s assorbiti, Alt+Tab non spezza la partita", SmoothingAndMatches);
             T.Run("sessione vecchia: fasi e statistiche ricalcolate al volo, originale intatto", LegacyRecompute);
+            T.Run("blocco di 0,9 s a metà partita con la GPU ferma: resta partita, una sola partita", MidMatchStall);
+            T.Run("GPU molto potente (6-9% in partita): soglia relativa, la partita non diventa caricamento", LowGpuMatch);
+            T.Run("registrazione iniziata in partita: niente matchmaking finto prima di uno scatto", StartConnected);
+            T.Run("chat vocale in lobby: pacchetti in un solo senso o lobby inattiva non sono partita", VoiceInLobby);
+            T.Run("sessione vecchia con il gioco ridotto a icona: pause ricostruite o niente solo partita", LegacyPauseAlignment);
             T.Run("istanti dei frame con le pause salvate e secondo di ogni frame", FrameTimeline);
             T.Run("frame della partita: CSV con colonna match, archivio e 4 ore di sessione", MatchFramesAndStore);
 
@@ -497,13 +502,16 @@ namespace FNBoost.Tests
             var ph = SessionPhases.Classify(hitch, out _);
             T.Equal(SessionPhase.Match, ph[50], "scatto da 400 ms a metà partita = partita");
             T.Equal(1, SessionPhases.FindMatches(ph, hitch, null).Count, "la partita non viene spezzata");
-            hitch[50].GpuPercent = 2; // GPU ferma: allora è davvero un caricamento
-            T.Equal(SessionPhase.Loading, SessionPhases.Classify(hitch, out _)[50], "con la GPU ferma è caricamento");
+            hitch[50].GpuPercent = 2; // durante un blocco la GPU resta ferma: 1 s resta comunque uno scatto della partita
+            T.Equal(SessionPhase.Match, SessionPhases.Classify(hitch, out _)[50], "anche con la GPU ferma, 1 s = scatto");
             hitch[50].GpuPercent = 40;
             hitch[51].MaxFrametimeMs = 900;
             hitch[51].Fps = 10;
             hitch[52].MaxFrametimeMs = 700;
-            T.Equal(SessionPhase.Loading, SessionPhases.Classify(hitch, out _)[51], "3 s di frame lunghissimi = caricamento");
+            T.Equal(SessionPhase.Match, SessionPhases.Classify(hitch, out _)[51], "3 s di frame lunghissimi = ancora uno scatto");
+            hitch[53].MaxFrametimeMs = 1200;
+            hitch[53].Fps = 0;
+            T.Equal(SessionPhase.Loading, SessionPhases.Classify(hitch, out _)[51], "4 s di frame lunghissimi = caricamento");
 
             // Un secondo isolato "di partita" in mezzo alla lobby diventa lobby.
             var flick = Enumerable.Range(0, 40).Select(k => new SecondSample { T = k, Fps = 120, MaxFrametimeMs = 9, GpuPercent = 40, PacketsInPerSec = 0 }).ToList();
@@ -554,6 +562,248 @@ namespace FNBoost.Tests
             T.True(Has(ins, "Statistiche solo partita"), "l'analisi ricalcola le fasi");
             T.True(Has(ins, "Download durante la partita"), "download riconosciuti anche senza traffico per programma");
             T.Contains(Get(ins, "Download durante la partita")?.Message ?? "", "Non sappiamo quale programma", "programma non misurato");
+        }
+
+        // ================= Casi limite della classificazione =================
+
+        /// <summary>Secondi di una partita collegata (pacchetti 40/30) a 165 FPS con la GPU indicata.</summary>
+        private static List<SecondSample> MatchSecs(int n, double gpu, int connectedFrom = 0)
+        {
+            var list = new List<SecondSample>(n);
+            for (int k = 0; k < n; k++)
+            {
+                bool conn = k >= connectedFrom;
+                list.Add(new SecondSample
+                {
+                    T = k, Fps = 165, MaxFrametimeMs = 7, GpuPercent = conn ? gpu : 45, CpuPercent = 20,
+                    PacketsInPerSec = conn ? 40 : 0, PacketsOutPerSec = conn ? 30 : 0
+                });
+            }
+            return list;
+        }
+
+        private static string Letters(IEnumerable<SessionPhase> p) =>
+            string.Concat(p.Select(x => x switch { SessionPhase.Match => 'M', SessionPhase.Loading => 'C', SessionPhase.Lobby => 'L', _ => 'U' }));
+
+        private static void MidMatchStall()
+        {
+            // Lobby 0-64 s, partita da 65 s a 165 FPS con la GPU al 30%; blocco di 900 ms che finisce nel secondo 201.
+            var ft = new List<float>();
+            var ts = new List<double>();
+            double t = 0;
+            void Add(float f)
+            {
+                t += f;
+                ft.Add(f);
+                ts.Add(t);
+            }
+            while (t < 200_400) Add(6.06f);
+            Add(900f);
+            while (t < 300_000) Add(6.06f);
+            var frames = FocusFilter.BuildSession(ft, ts, null, 2.5, 12);
+            var s = new PerfSession { Id = "stall", ProcessName = Fn, Stats = frames.Stats, DurationSec = frames.DurationSec, Seconds = frames.Seconds };
+            foreach (var x in s.Seconds)
+            {
+                int k = (int)x.T;
+                bool conn = k >= 65;
+                x.PacketsInPerSec = conn ? 40 : 0;
+                x.PacketsOutPerSec = conn ? 30 : 0;
+                x.ServerIdx = conn ? 0 : null;
+                // Durante il blocco la GPU resta quasi ferma.
+                x.GpuPercent = !conn ? 45 : k == 200 || k == 201 ? 3 : 30;
+                if (k == 203)
+                {
+                    x.NetFreezes = 1; // freeze vero subito dopo il blocco: non è un ingresso in partita
+                    x.MaxRecvGapMs = 400;
+                }
+            }
+            s.Network = new NetworkSummary { ServerEndpoints = { "34.1.2.3:7777" } };
+            SessionPhases.Apply(s, ft.ToArray(), null, SessionPhases.FrameSeconds(ts), 2.5, 12);
+            var p = SessionPhases.PhasesOf(s);
+            T.Equal(new string('M', 20), Letters(p.Skip(190).Take(20)), "190-209 s tutti partita: " + Letters(p.Skip(190).Take(20)));
+            T.Equal(1, s.Matches!.Count, "una sola partita");
+            T.Near(900, s.MatchStats!.MaxFrametimeMs, 0.1, "il blocco da 900 ms resta nelle statistiche solo partita");
+            T.True(s.Hitches!.Top.Any(h => Math.Abs(h.Ms - 900) < 0.1), "e nella lista degli scatti");
+            var mid = SessionPhases.MidMatchFreezes(s, out int join);
+            T.True(mid.Any(f => f.Sec == 203), "freeze dopo il blocco contato a metà partita (niente seconda «grazia» d'ingresso)");
+
+            // FindMatches: un caricamento breve tra due tratti di partita non spezza la partita, salvo cambio di server.
+            var secs = MatchSecs(40, 30);
+            var ph = Enumerable.Repeat(SessionPhase.Match, 40).ToArray();
+            ph[20] = ph[21] = SessionPhase.Loading;
+            T.Equal(1, SessionPhases.FindMatches(ph, secs, null).Count, "2 s di caricamento in mezzo: una partita");
+            for (int k = 0; k < 40; k++) secs[k].ServerIdx = k < 20 ? 0 : 1;
+            T.Equal(2, SessionPhases.FindMatches(ph, secs, null).Count, "server diverso: due partite");
+            ph[22] = ph[23] = SessionPhase.Loading;
+            secs.ForEach(x => x.ServerIdx = null);
+            T.Equal(2, SessionPhases.FindMatches(ph, secs, null).Count, "4 s di caricamento: due partite");
+        }
+
+        private static void LowGpuMatch()
+        {
+            // 0-29 lobby, poi partita collegata con la GPU al 6% (RTX 4090 con il cap): resta partita.
+            var a = MatchSecs(200, 6, connectedFrom: 30);
+            for (int k = 30; k < 36; k++)
+            {
+                a[k].GpuPercent = 0.5; // schermata di caricamento all'ingresso
+                a[k].MaxFrametimeMs = k == 32 ? 1200 : 20;
+            }
+            var pa = SessionPhases.Classify(a, out bool net);
+            T.True(net, "dal traffico");
+            T.Equal(SessionPhase.Loading, pa[33], "caricamento d'ingresso riconosciuto (GPU 0,5%)");
+            T.True(pa.Skip(40).All(x => x == SessionPhase.Match), "GPU al 6% in partita: partita, non caricamento");
+            T.Equal(1, SessionPhases.FindMatches(pa, a, null).Count, "una partita");
+
+            // GPU 9,5 / 9,5 / 7%: un secondo su tre sotto l'8% non trasforma la partita in caricamento.
+            var b = MatchSecs(200, 9.5, connectedFrom: 30);
+            for (int k = 30; k < 200; k++)
+                if (k % 3 == 2) b[k].GpuPercent = 7;
+            var pb = SessionPhases.Classify(b, out _);
+            T.True(pb.Skip(40).All(x => x == SessionPhase.Match), "GPU 9,5/9,5/7%: partita: " + Letters(pb.Skip(30).Take(30)));
+
+            // Con la GPU al 33% (come nel report) l'8% resta la soglia: 5 s all'1% = caricamento.
+            var c = MatchSecs(200, 33, connectedFrom: 30);
+            for (int k = 100; k < 106; k++) c[k].GpuPercent = 1;
+            var pc = SessionPhases.Classify(c, out _);
+            T.Equal(SessionPhase.Loading, pc[102], "GPU ferma per 6 s a 33% di mediana = caricamento");
+        }
+
+        private static void StartConnected()
+        {
+            // Registrazione iniziata a partita in corso, scatto da 300 ms a 12 s: nessun matchmaking prima.
+            var a = MatchSecs(120, 30);
+            a[12].MaxFrametimeMs = 300;
+            a[12].Fps = 140;
+            var pa = SessionPhases.Classify(a, out _);
+            T.Equal(new string('M', 20), Letters(pa.Take(20)), "0-19 s partita: " + Letters(pa.Take(20)));
+
+            // Iniziata già collegati ma in matchmaking, con una vera schermata di caricamento (6 s) a 12 s: prima è caricamento.
+            var b = MatchSecs(120, 30);
+            for (int k = 12; k < 18; k++)
+            {
+                b[k].MaxFrametimeMs = 900;
+                b[k].GpuPercent = 1;
+            }
+            var pb = SessionPhases.Classify(b, out _);
+            T.Equal(SessionPhase.Loading, pb[5], "matchmaking prima del caricamento");
+            T.Equal(SessionPhase.Loading, pb[14], "caricamento");
+            T.Equal(SessionPhase.Match, pb[30], "partita dopo");
+        }
+
+        private static void VoiceInLobby()
+        {
+            // Lobby 0-119 s con la chat vocale (30-36 pacchetti/s ricevuti, quasi niente inviato), 30 FPS inattivi a 40-79 s;
+            // partita 120-299 s.
+            var secs = MatchSecs(300, 33, connectedFrom: 120);
+            for (int k = 0; k < 120; k++)
+            {
+                var x = secs[k];
+                x.PacketsInPerSec = 30 + k % 7;
+                x.PacketsOutPerSec = k % 10 == 0 ? 3 : 0;
+                x.Fps = k >= 40 && k < 80 ? 30 : 120;
+                x.GpuPercent = k >= 40 && k < 80 ? 10 : 40;
+            }
+            for (int k = 120; k < 126; k++)
+            {
+                secs[k].MaxFrametimeMs = 800;
+                secs[k].GpuPercent = 1;
+            }
+            var p = SessionPhases.Classify(secs, out bool net);
+            T.True(net, "dal traffico");
+            T.True(p.Take(120).All(x => x == SessionPhase.Lobby), "voce in ascolto: lobby: " + Letters(p.Take(120)));
+            T.Equal(SessionPhase.Match, p[200], "partita");
+
+            // Parli anche tu (pacchetti nei due sensi): la lobby inattiva a 30 FPS resta comunque lobby.
+            for (int k = 0; k < 120; k++) secs[k].PacketsOutPerSec = 45;
+            var p2 = SessionPhases.Classify(secs, out _);
+            T.True(p2.Skip(40).Take(40).All(x => x == SessionPhase.Lobby), "30 FPS inattivi = lobby anche con i pacchetti: " + Letters(p2.Skip(40).Take(40)));
+
+            // Pacchetti dal solo server: 20 pacchetti/s sparsi su tanti indirizzi (beacon) non sono un collegamento.
+            var beacons = MatchSecs(200, 33, connectedFrom: 100);
+            for (int k = 0; k < 200; k++) beacons[k].ServerPacketsInPerSec = k >= 100 ? 40 : 1;
+            for (int k = 0; k < 100; k++)
+            {
+                beacons[k].PacketsInPerSec = 20;
+                beacons[k].PacketsOutPerSec = 20;
+            }
+            var pb = SessionPhases.Classify(beacons, out _);
+            T.True(pb.Take(100).All(x => x == SessionPhase.Lobby), "beacon verso tanti indirizzi: lobby");
+            T.Equal(SessionPhase.Match, pb[150], "server: partita");
+
+            // L'aggregatore conta a parte i pacchetti dall'indirizzo che ne manda di più.
+            var agg = new NetTrafficAggregator();
+            var server = new NetEndpoint(System.Net.IPAddress.Parse("52.1.2.3"), 7777);
+            var lan = new NetEndpoint(System.Net.IPAddress.Parse("192.168.1.50"), 5000);
+            for (int i = 0; i < 40; i++) agg.Add(new NetPacket(i * 20.0, true, 100, server));
+            for (int i = 0; i < 50; i++) agg.Add(new NetPacket(i * 15.0 + 1, true, 100, lan));
+            for (int i = 0; i < 12; i++) agg.Add(new NetPacket(i * 70.0 + 2, true, 60, new NetEndpoint(System.Net.IPAddress.Parse("35.0.0." + (i + 1)), 22222)));
+            var done = agg.Advance(1000);
+            T.Equal(1, done.Count, "un secondo");
+            T.Equal(102, done[0].PacketsIn, "tutti i pacchetti ricevuti");
+            T.Equal(40, done[0].ServerPacketsIn, "solo quelli dell'indirizzo pubblico principale");
+        }
+
+        private static void LegacyPauseAlignment()
+        {
+            // Lobby 0-59 s con il gioco ridotto a icona 30-60 s (nessun frame: pausa scartata dalla cattura), partita 96-300 s,
+            // poi il caricamento del ritorno in lobby con frame da 1,8 e 2,6 s.
+            var ft = new List<float>();
+            var ts = new List<double>();
+            double t = 0;
+            void Add(float f)
+            {
+                t += f;
+                ft.Add(f);
+                ts.Add(t);
+            }
+            void FillTo(double end, float f)
+            {
+                while (t + f < end) Add(f);
+            }
+            FillTo(30_000, 8.333f);
+            t = 60_000; // pausa: nessun frame, e il primo dopo la pausa non è un frametime
+            FillTo(90_000, 8.333f);
+            FillTo(96_000, 6f);
+            FillTo(300_000, 6.06f);
+            Add(1800f);
+            Add(2600f);
+            FillTo(330_000, 8.333f);
+            var frames = FocusFilter.BuildSession(ft, ts, null, 2.5, 12);
+            var s = new PerfSession { Id = "legacy-pause", ProcessName = Fn, Stats = frames.Stats, DurationSec = frames.DurationSec, Seconds = frames.Seconds };
+            foreach (var x in s.Seconds)
+            {
+                int k = (int)x.T;
+                bool conn = k >= 90 && k < 304;
+                x.PacketsInPerSec = conn ? 40 : 0;
+                x.PacketsOutPerSec = conn ? 30 : 0;
+                x.GpuPercent = k >= 90 && k < 96 || k >= 300 && k < 304 ? 1 : 33;
+            }
+            for (int k = 90; k < 96; k++) s.Seconds[k].MaxFrametimeMs = 400;
+            var ftArr = ft.ToArray();
+            var live = JsonSerializer.Deserialize<PerfSession>(JsonSerializer.Serialize(s))!;
+            live.FrameGaps = SessionPhases.FindGaps(ftArr, ts);
+            SessionPhases.Apply(live, ftArr, null, SessionPhases.FrameSeconds(ts), 2.5, 12);
+            T.True(live.MatchStats!.MaxFrametimeMs < 10, "registrazione nuova: nessun caricamento nella partita");
+
+            // Sessione vecchia: stessi dati, ma senza FrameGaps né fasi.
+            var old = JsonSerializer.Deserialize<PerfSession>(JsonSerializer.Serialize(s))!;
+            var re = SessionPhases.Ensure(old, ftArr);
+            T.True(re != null, "ricalcolo");
+            if (re == null) return;
+            T.True(re.FrameGaps is { Count: 1 }, "pausa ricostruita dai secondi senza frame");
+            T.True(re.HeadlineIsMatch, "solo partita");
+            T.Near(live.MatchStats.AvgFps, re.MatchStats!.AvgFps, 1, "stessa media della registrazione nuova");
+            T.True(re.MatchStats.MaxFrametimeMs < 250, $"frame dei caricamenti fuori dalla partita: {re.MatchStats.MaxFrametimeMs:0}");
+            T.True(re.MatchStats.Low01Fps > 100, $"0,1% low della partita: {re.MatchStats.Low01Fps:0}");
+            var mask = SessionPhases.MatchMask(re, ftArr);
+            T.Equal(re.MatchStats.Frames, mask?.Count(x => x) ?? -1, "maschera della partita con le pause ricostruite");
+
+            // Pausa non ricostruibile (nessun secondo vuoto, frame e secondi non tornano): niente "solo partita" sbagliato.
+            var broken = JsonSerializer.Deserialize<PerfSession>(JsonSerializer.Serialize(s))!;
+            for (int k = 30; k < 60; k++) broken.Seconds[k].Unfocused = true;
+            var rb = SessionPhases.Ensure(broken, ftArr);
+            T.True(rb != null && rb.MatchStats == null && !rb.HeadlineIsMatch, "disallineata: numeri della sessione intera");
+            T.True(rb?.Matches is { Count: 1 }, "le fasi al secondo restano");
         }
 
         private static void FrameTimeline()

@@ -695,6 +695,8 @@ namespace FNBoost.Perf
         public double StartMs { get; set; }
         public int PacketsIn { get; set; }
         public int PacketsOut { get; set; }
+        /// <summary>Pacchetti ricevuti dall'indirizzo pubblico che ne ha mandati di più in questo secondo (in partita: il server).</summary>
+        public int ServerPacketsIn { get; set; }
         public long BytesIn { get; set; }
         public long BytesOut { get; set; }
         /// <summary>Pausa più lunga tra due pacchetti del server terminata in questo secondo (null se nessun pacchetto dal server).</summary>
@@ -849,6 +851,8 @@ namespace FNBoost.Perf
                         if (_freezes.Count > MaxFreezes) _freezes.RemoveRange(0, _freezes.Count - MaxFreezes);
                     }
                 }
+                foreach (var kv in counts)
+                    if (kv.Value > b.ServerPacketsIn && NetStats.IsPublicAddress(kv.Key.Address)) b.ServerPacketsIn = kv.Value;
                 result.Add(b);
 
                 // Finestra mobile di 10 s per scegliere il server.

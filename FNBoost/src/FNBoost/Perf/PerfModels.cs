@@ -83,6 +83,11 @@ namespace FNBoost.Perf
         /// <summary>Pacchetti UDP al secondo ricevuti dal / inviati al server di gioco.</summary>
         public double? PacketsInPerSec { get; set; }
         public double? PacketsOutPerSec { get; set; }
+        /// <summary>
+        /// Pacchetti ricevuti dal solo indirizzo pubblico che ne ha mandati di più in questo secondo (in partita è il server
+        /// di gioco): serve a riconoscere la partita senza contare beacon e altri piccoli flussi UDP. Null nelle sessioni vecchie.
+        /// </summary>
+        public double? ServerPacketsInPerSec { get; set; }
         /// <summary>Banda usata dal gioco (kbit/s).</summary>
         public double? GameKbpsIn { get; set; }
         public double? GameKbpsOut { get; set; }

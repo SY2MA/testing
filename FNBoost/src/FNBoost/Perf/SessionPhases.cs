@@ -19,14 +19,21 @@ namespace FNBoost.Perf
     public static class SessionPhases
     {
         /// <summary>Versione del calcolo: le sessioni con una versione più vecchia vengono ricalcolate all'analisi.</summary>
-        public const int Version = 1;
+        public const int Version = 2;
 
         /// <summary>Pacchetti al secondo dal server sotto cui si è in lobby (in partita il server ne manda 30-100).</summary>
         public const double MinPacketsPerSec = 5;
+        /// <summary>Pacchetti ricevuti senza quasi nulla inviato per almeno così tanti secondi: non è una partita (es. chat vocale).</summary>
+        public const int MinOneWaySec = 10;
         /// <summary>Un frame così lungo è una schermata di caricamento, non uno scatto di gioco.</summary>
         public const double LoadingFrameMs = 250;
         /// <summary>GPU sotto questa soglia mentre si è collegati a un server: caricamento (in partita la GPU lavora).</summary>
         public const double LoadingGpuMax = 8;
+        /// <summary>
+        /// La soglia della GPU è relativa alla sessione: sotto il 30% della mediana dei secondi di gioco (al massimo 8%).
+        /// Con una GPU molto potente e il cap degli FPS la partita può stare al 6-9%: una soglia fissa la scambierebbe per caricamento.
+        /// </summary>
+        public const double LoadingGpuRel = 0.3;
         /// <summary>Tratti più corti di così (lobby in mezzo alla partita o viceversa) sono sfarfallii e vengono assorbiti.</summary>
         public const int MinSegmentSec = 5;
         /// <summary>I primi secondi dopo l'inizio del collegamento a un server sono ingresso/caricamento.</summary>
@@ -38,6 +45,10 @@ namespace FNBoost.Perf
         /// <summary>Senza dati di rete: cursore visibile per almeno così tanti secondi (vicino a lobby/caricamenti) = menu.</summary>
         public const int CursorLobbySec = 10;
         public const double CursorLobbyFraction = 0.9;
+        /// <summary>Una pausa della cattura oltre 5 s lascia almeno così tanti secondi senza frame (sessioni vecchie senza FrameGaps).</summary>
+        private const int MinPauseEmptySec = 4;
+        /// <summary>Differenza massima (s) tra la somma dei frametime e la durata della sessione per allineare frame e secondi.</summary>
+        private const double MaxTimelineDriftSec = 2;
         /// <summary>Freeze di rete nei primi secondi dopo l'ingresso in partita: normali (il server sta caricando), non contano.</summary>
         public const int JoinFreezeGraceSec = 10;
         /// <summary>Soglie degli scatti (ms).</summary>
@@ -49,11 +60,14 @@ namespace FNBoost.Perf
 
         /// <summary>
         /// Fase di ogni secondo. Con i dati di rete (pacchetti dal server misurati nella maggior parte dei secondi e almeno
-        /// un tratto collegato): lobby = meno di <see cref="MinPacketsPerSec"/> pacchetti/s dal server; caricamento = secondi
-        /// collegati con un frame ≥ 250 ms (più i secondi vicini, se non sembrano gioco) o con la GPU sotto l'8%, i primi
-        /// 2 s di ogni collegamento e il matchmaking che precede una schermata di caricamento; il resto collegato = partita.
+        /// un tratto collegato): lobby = meno di <see cref="MinPacketsPerSec"/> pacchetti/s dal server, o un collegamento in
+        /// cui il PC quasi non invia (non è una partita), o la lobby inattiva a ~30 FPS; caricamento = secondi collegati con
+        /// un frame ≥ 250 ms (più i secondi vicini, se non sembrano gioco) o con la GPU ferma (sotto il 30% della mediana,
+        /// al massimo 8%), i primi 2 s di ogni collegamento e il matchmaking che precede una schermata di caricamento;
+        /// il resto collegato = partita.
         /// Senza dati di rete: lobby = tratti di almeno 5 s a ~30 FPS con la GPU sotto il 15% (lobby inattiva) oppure
         /// con il cursore visibile accanto a lobby/caricamenti; caricamento = frame ≥ 250 ms; il resto = partita.
+        /// Un "caricamento" di al massimo 3 s in mezzo alla partita è uno scatto e resta partita.
         /// Infine i tratti di partita o di lobby più corti di 5 s vengono assorbiti dai vicini.
         /// </summary>
         public static SessionPhase[] Classify(IReadOnlyList<SecondSample>? seconds, out bool fromNetwork)
@@ -75,8 +89,8 @@ namespace FNBoost.Perf
             var secs = new SecondSample[m];
             for (int k = 0; k < m; k++) secs[k] = seconds[idx[k]];
 
-            int withPackets = secs.Count(x => x.PacketsInPerSec.HasValue);
-            bool anyConnected = secs.Any(x => x.PacketsInPerSec is >= MinPacketsPerSec);
+            int withPackets = secs.Count(x => InPackets(x).HasValue);
+            bool anyConnected = secs.Any(x => InPackets(x) is >= MinPacketsPerSec);
             fromNetwork = withPackets * 2 >= m && anyConnected;
 
             var p = fromNetwork ? ClassifyNetwork(secs) : ClassifyFallback(secs);
@@ -86,13 +100,30 @@ namespace FNBoost.Perf
             return result;
         }
 
+        /// <summary>
+        /// Pacchetti ricevuti nel secondo dal server (l'indirizzo pubblico che ne ha mandati di più); per le sessioni
+        /// registrate prima di questa misura, tutti i pacchetti UDP ricevuti dal gioco.
+        /// </summary>
+        private static double? InPackets(SecondSample x) => x.ServerPacketsInPerSec ?? x.PacketsInPerSec;
+
         private static SessionPhase[] ClassifyNetwork(SecondSample[] s)
         {
             int m = s.Length;
             // ---- collegato al server: pacchetti ≥ 5/s; secondi non misurati = come il vicino misurato ----
+            // Una partita è traffico nei due sensi (il client invia e conferma decine di pacchetti al secondo): almeno 10 s
+            // di pacchetti ricevuti senza quasi nulla inviato (es. si ascolta la chat vocale del party in lobby) non sono
+            // un collegamento a un server di gioco. Più corti (una schermata di caricamento) non contano.
+            var oneWay = new bool[m];
+            for (int k = 0; k < m; k++)
+                oneWay[k] = InPackets(s[k]) is >= MinPacketsPerSec && s[k].PacketsOutPerSec is { } po && po < MinPacketsPerSec;
+            ForRuns(oneWay, true, (a, b) =>
+            {
+                if (b - a >= MinOneWaySec) return;
+                for (int k = a; k < b; k++) oneWay[k] = false;
+            });
             var known = new bool?[m];
             for (int k = 0; k < m; k++)
-                if (s[k].PacketsInPerSec is { } pk) known[k] = pk >= MinPacketsPerSec;
+                if (InPackets(s[k]) is { } pk) known[k] = pk >= MinPacketsPerSec && !oneWay[k];
             var conn = new bool[m];
             bool? last = null;
             for (int k = 0; k < m; k++)
@@ -111,8 +142,9 @@ namespace FNBoost.Perf
             var p = new SessionPhase[m];
             for (int k = 0; k < m; k++) p[k] = conn[k] ? SessionPhase.Match : SessionPhase.Lobby;
 
+            double gpuLow = GpuLowThreshold(s, conn);
             bool LoadSignal(int k) => conn[k] && (s[k].MaxFrametimeMs >= LoadingFrameMs || s[k].Fps <= 0 ||
-                                                   s[k].GpuPercent is < LoadingGpuMax);
+                                                   s[k].GpuPercent is { } g && g < gpuLow);
             for (int k = 0; k < m; k++)
                 if (LoadSignal(k)) p[k] = SessionPhase.Loading;
 
@@ -125,12 +157,52 @@ namespace FNBoost.Perf
                 int firstLoad = -1;
                 for (int j = k; j < Math.Min(end, k + PreLoadingWindowSec); j++)
                     if (LoadSignal(j)) { firstLoad = j; break; }
-                int upTo = firstLoad >= 0 ? firstLoad : k > 0 ? Math.Min(end, k + JoinLoadingSec) : k;
+                int upTo;
+                if (firstLoad < 0) upTo = k > 0 ? Math.Min(end, k + JoinLoadingSec) : k;
+                else if (k > 0) upTo = firstLoad;
+                else
+                {
+                    // Registrazione iniziata già collegati: nessun ingresso osservato. Quello che precede il primo
+                    // caricamento è matchmaking solo se è una vera schermata di caricamento (più di 3 s), non uno scatto.
+                    int loadEnd = firstLoad;
+                    while (loadEnd < end && LoadSignal(loadEnd)) loadEnd++;
+                    upTo = loadEnd - firstLoad > MaxHitchLoadingSec ? firstLoad : k;
+                }
                 for (int j = k; j < upTo; j++) p[j] = SessionPhase.Loading;
             }
 
-            MarkLongFrameNeighbours(s, p, conn);
+            MarkLongFrameNeighbours(s, p, conn, gpuLow);
+
+            // Rete di sicurezza: ~30 FPS con la GPU quasi ferma per almeno 5 s è la lobby inattiva anche se arrivano
+            // pacchetti (es. chat vocale del party): in partita Fortnite non si limita a 30 FPS.
+            MarkIdleLobby(s, p, requireShortFrames: true);
             return p;
+        }
+
+        /// <summary>
+        /// GPU "ferma" (caricamento): sotto il 30% della mediana dei secondi che sembrano gioco (collegati, con frame e senza
+        /// frame lunghissimi), al massimo 8%. Senza misure della GPU: 8% (non scatta mai).
+        /// </summary>
+        private static double GpuLowThreshold(SecondSample[] s, bool[]? conn)
+        {
+            var g = new List<double>();
+            for (int k = 0; k < s.Length; k++)
+                if ((conn == null || conn[k]) && s[k].Fps > 0 && s[k].MaxFrametimeMs < LoadingFrameMs && s[k].GpuPercent is { } v)
+                    g.Add(v);
+            return g.Count > 0 ? Math.Min(LoadingGpuMax, LoadingGpuRel * NetStats.Median(g)) : LoadingGpuMax;
+        }
+
+        /// <summary>Lobby inattiva: tratti di almeno 5 s a ~30 FPS con la GPU quasi ferma (con requireShortFrames: senza frame ≥ 250 ms).</summary>
+        private static void MarkIdleLobby(SecondSample[] s, SessionPhase[] p, bool requireShortFrames)
+        {
+            int m = s.Length;
+            var idle = new bool[m];
+            for (int k = 0; k < m; k++) idle[k] = IsIdle(s[k]) && (!requireShortFrames || s[k].MaxFrametimeMs < LoadingFrameMs);
+            ForRuns(idle, true, (a, b) =>
+            {
+                if (b - a < MinSegmentSec) return;
+                for (int k = a; k < b; k++) p[k] = SessionPhase.Lobby;
+            });
         }
 
         private static SessionPhase[] ClassifyFallback(SecondSample[] s)
@@ -140,18 +212,12 @@ namespace FNBoost.Perf
             for (int k = 0; k < m; k++) p[k] = SessionPhase.Match;
 
             // ---- lobby inattiva: ~30 FPS con la GPU quasi ferma per almeno 5 s ----
-            var idle = new bool[m];
-            for (int k = 0; k < m; k++) idle[k] = IsIdle(s[k]);
-            ForRuns(idle, true, (a, b) =>
-            {
-                if (b - a < MinSegmentSec) return;
-                for (int k = a; k < b; k++) p[k] = SessionPhase.Lobby;
-            });
+            MarkIdleLobby(s, p, requireShortFrames: false);
 
             // ---- caricamenti: frame lunghissimi, o nessun frame per un secondo intero con il gioco in primo piano ----
             for (int k = 0; k < m; k++)
                 if (s[k].MaxFrametimeMs >= LoadingFrameMs || s[k].Fps <= 0) p[k] = SessionPhase.Loading;
-            MarkLongFrameNeighbours(s, p, null);
+            MarkLongFrameNeighbours(s, p, null, GpuLowThreshold(s, null));
 
             // ---- menu: cursore visibile a lungo, accanto a lobby/caricamenti o all'inizio/alla fine ----
             var cursor = new bool[m];
@@ -173,9 +239,9 @@ namespace FNBoost.Perf
 
         /// <summary>
         /// I secondi accanto a un frame ≥ 250 ms fanno parte del caricamento (il frame lungo inizia nel secondo prima),
-        /// a meno che sembrino gioco vero: GPU ≥ 8% (o non misurata), FPS ≥ 60% della mediana della partita e nessun frame lunghissimo.
+        /// a meno che sembrino gioco vero: GPU non ferma (o non misurata), FPS ≥ 60% della mediana della partita e nessun frame lunghissimo.
         /// </summary>
-        private static void MarkLongFrameNeighbours(SecondSample[] s, SessionPhase[] p, bool[]? conn)
+        private static void MarkLongFrameNeighbours(SecondSample[] s, SessionPhase[] p, bool[]? conn, double gpuLow)
         {
             int m = s.Length;
             var matchFps = new List<double>();
@@ -183,7 +249,7 @@ namespace FNBoost.Perf
                 if (p[k] == SessionPhase.Match && s[k].Fps > 0) matchFps.Add(s[k].Fps);
             double median = matchFps.Count > 0 ? NetStats.Median(matchFps) : 0;
             bool Gameplay(SecondSample x) =>
-                x.MaxFrametimeMs < LoadingFrameMs && x.Fps >= 0.6 * median && !(x.GpuPercent is < LoadingGpuMax);
+                x.MaxFrametimeMs < LoadingFrameMs && x.Fps >= 0.6 * median && !(x.GpuPercent is { } g && g < gpuLow);
 
             var longFrame = new bool[m];
             for (int k = 0; k < m; k++) longFrame[k] = s[k].MaxFrametimeMs >= LoadingFrameMs && (conn == null || conn[k]);
@@ -199,14 +265,15 @@ namespace FNBoost.Perf
             }
         }
 
-        /// <summary>Un "caricamento" di al massimo questi secondi in mezzo alla partita, senza GPU ferma, è uno scatto vero.</summary>
-        public const int MaxHitchLoadingSec = 2;
+        /// <summary>Un "caricamento" di al massimo questi secondi in mezzo alla partita è uno scatto vero (le schermate di caricamento durano 5-8 s).</summary>
+        public const int MaxHitchLoadingSec = 3;
         private const int MatchContextSec = 10;
 
         /// <summary>
-        /// Un frame ≥ 250 ms in mezzo alla partita (1-2 s, partita prima e dopo) con la GPU che lavora e senza secondi
-        /// senza frame è uno scatto vero, non una schermata di caricamento: resta nella partita e nelle sue statistiche.
-        /// Le schermate di caricamento vere durano di più e hanno la GPU quasi ferma.
+        /// Un "caricamento" di al massimo 3 s in mezzo alla partita (almeno 10 s di partita prima e dopo, stesso server) è
+        /// uno scatto vero, non una schermata di caricamento: resta nella partita e nelle sue statistiche. Qui non si guardano
+        /// GPU e FPS: durante un blocco di 1-3 s la GPU resta ferma e nessun frame finisce, eppure sono proprio gli scatti
+        /// che l'1% e lo 0,1% low devono mostrare. Le schermate di caricamento vere durano di più (5-8 s).
         /// </summary>
         private static void KeepMidMatchHitches(SecondSample[] s, SessionPhase[] p)
         {
@@ -219,10 +286,24 @@ namespace FNBoost.Perf
                 while (a - 1 - left >= 0 && p[a - 1 - left] == SessionPhase.Match) left++;
                 while (b + right < p.Length && p[b + right] == SessionPhase.Match) right++;
                 if (left < MatchContextSec || right < MatchContextSec) return;
-                for (int j = a - 1; j <= b; j++)
-                    if (s[j].GpuPercent is < LoadingGpuMax || s[j].Fps <= 0) return;
+                if (ServerChanged(s, p, a - 1, b)) return;
                 for (int k = a; k < b; k++) p[k] = SessionPhase.Match;
             });
+        }
+
+        /// <summary>
+        /// true se il server noto più vicino prima di <paramref name="before"/> (incluso) e quello dopo <paramref name="after"/>
+        /// (incluso), cercati tra i secondi di partita entro 10 s, sono diversi: sono due partite.
+        /// </summary>
+        private static bool ServerChanged(IReadOnlyList<SecondSample?> s, IReadOnlyList<SessionPhase> p, int before, int after)
+        {
+            int? Find(int from, int step)
+            {
+                for (int j = from, c = 0; j >= 0 && j < s.Count && j < p.Count && c < MatchContextSec; j += step, c++)
+                    if (p[j] == SessionPhase.Match && s[j]?.ServerIdx is { } si) return si;
+                return null;
+            }
+            return Find(before, -1) is { } x && Find(after, 1) is { } y && x != y;
         }
 
         /// <summary>
@@ -310,7 +391,8 @@ namespace FNBoost.Perf
 
         /// <summary>
         /// Partite = tratti di secondi in partita, uniti se separati solo da secondi fuori fuoco (un Alt+Tab non chiude la
-        /// partita). Server = il più frequente tra i secondi della partita (indice in <paramref name="servers"/>).
+        /// partita) o da un "caricamento" di al massimo 3 s con lo stesso server (uno scatto lungo non spezza la partita).
+        /// Server = il più frequente tra i secondi della partita (indice in <paramref name="servers"/>).
         /// </summary>
         public static List<MatchSegment> FindMatches(IReadOnlyList<SessionPhase> p, IReadOnlyList<SecondSample>? seconds,
             IReadOnlyList<string>? servers)
@@ -327,9 +409,23 @@ namespace FNBoost.Perf
                 }
                 int start = i, lastMatch = i;
                 int k = i;
-                while (k < n && (p[k] == SessionPhase.Match || p[k] == SessionPhase.Unfocused))
+                while (k < n)
                 {
                     if (p[k] == SessionPhase.Match) lastMatch = k;
+                    else if (p[k] == SessionPhase.Loading)
+                    {
+                        // Caricamento breve seguito dalla stessa partita: si salta.
+                        int j = k;
+                        while (j < n && p[j] == SessionPhase.Loading) j++;
+                        int next = j;
+                        while (next < n && p[next] == SessionPhase.Unfocused) next++;
+                        if (j - k > MaxHitchLoadingSec || next >= n || p[next] != SessionPhase.Match ||
+                            (seconds != null && ServerChanged(seconds, p, lastMatch, next)))
+                            break;
+                        k = next;
+                        continue;
+                    }
+                    else if (p[k] != SessionPhase.Unfocused) break;
                     k++;
                 }
                 int end = lastMatch + 1;
@@ -461,6 +557,23 @@ namespace FNBoost.Perf
             if (ft == null || ft.Count < 2) return;
 
             double[] endMs = FrameEndTimes(ft, session.FrameGaps);
+            if (frameSecond == null && session.FrameGaps == null && secs.Count > 0 && !Aligned(endMs, secs.Count))
+            {
+                // Sessione vecchia senza le pause salvate: la cattura scarta le pause oltre 5 s (gioco ridotto a icona),
+                // quindi sommando i frametime ogni frame dopo una pausa finirebbe nel secondo sbagliato. Si ricostruiscono
+                // le pause dai secondi senza frame; se i conti non tornano, niente statistiche "solo partita" (meglio i numeri
+                // della sessione intera che una partita disallineata con dentro i caricamenti).
+                var rebuilt = RebuildGaps(ft, secs);
+                var endRebuilt = rebuilt != null ? FrameEndTimes(ft, rebuilt) : null;
+                if (endRebuilt == null || !Aligned(endRebuilt, secs.Count))
+                {
+                    session.MatchStats = null;
+                    session.Hitches = null;
+                    return;
+                }
+                session.FrameGaps = rebuilt;
+                endMs = endRebuilt;
+            }
             frameSecond ??= FrameSeconds(endMs);
             var mask = MatchMask(phases, ft, excluded ?? FocusFilter.MaskFromRanges(ft.Count, session.ExcludedRanges), frameSecond);
             var matchFt = new List<float>(ft.Count);
@@ -475,6 +588,56 @@ namespace FNBoost.Perf
             session.Hitches = matchFt.Count >= 2
                 ? BuildHitches(matchFt, matchIdx, endMs, frameSecond, session.Matches, secs, session.MatchStats)
                 : null;
+        }
+
+        /// <summary>La fine dell'ultimo frame cade entro 2 s dalla fine della sessione (frame e secondi allineati).</summary>
+        private static bool Aligned(double[] endMs, int seconds) =>
+            endMs.Length > 0 && Math.Abs(endMs[^1] / 1000.0 - seconds) <= MaxTimelineDriftSec;
+
+        /// <summary>
+        /// Pause della cattura ricostruite dai secondi senza alcun frame (almeno 4 di fila, non fuori fuoco): il primo frame
+        /// che finirebbe dentro un tratto vuoto ricomincia all'inizio del secondo successivo al tratto, a meno che sia lui
+        /// stesso a coprirlo (un frame lunghissimo ma valido). Null se non c'è nessun tratto vuoto.
+        /// </summary>
+        private static List<FrameGap>? RebuildGaps(IReadOnlyList<float> ft, IReadOnlyList<SecondSample> secs)
+        {
+            var runs = new List<(int A, int B)>();
+            int i = 0;
+            while (i < secs.Count)
+            {
+                if (!Empty(secs[i]))
+                {
+                    i++;
+                    continue;
+                }
+                int a = i;
+                while (i < secs.Count && Empty(secs[i])) i++;
+                if (i - a >= MinPauseEmptySec) runs.Add((a, i));
+            }
+            if (runs.Count == 0) return null;
+
+            var gaps = new List<FrameGap>();
+            double t = 0;
+            int r = 0;
+            for (int k = 0; k < ft.Count && r < runs.Count; k++)
+            {
+                double f = FrameStats.IsValid(ft[k]) ? ft[k] : 0;
+                while (r < runs.Count && t + f > runs[r].A * 1000.0)
+                {
+                    double restart = runs[r].B * 1000.0;
+                    double add = Math.Round(restart - t, 1);
+                    if (t + f <= restart && add > 0)
+                    {
+                        gaps.Add(new FrameGap { Index = k, Ms = add });
+                        t += add;
+                    }
+                    r++;
+                }
+                t += f;
+            }
+            return gaps.Count > 0 ? gaps : null;
+
+            static bool Empty(SecondSample? x) => x != null && !x.Unfocused && x.Fps <= 0 && x.MaxFrametimeMs <= 0;
         }
 
         /// <summary>Per ogni frame, true se è un frame della partita in primo piano (quelli delle statistiche "solo partita").</summary>

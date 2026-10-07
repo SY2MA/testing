@@ -510,7 +510,9 @@ namespace FNBoost.Perf
                 sample.NetFreezes = freezes[s];
                 if (trafficIdx[s] >= 0 && rec.Net[trafficIdx[s]] is { } pn)
                 {
-                    if (pn.Procs is { Count: > 0 } pl && NetProcessAttribution.TopDownloaders(pl) is { Count: > 0 } top)
+                    // Solo un elenco nuovo in quel tick: quello ripetuto (nessun secondo per programma chiuso) mostrerebbe
+                    // chi scaricava prima, anche se nel frattempo ha smesso.
+                    if (pn is { ProcsFresh: true, Procs: { Count: > 0 } pl } && NetProcessAttribution.TopDownloaders(pl) is { Count: > 0 } top)
                         sample.TopDownloaders = top;
                     if (pn.Server != null && session.Network?.ServerEndpoints is { } eps)
                     {
@@ -567,8 +569,12 @@ namespace FNBoost.Perf
                 if (t is { ProcsFresh: true, Procs: { } pl }) totals.Add(pl);
             if (!totals.Any) return null;
             var phases = SessionPhases.PhasesOf(session);
+            // Ogni tick conta una volta sola (il timer deriva: due secondi della sessione possono finire sullo stesso tick)
+            // e solo se il suo elenco per programma è nuovo.
+            var used = new HashSet<int>();
             for (int s = 0; s < phases.Length && s < trafficIdx.Length; s++)
-                if (phases[s] == SessionPhase.Match && trafficIdx[s] >= 0 && rec.Net[trafficIdx[s]] is { Procs: { } mp })
+                if (phases[s] == SessionPhase.Match && trafficIdx[s] >= 0 && used.Add(trafficIdx[s]) &&
+                    rec.Net[trafficIdx[s]] is { ProcsFresh: true, Procs: { } mp })
                     totals.AddMatchSecond(mp);
             var top = totals.Top();
             return top.Count > 0 ? top : null;
@@ -1240,6 +1246,7 @@ namespace FNBoost.Perf
                         StartMs = _lastTraffic.StartMs,
                         PacketsIn = _lastTraffic.PacketsIn,
                         PacketsOut = _lastTraffic.PacketsOut,
+                        ServerPacketsIn = _lastTraffic.ServerPacketsIn,
                         BytesIn = _lastTraffic.BytesIn,
                         BytesOut = _lastTraffic.BytesOut,
                         Server = _lastTraffic.Server
@@ -1264,7 +1271,8 @@ namespace FNBoost.Perf
                 {
                     tick.Procs = NetProcessAttribution.Attribute(procSecs, pid, NetName, OwnProcessName.Value);
                     tick.ProcsFresh = true;
-                    _lastProcs = tick.Procs;
+                    // Ripetuto solo per la UI nei tick senza secondi chiusi; nessuno sopra la soglia = non c'è più nessun download.
+                    _lastProcs = NetProcessAttribution.TopDownloaders(tick.Procs).Count > 0 ? tick.Procs : null;
                 }
                 else tick.Procs = _lastProcs;
             }
@@ -1298,6 +1306,7 @@ namespace FNBoost.Perf
             {
                 tick.PacketsIn = traffic.PacketsIn;
                 tick.PacketsOut = traffic.PacketsOut;
+                tick.ServerPacketsIn = traffic.ServerPacketsIn;
                 tick.KbpsIn = Math.Round(traffic.KbpsIn, 1);
                 tick.KbpsOut = Math.Round(traffic.KbpsOut, 1);
                 tick.MaxGapMs = traffic.MaxRecvGapMs is { } g ? Math.Round(g, 1) : null;
@@ -1326,6 +1335,7 @@ namespace FNBoost.Perf
                 StartMs = last.StartMs,
                 PacketsIn = (int)Math.Round(list.Average(x => x.PacketsIn)),
                 PacketsOut = (int)Math.Round(list.Average(x => x.PacketsOut)),
+                ServerPacketsIn = (int)Math.Round(list.Average(x => x.ServerPacketsIn)),
                 BytesIn = (long)list.Average(x => x.BytesIn),
                 BytesOut = (long)list.Average(x => x.BytesOut),
                 MaxRecvGapMs = list.Any(x => x.MaxRecvGapMs.HasValue) ? list.Max(x => x.MaxRecvGapMs ?? 0) : null,
@@ -1421,6 +1431,7 @@ namespace FNBoost.Perf
         {
             sample.PacketsInPerSec = net.PacketsIn;
             sample.PacketsOutPerSec = net.PacketsOut;
+            sample.ServerPacketsInPerSec = net.ServerPacketsIn;
             sample.GameKbpsIn = net.KbpsIn;
             sample.GameKbpsOut = net.KbpsOut;
             sample.OtherAppsKbps = net.OtherKbps;
@@ -1502,7 +1513,7 @@ namespace FNBoost.Perf
         private sealed class NetTick
         {
             public double? PingMs, JitterMs, LossPct, GatewayPingMs;
-            public int? PacketsIn, PacketsOut;
+            public int? PacketsIn, PacketsOut, ServerPacketsIn;
             public double? KbpsIn, KbpsOut, OtherKbps, MaxGapMs;
             public int Freezes;
             public double LongestFreezeMs;
